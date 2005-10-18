@@ -1,0 +1,30 @@
+<Location /test>
+	PerlSetVar SWITSession T::Session
+</Location>
+
+<Location /test/basic_handler>
+  SetHandler perl-script
+  PerlHandler T::Basic
+</Location>
+
+<Location /test/swit>
+  SetHandler perl-script
+  PerlHandler T::SWIT
+</Location>
+
+<Location /test/ht_page>
+  SetHandler perl-script
+  PerlHandler T::HTPage
+</Location>
+
+<Location /test/res>
+  SetHandler perl-script
+  PerlHandler T::Res
+</Location>
+
+<Location /test/sess_page>
+  SetHandler perl-script
+  PerlHandler T::SessPage
+</Location>
+
+

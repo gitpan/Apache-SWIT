@@ -1,0 +1,8 @@
+<html>
+<body>
+<form action="u">
+hello [% hello %]
+file: [% file %]
+</form>
+</body>
+</html>

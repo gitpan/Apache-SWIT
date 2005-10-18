@@ -1,0 +1,20 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Apache-SWIT
+version:      0.01
+version_from: lib/Apache/SWIT.pm
+installdirs:  site
+requires:
+    Apache::Cookie:                
+    Apache::Request:               
+    Apache::Test:                  
+    Class::Accessor:               
+    ExtUtils::ModuleMaker:         
+    HTML::Tested:                  
+    Template:                      
+    Test::Simple:                  0.44
+    WWW::Mechanize:                
+    YAML:                          
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17
