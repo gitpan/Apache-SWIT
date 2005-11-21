@@ -14,6 +14,7 @@ t/001_load.t
 t/100_session.t
 t/500_swit_init.t
 t/510_install.t
+t/520_db.t
 t/conf/extra.conf.in
 t/apache/test.pl
 t/apache/001_basic.t

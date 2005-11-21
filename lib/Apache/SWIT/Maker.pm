@@ -1,3 +1,10 @@
+=head1 NAME
+
+Apache::SWIT::Maker - creates various skeleton files for your SWIT project.
+
+=head1 METHODS
+
+=cut
 use strict;
 use warnings FATAL => 'all';
 
@@ -33,6 +40,12 @@ sub wf_path {
 	wf($f, $str);
 }
 
+sub mani_wf {
+	my ($f, $str) = @_;
+	wf_path($f, $str);
+	wf('>MANIFEST', "$f\n");
+}
+
 sub new {
 	my $self = shift->SUPER::new(@_);
 	unless ($self->root_class) {
@@ -51,8 +64,8 @@ sub new {
 	}
 	unless($self->app_name) {
 		my $app_name = $self->root_location;
-		$app_name =~ s/\//-/g;
-		$app_name =~ s/^-//;
+		$app_name =~ s/\//_/g;
+		$app_name =~ s/^_//;
 		$self->app_name($app_name);
 	}
 	unless($self->root_var_name) {
@@ -62,6 +75,9 @@ sub new {
 	}
 	return $self;
 }
+
+sub schema_class { return shift()->root_class . '::DB::Schema'; }
+sub connection_class { return shift()->root_class . '::DB::Connection'; }
 
 sub write_swit_yaml {
 	my $self = shift;
@@ -89,18 +105,21 @@ config :: t/conf/httpd.conf conf/httpd.conf
 	\$(NOECHO) \$(NOOP)
 			
 t/conf/httpd.conf :: t/conf/extra.conf.in
-	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) t/apache_test.pl -config
+	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) t/apache_test_run.pl -config
 
 conf/httpd.conf :: conf/swit.yaml conf/httpd.conf.in
 	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -MApache::SWIT::Maker -e 'Apache::SWIT::Maker->regenerate_httpd_conf'
 
-test :: test_apache
+test :: test_direct test_apache 
 
 APACHE_TEST_FILES = t/dual/*.t
 
+test_direct :: pure_all
+	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I blib/lib t/direct_test.pl \$(APACHE_TEST_FILES)
+
 test_apache :: pure_all
 	\$(RM_F) t/logs/access_log  t/logs/error_log
-	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) t/apache_test.pl \$(APACHE_TEST_FILES)
+	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I blib/lib t/apache_test.pl \$(APACHE_TEST_FILES)
 
 realclean ::
 	\$(RM_RF) t/htdocs t/logs
@@ -108,12 +127,6 @@ realclean ::
 	\$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	\$(RM_F) conf/httpd.conf t/conf/my.conf
 }}
-
-sub test {
-	my \$res = shift()->SUPER::test(\@_);
-	\$res =~ s/(TEST_FILES[^\\n]+)/\$1 t\\/dual\\/\\*\\.t/;
-	return \$res;
-}
 
 sub install {
 	return <<ENDS;
@@ -130,11 +143,18 @@ ENDM
 
 sub write_startup_pl {
 	my $self = shift;
+	my $sess_class = $self->session_class;
 	wf('conf/startup.pl', sprintf(<<ENDM
 use strict;
 use warnings FATAL => 'all';
 
-push \@INC, \$ENV{%s} . "/lib";
+BEGIN {
+	push \@INC, \$ENV{%s} . "/lib";
+};
+
+use $sess_class;
+my \$sess_dir = $sess_class\->sessions_dir;
+mkdir \$sess_dir if \$sess_dir;
 
 1;
 ENDM
@@ -168,7 +188,62 @@ use base 'Apache::SWIT::Session';
 sub sessions_dir { return '$sess_dir'; }
 sub cookie_name { return '$an'; }
 
-mkdir __PACKAGE__->sessions_dir;
+ENDM
+}
+
+sub db_env_var {
+	my $db_var = shift->root_var_name;
+	$db_var =~ s/ROOT$/DB/;
+	return $db_var;
+}
+
+sub write_db_connection_pm {
+	my $self = shift;
+	my $db_var = $self->db_env_var;
+	$self->write_pm_file($self->connection_class, <<ENDM);
+use base 'Class::Singleton', 'Class::Accessor';
+use DBI;
+
+__PACKAGE__->mk_accessors('db_handle');
+
+sub _new_instance {
+	my \$class = shift;
+	die "No $db_var\_NAME given!" unless \$ENV{$db_var\_NAME};
+	my \$dbh = DBI->connect("dbi:Pg:dbname=" 
+			. \$ENV{$db_var\_NAME}, undef, undef, {
+			RaiseError => 1, AutoCommit => 1, })
+		or die "Unable to connect to \$ENV{$db_var\_NAME} db";
+	return \$class->new({ db_handle => \$dbh });
+}
+ENDM
+}
+
+sub write_db_schema_file {
+	my $self = shift;
+	my $an = $self->app_name;
+	$self->write_pm_file($self->schema_class, <<ENDM);
+use base 'DBIx::VersionedSchema';
+__PACKAGE__->Name('$an');
+
+__PACKAGE__->add_version(sub {
+	my \$dbh = shift;
+});
+
+ENDM
+}
+
+sub write_test_db_file {
+	my $self = shift;
+	my $sc = $self->schema_class;
+	my $an = $self->app_name;
+	my $db_var = $self->db_env_var;
+	mani_wf('t/test_db.pl', <<ENDM);
+use Test::TempDatabase;
+use $sc;
+
+\$ENV{$db_var\_NAME} = '$an\_test_db';
+our \$test_db = Test::TempDatabase->create(dbname => '$an\_test_db',
+                        schema => '$sc');
 ENDM
 }
 
@@ -179,15 +254,28 @@ sub write_initial_files {
 	my $root_class = $self->root_class;
 	$self->write_swit_yaml;
 	$self->write_session_pm;
+	$self->write_db_schema_file;
+	$self->write_test_db_file;
+	$self->write_db_connection_pm;
 	my $root_location = $self->root_location;
+	my $db_var = $self->db_env_var;
+	my $an = $self->app_name;
 
 	wf_path('t/conf/extra.conf.in', <<ENDM);
 Include conf/my.conf
+PerlSetEnv $db_var\_NAME $an\_test_db
 ENDM
 
+	my $sess_class = $self->session_class;
 	wf('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
 PerlRequire \@ServerRoot\@/conf/startup.pl
+
+PerlModule $sess_class
+<Location $root_location>
+	PerlSetVar SWITRoot \@ServerRoot\@/
+	PerlAccessHandler $sess_class\->access_handler
+</Location>
 ENDM
 		, $self->root_var_name));
 
@@ -205,7 +293,18 @@ my \$t = Apache::SWIT::Test->new;
 \$t->ok_ht_index_r(base_url => "$root_location/index/r", ht => { first => '' });
 ENDM
 
-	wf('t/apache_test.pl', <<ENDM);
+	wf('t/direct_test.pl', <<ENDM);
+use strict;
+use warnings FATAL => 'all';
+use Test::Harness;
+
+do "t/test_db.pl";
+runtests(\@ARGV);
+ENDM
+
+	wf('t/apache_test_run.pl', <<ENDM);
+# Do not add anything to this file
+# You can use t/apache_test.pl for custom stuff
 use Apache::TestRunPerl;
 use File::Basename qw(dirname);
 use Cwd qw(abs_path);
@@ -214,13 +313,18 @@ use Cwd qw(abs_path);
 push \@ARGV, '-top_dir', abs_path(dirname(\$0) . "/../");
 Apache::TestRunPerl->new->run(\@ARGV);
 ENDM
+	wf('t/apache_test.pl', <<ENDM);
+do "t/test_db.pl";
+do "t/apache_test_run.pl";
+ENDM
 
 	$self->write_makefile_pl;
 
 	wf('>MANIFEST', <<ENDM);
-
 t/conf/extra.conf.in
 t/apache_test.pl
+t/apache_test_run.pl
+t/direct_test.pl
 t/dual/001_load.t
 conf/swit.yaml
 conf/httpd.conf.in
@@ -229,8 +333,15 @@ ENDM
 	$self->add_ht_page('Index');
 }
 
+=head2 add_page(page)
+
+Adds page and related files. Page should be the name of the module, 
+e.g. 'Index'. See C<add_ht_page> for adding HTML::Tested enabled page.
+
+=cut
 sub add_page {
-	my ($self, $page_class, %args) = @_;
+	my ($self, $page_class, $tmpl_str) = @_;
+	$tmpl_str ||= '';
 	my $tree = YAML::LoadFile('conf/swit.yaml') or die "No conf/swit.yaml found";
 	my $entry_point = lc($page_class);
 	$entry_point =~ s/::/\//g;
@@ -246,7 +357,8 @@ sub add_page {
 	wf_path($tt_file, <<ENDM);
 <html>
 <body>
-<form>
+<form action="u" method="post">
+$tmpl_str
 </form>
 </body>
 </html>
@@ -266,8 +378,14 @@ ENDM
 	return $tree->{pages}->{$entry_point};
 }
 
+=head2 add_ht_page(page)
+
+Adds HTML::Tested enabled page and related files. 
+Page should be the name of the module, e.g. 'Index'.
+
+=cut
 sub add_ht_page {
-	my $p = shift()->add_page(@_);
+	my $p = shift()->add_page(@_, '[% first %]');
 	my $module_file = "lib/" . $p->{class} . ".pm";
 	$module_file =~ s/::/\//g;
 	my $tt_file = $p->{template};
@@ -303,14 +421,7 @@ ENDM
 sub regenerate_httpd_conf {
 	my $tree = YAML::LoadFile('conf/swit.yaml') or die "No conf/swit.yaml found";
 	copy('conf/httpd.conf.in', 'conf/httpd.conf');
-	wf('>conf/httpd.conf', <<ENDS
-PerlModule $tree->{session_class}
-<Location $tree->{root_location}>
-	PerlSetVar SWITRoot \@ServerRoot\@/
-	PerlSetVar SWITSession $tree->{session_class}
-</Location>
-ENDS
-			. join("\n", map { <<ENDS
+	wf('>conf/httpd.conf', join("\n", map { <<ENDS
 <Location $_->{location}>
 	SetHandler perl-script
 	PerlHandler $_->{class}
@@ -323,6 +434,11 @@ ENDS
 	wf('t/conf/my.conf', $c);
 }
 
+=head2 remove_page(page)
+
+Removes page and related files. Page is relative to the root location
+
+=cut
 sub remove_page {
 	my ($class, $page) = @_;
 	my $tree = YAML::LoadFile('conf/swit.yaml') or die "No conf/swit.yaml found";

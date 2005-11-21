@@ -2,7 +2,6 @@ use strict;
 use warnings FATAL => 'all';
 
 package T::Basic;
-use T::Session;
  
 sub handler ($$) {
 	my($class, $r) = @_;

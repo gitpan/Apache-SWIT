@@ -9,7 +9,6 @@ __PACKAGE__->make_tested_edit_box('file');
 
 package T::HTPage;
 use base 'Apache::SWIT::HTPage';
-use T::Session;
 
 sub ht_root_class { return 'T::HTPage::Root'; }
 

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 45;
+use Test::More tests => 50;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -40,7 +40,6 @@ like($tres, qr/All tests successful/);
 like($tres, qr/t\/dual\/001_load/);
 like($tres, qr/started\n.*dual/);
 like($tres, qr/Files=1/);
-like($tres, qr/Files=2/);
 ok(-d 't/logs');
 ok(-f 'conf/httpd.conf');
 ok(-d '/tmp/ttt_sessions');
@@ -62,6 +61,12 @@ like($tres, qr/configuration/);
 $tres = join('', `make test_ 2>&1`);
 unlike($tres, qr/started/);
 
+# make test_direct doesn't run neither apache nor other tests
+$tres = join('', `make test_direct 2>&1`);
+unlike($tres, qr/started/);
+unlike($tres, qr/t\/001_load/);
+like($tres, qr/dual/);
+
 Apache::SWIT::Maker->new->add_page('First::Page');
 like(read_file('conf/swit.yaml'), qr/TTT::First::Page/);
 
@@ -69,8 +74,8 @@ ok(-f "templates/first/page.tt");
 ok(-f "lib/TTT/First/Page.pm");
 ok(-f "conf/startup.pl");
 
-open(my $fh, ">conf/httpd.conf.in");
-print $fh "# Custom";
+open(my $fh, ">>conf/httpd.conf.in");
+print $fh "# Custom\n";
 close $fh;
 
 `make 2>&1`;
@@ -84,6 +89,7 @@ like($mani, qr/TTT\/First\/Page\.pm/);
 like($mani, qr/templates\/first\/page\.tt/);
 like($mani, qr/conf\/httpd\.conf\.in/);
 like($mani, qr/conf\/startup\.pl/);
+like($mani, qr/direct_test/);
 
 $tres = join('', `make dist 2>&1`);
 like($tres, qr/apache_test/);
@@ -108,6 +114,18 @@ Apache::SWIT::Maker->new->add_ht_page('First::Page');
 like(read_file('conf/swit.yaml'), qr/TTT::First::Page/);
 like(read_file('lib/TTT/First/Page.pm'), qr/ht_root_class/);
 ok(require("lib/TTT/First/Page.pm"));
+
+my $at = read_file('t/apache_test.pl');
+open($fh, ">t/apache_test.pl");
+print $fh "use TTT::First::Page;\n$at";
+close $fh;
+
+`perl Makefile.PL`;
+$tres = join('', `make test_apache 2>&1`);
+like($tres, qr/All tests successful/);
+
+$tres = join('', `make disttest 2>&1`);
+unlike($tres, qr/Fail/);
 
 chdir '/';
 rmtree('/tmp/ttt_sessions');

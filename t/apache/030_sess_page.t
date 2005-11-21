@@ -1,10 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Data::Dumper;
 
-BEGIN { use_ok('T::SessPage');
+BEGIN { use_ok('T::Session');
+	use_ok('T::SessPage');
 	use_ok('Apache::SWIT::Test');
 }
 

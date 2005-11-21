@@ -12,7 +12,8 @@ WriteMakefile(
 	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '',
 	'ExtUtils::ModuleMaker' => '',
 	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
-	'Apache::Cookie' => '',
+	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
+	'Test::TempDatabase' => '', 'Class::Singleton' => '',
     },
 );
 

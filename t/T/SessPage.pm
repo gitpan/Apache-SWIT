@@ -7,7 +7,6 @@ __PACKAGE__->make_tested_edit_box('persbox');
 
 package T::SessPage;
 use base 'Apache::SWIT::HTPage';
-use T::Session;
 
 sub ht_root_class { return 'T::SessPage::Root'; }
 

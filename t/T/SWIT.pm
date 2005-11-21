@@ -3,7 +3,6 @@ use warnings FATAL => 'all';
 
 package T::SWIT;
 use base 'Apache::SWIT';
-use T::Session;
 
 sub swit_render {
 	my ($class, $r) = @_;

@@ -47,7 +47,7 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 sub swit_update_i {
 	my($class, $r, $session) = @_;
@@ -83,7 +83,7 @@ sub handler($$) {
 	my $t = $1 or die "Unable to find request type";
 	my $h = $_handlers{$t} or die "Unable to find handler for $t";
 	my $f = "swit_$h\_i";
-	my $session = $r->dir_config('SWITSession')->begin($r);
+	my $session = $r->pnotes('SWITSession');
 	return $class->$f(Apache::Request->new($r), $session);
 }
 

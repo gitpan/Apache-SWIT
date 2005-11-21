@@ -6,6 +6,13 @@ use Digest::MD5 qw(md5_hex);
 use Storable qw(lock_store lock_retrieve);
 use Apache::Cookie;
 
+sub access_handler($$) {
+	my ($class, $r) = @_;
+	my $session = $class->begin($r);
+	$r->pnotes("SWITSession", $session);
+	return 200;
+}
+
 sub begin {
 	my ($class, $r) = @_;
 	my %args = (_request => $r);
@@ -96,6 +103,5 @@ sub read_stash {
 	my $file = $self->sessions_dir . "/" . $self->session_id;
 	$self->{_stash} = -f $file ? lock_retrieve($file) : {};
 }
-
 
 1;

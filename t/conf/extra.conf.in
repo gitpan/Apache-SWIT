@@ -1,5 +1,10 @@
+<Perl>
+	push @INC, "@ServerRoot@/../blib/lib";
+</Perl>
+
+PerlModule T::Session
 <Location /test>
-	PerlSetVar SWITSession T::Session
+	PerlAccessHandler T::Session->access_handler
 </Location>
 
 <Location /test/basic_handler>
