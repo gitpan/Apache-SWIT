@@ -1,7 +1,6 @@
 MANIFEST
 LICENSE
 README
-Todo
 Changes
 lib/Apache/SWIT.pm
 lib/Apache/SWIT/Maker.pm

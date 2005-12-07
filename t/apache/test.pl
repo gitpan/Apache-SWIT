@@ -11,5 +11,6 @@ $0 = 'asdhdhdh';
 push @ARGV, '-top_dir', $top_dir;
 
 mkpath('/tmp/apache_swit_sessions'); 
+`chown nobody /tmp/apache_swit_sessions` unless $<;
 Apache::TestRunPerl->new->run(@ARGV);
 rmtree('/tmp/apache_swit_sessions');

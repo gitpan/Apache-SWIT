@@ -11,7 +11,7 @@ use warnings FATAL => 'all';
 package Apache::SWIT::Maker;
 use base 'Class::Accessor';
 use File::Path;
-use File::Basename qw(dirname);
+use File::Basename qw(dirname basename);
 use YAML;
 use File::Copy;
 use Cwd qw(abs_path);
@@ -81,7 +81,7 @@ sub connection_class { return shift()->root_class . '::DB::Connection'; }
 
 sub write_swit_yaml {
 	my $self = shift;
-	wf_path('conf/swit.yaml', sprintf(<<ENDM
+	mani_wf('conf/swit.yaml', sprintf(<<ENDM
 root_class: %s
 root_location: "%s"
 session_class: %s
@@ -115,15 +115,15 @@ test :: test_direct test_apache
 APACHE_TEST_FILES = t/dual/*.t
 
 test_direct :: pure_all
-	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I blib/lib t/direct_test.pl \$(APACHE_TEST_FILES)
+	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I t -I blib/lib t/direct_test.pl \$(APACHE_TEST_FILES)
 
 test_apache :: pure_all
 	\$(RM_F) t/logs/access_log  t/logs/error_log
-	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I blib/lib t/apache_test.pl \$(APACHE_TEST_FILES)
+	ulimit -c unlimited && PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I t -I blib/lib t/apache_test.pl \$(APACHE_TEST_FILES)
 
 realclean ::
 	\$(RM_RF) t/htdocs t/logs
-	\$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
+	\$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl t/T/Test.pm
 	\$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	\$(RM_F) conf/httpd.conf t/conf/my.conf
 }}
@@ -247,27 +247,21 @@ our \$test_db = Test::TempDatabase->create(dbname => '$an\_test_db',
 ENDM
 }
 
-sub write_initial_files {
+sub write_t_extra_conf_in {
 	my $self = shift;
-	wf('>MANIFEST', "\n");
-
-	my $root_class = $self->root_class;
-	$self->write_swit_yaml;
-	$self->write_session_pm;
-	$self->write_db_schema_file;
-	$self->write_test_db_file;
-	$self->write_db_connection_pm;
-	my $root_location = $self->root_location;
-	my $db_var = $self->db_env_var;
 	my $an = $self->app_name;
-
-	wf_path('t/conf/extra.conf.in', <<ENDM);
+	my $db_var = $self->db_env_var;
+	mani_wf('t/conf/extra.conf.in', <<ENDM);
 Include conf/my.conf
 PerlSetEnv $db_var\_NAME $an\_test_db
 ENDM
+}
 
+sub write_httpd_conf_in {
+	my $self = shift;
+	my $root_location = $self->root_location;
 	my $sess_class = $self->session_class;
-	wf('conf/httpd.conf.in', sprintf(<<ENDM
+	mani_wf('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
 PerlRequire \@ServerRoot\@/conf/startup.pl
 
@@ -279,30 +273,19 @@ PerlModule $sess_class
 ENDM
 		, $self->root_var_name));
 
-	wf_path('t/dual/001_load.t', <<ENDM);
-use strict;
-use warnings FATAL => 'all';
+}
 
-use Test::More tests => 2;
-use Apache::SWIT::Test;
-
-BEGIN { use_ok('$root_class\::Index'); }
-
-Apache::SWIT::Test->make_aliases(index => '$root_class\::Index');
-my \$t = Apache::SWIT::Test->new;
-\$t->ok_ht_index_r(base_url => "$root_location/index/r", ht => { first => '' });
-ENDM
-
-	wf('t/direct_test.pl', <<ENDM);
-use strict;
-use warnings FATAL => 'all';
-use Test::Harness;
-
+sub write_apache_test_pl {
+	mani_wf('t/apache_test.pl', <<ENDM);
 do "t/test_db.pl";
-runtests(\@ARGV);
+do "t/apache_test_run.pl";
+our \$test_db;
+\$test_db->destroy;
 ENDM
+}
 
-	wf('t/apache_test_run.pl', <<ENDM);
+sub write_apache_test_run_pl {
+	mani_wf('t/apache_test_run.pl', <<ENDM);
 # Do not add anything to this file
 # You can use t/apache_test.pl for custom stuff
 use Apache::TestRunPerl;
@@ -313,22 +296,55 @@ use Cwd qw(abs_path);
 push \@ARGV, '-top_dir', abs_path(dirname(\$0) . "/../");
 Apache::TestRunPerl->new->run(\@ARGV);
 ENDM
-	wf('t/apache_test.pl', <<ENDM);
+}
+
+sub write_direct_test_pl {
+	mani_wf('t/direct_test.pl', <<ENDM);
+use strict;
+use warnings FATAL => 'all';
+use Test::Harness;
+
 do "t/test_db.pl";
-do "t/apache_test_run.pl";
+runtests(\@ARGV);
+our \$test_db;
+\$test_db->destroy;
 ENDM
+}
 
+sub write_t_dual_001_load_t {
+	my $self = shift;
+	my $root_class = $self->root_class;
+	my $root_location = $self->root_location;
+	mani_wf('t/dual/001_load.t', <<ENDM);
+use strict;
+use warnings FATAL => 'all';
+
+use Test::More tests => 2;
+use T::Test;
+
+BEGIN { use_ok('$root_class\::Index'); }
+
+my \$t = T::Test->new;
+\$t->ok_ht_index_r(base_url => "$root_location/index/r", ht => { first => '' });
+ENDM
+}
+
+sub write_initial_files {
+	my $self = shift;
+	wf('>MANIFEST', "\n");
+
+	$self->write_swit_yaml;
+	$self->write_session_pm;
+	$self->write_db_schema_file;
+	$self->write_test_db_file;
+	$self->write_db_connection_pm;
+	$self->write_t_extra_conf_in;
+	$self->write_httpd_conf_in;
+	$self->write_t_dual_001_load_t;
+	$self->write_direct_test_pl;
+	$self->write_apache_test_run_pl;
+	$self->write_apache_test_pl;
 	$self->write_makefile_pl;
-
-	wf('>MANIFEST', <<ENDM);
-t/conf/extra.conf.in
-t/apache_test.pl
-t/apache_test_run.pl
-t/direct_test.pl
-t/dual/001_load.t
-conf/swit.yaml
-conf/httpd.conf.in
-ENDM
 	$self->write_startup_pl;
 	$self->add_ht_page('Index');
 }
@@ -432,6 +448,23 @@ ENDS
 	my $ap = abs_path('.');
 	$c =~ s/\@ServerRoot\@/$ap/g;
 	wf('t/conf/my.conf', $c);
+
+	my $aliases = "";
+	for my $p (values %{ $tree->{pages} }) {
+		$aliases .= basename($p->{location})
+			. " => '" . $p->{class} . "',\n";
+	}
+
+	wf_path('t/T/Test.pm', <<ENDS);
+package T::Test;
+use base 'Apache::SWIT::Test';
+
+__PACKAGE__->make_aliases(
+$aliases
+);
+
+1;
+ENDS
 }
 
 =head2 remove_page(page)

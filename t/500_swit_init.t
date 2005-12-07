@@ -1,10 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 50;
+use Test::More tests => 53;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
+use Test::TempDatabase;
 
 BEGIN { use_ok('Apache::SWIT::Maker'); }
 
@@ -20,6 +21,7 @@ delete $ENV{TEST_FILES};
 delete $ENV{MAKEFLAGS};
 delete $ENV{MAKEOVERRIDES};
 
+Test::TempDatabase->become_postgres_user;
 my $td = tempdir('/tmp/swit_init_XXXXXX', CLEANUP => 1);
 chdir $td;
 `modulemaker -I -n TTT`;
@@ -43,6 +45,8 @@ like($tres, qr/Files=1/);
 ok(-d 't/logs');
 ok(-f 'conf/httpd.conf');
 ok(-d '/tmp/ttt_sessions');
+
+is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);
 
 #diag($td);
 #readline(\*STDIN);
@@ -97,6 +101,7 @@ like($tres, qr/dual/);
 like($tres, qr/extra/);
 
 `make realclean`;
+ok(! -f 't/T/Test.pm');
 ok(! -d 't/htdocs');
 ok(! -d 't/logs');
 ok(! -f 'conf/httpd.conf');
@@ -126,6 +131,7 @@ like($tres, qr/All tests successful/);
 
 $tres = join('', `make disttest 2>&1`);
 unlike($tres, qr/Fail/);
+is_deeply([ `psql -l | grep ttt_test_db` ], []);
 
 chdir '/';
 rmtree('/tmp/ttt_sessions');

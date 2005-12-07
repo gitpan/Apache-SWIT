@@ -47,7 +47,7 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 sub swit_update_i {
 	my($class, $r, $session) = @_;
