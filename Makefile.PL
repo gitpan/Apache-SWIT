@@ -14,6 +14,7 @@ WriteMakefile(
 	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
 	'Test::TempDatabase' => '', 'Class::Singleton' => '',
+	'Class::DBI' => '',
     },
 );
 

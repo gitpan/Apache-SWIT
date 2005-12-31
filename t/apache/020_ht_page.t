@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 use File::Temp qw(tempdir);
 
 BEGIN { use_ok('Apache::SWIT::HTPage'); 
@@ -11,7 +11,8 @@ BEGIN { use_ok('Apache::SWIT::HTPage');
 
 my $td = tempdir("/tmp/swit_ht_page_XXXXXXX", CLEANUP => 1);
 
-Apache::SWIT::Test->make_aliases(another_page => 'T::HTPage');
+Apache::SWIT::Test->make_aliases(another_page => 'T::HTPage',
+		"and/another" => 'T::HTPage');
 
 my $t = Apache::SWIT::Test->new;
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => { 
@@ -34,4 +35,7 @@ isnt($x[0], undef);
 @x = $t->ht_another_page_u(ht => { file => "$td/uuu" });
 is(unlink("$td/uuu"), 1);
 is_deeply(\@x, [ 'hhhh' ]);
+
+$t->ok_ht_and_another_r(base_url => '/test/ht_page/r', ht => { 
+		hello => 'world' });
 

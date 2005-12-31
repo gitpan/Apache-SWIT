@@ -15,7 +15,7 @@ sub ht_root_class { return 'T::HTPage::Root'; }
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
 	$root->hello('world');
-	return ($r->server_root_relative('templates/htpage.tt'), $root);
+	return $root;
 }
 
 sub ht_swit_update {

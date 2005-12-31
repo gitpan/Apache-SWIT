@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -21,14 +21,14 @@ isa_ok($t, 'Apache::SWIT::Test');
 is($t->mech, undef);
 
 my @res = $t->the_page_r(base_url => '/test/swit');
-is_deeply(\@res, [ 'templates/test.tt', { hello => 'world' } ]);
+is_deeply(\@res, [ { hello => 'world' } ]);
 
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
 @res = $t->res_r;
-is_deeply(\@res, [ 'templates/res.tt', { res => 'hhhh' } ])
+is_deeply(\@res, [ { res => 'hhhh' } ])
 	or diag(Dumper(\@res));
 
 $ENV{SWIT_HAS_APACHE} = 1;
@@ -49,3 +49,18 @@ ENDS
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ "hhhh\n" ]);
+
+Apache::SWIT::Test->make_aliases("another/page" => 'T::SWIT');
+$t->root_location('/test');
+@res = $t->another_page_r(make_url => 1);
+is_deeply(\@res, [ <<ENDS ]);
+<html>
+<body>
+<form action="u">
+hello world
+<input type="text" name="file" />
+</form>
+</body>
+</html>
+ENDS
+

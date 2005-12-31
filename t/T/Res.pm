@@ -6,8 +6,9 @@ use base 'Apache::SWIT';
 
 sub swit_render {
 	my ($class, $r) = @_;
-	return ($r->server_root_relative('templates/res.tt'), { 
-			res => $r->param('res') });
+	$r->pnotes('SWITTemplate', 
+			$r->server_root_relative('templates/res.tt'));
+	return { res => $r->param('res') };
 }
 
 1;

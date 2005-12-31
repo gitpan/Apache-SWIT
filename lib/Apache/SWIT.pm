@@ -10,7 +10,9 @@ Apache::SWIT - mod_perl based application server with integrated testing.
 	# overload render routine
 	sub swit_render {
 		my ($class, $r) = @_;
-		return ('my_template.tt', { hello => 'world' });
+		return ({ hello => 'world' }, 'my_template.tt');
+		# or return { hello => 'world' }; to rely on swit.yaml
+		# based generation
 	}
 
 	# overload update routine, usually result of POST
@@ -47,25 +49,26 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
 sub swit_update_i {
-	my($class, $r, $session) = @_;
-	my $to = $class->swit_update($r, $session);
+	my($class, $r) = @_;
+	my $to = $class->swit_update($r);
 	$r->status(302);
 	$r->header_out(Location => $to);
-	$session->end;
+	$r->pnotes('SWITSession')->end;
 	$r->send_http_header("text/html");
 	return 302;
 }
 
 sub swit_render_i {
-	my($class, $r, $session) = @_;
-	my ($file, $vars) = $class->swit_render($r, $session);
+	my($class, $r) = @_;
+	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
+	my $vars = $class->swit_render($r);
 	my $t = Template->new({ ABSOLUTE => 1 }) or die "No template";
-	die "No file" if !defined($file);
+	my $file = $r->pnotes('SWITTemplate') or die "No template file";
 
-	$session->end;
+	$r->pnotes('SWITSession')->end;
 	$r->send_http_header("text/html");
 	my $out;
 	$t->process($file, $vars, \$out)
@@ -83,8 +86,7 @@ sub handler($$) {
 	my $t = $1 or die "Unable to find request type";
 	my $h = $_handlers{$t} or die "Unable to find handler for $t";
 	my $f = "swit_$h\_i";
-	my $session = $r->pnotes('SWITSession');
-	return $class->$f(Apache::Request->new($r), $session);
+	return $class->$f(Apache::Request->new($r));
 }
 
 1;

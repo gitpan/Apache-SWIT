@@ -17,8 +17,14 @@ PerlModule T::Session
   PerlHandler T::SWIT
 </Location>
 
+<Location /test/another/page>
+  SetHandler perl-script
+  PerlHandler T::SWIT
+</Location>
+
 <Location /test/ht_page>
   SetHandler perl-script
+  PerlSetVar SWITTemplate @ServerRoot@/templates/htpage.tt
   PerlHandler T::HTPage
 </Location>
 
@@ -29,6 +35,7 @@ PerlModule T::Session
 
 <Location /test/sess_page>
   SetHandler perl-script
+  PerlSetVar SWITTemplate @ServerRoot@/templates/sess_page.tt
   PerlHandler T::SessPage
 </Location>
 

@@ -2,7 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Test;
-use base 'Class::Accessor';
+use base 'Class::Accessor', 'Class::Data::Inheritable';
 use Apache::FakeRequest;
 use Apache::SWIT::Test::Mechanize;
 use Apache::SWIT::Test::Request;
@@ -10,6 +10,7 @@ use HTML::Tested::Test;
 use Test::More;
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
+__PACKAGE__->mk_classdata('root_location');
 
 sub new {
 	my ($class, $args) = @_;
@@ -27,12 +28,14 @@ sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
 	$r->_param($args{param}) if $args{param};
-	return $handler_class->swit_render($r, $self->session);
+	$r->pnotes('SWITSession', $self->session);
+	return $handler_class->swit_render($r);
 }
 
 sub _do_swit_update {
 	my ($self, $handler_class, $r) = @_;
-	my @res = $handler_class->swit_update($r, $self->session);
+	$r->pnotes('SWITSession', $self->session);
+	my @res = $handler_class->swit_update($r);
 	my $new_r = Apache::SWIT::Test::Request->new;
 	$new_r->parse_url($res[0]);
 	$self->fake_request($new_r);
@@ -47,21 +50,25 @@ sub _direct_update {
 
 sub _mech_render {
 	my ($self, $handler_class, %args) = @_;
-	$self->mech->get_base($args{base_url}) if $args{base_url};
+	my $goto = $args{base_url};
+	$goto = $self->root_location . "/" . $args{url_to_make} 
+			if ($args{make_url});
+	$self->mech->get_base($goto) if $goto;
 	return $self->mech->content;
 }
 
 sub _mech_update {
 	my ($self, $handler_class, %args) = @_;
+	delete $args{url_to_make};
 	$self->mech->submit_form(%args);
 	return $self->mech->content;
 }
 
 sub _direct_ht_render {
 	my ($self, $handler_class, %args) = @_;
-	my @res = $self->_direct_render($handler_class, %args);
+	my $res = $self->_direct_render($handler_class, %args);
 	return HTML::Tested::Test->check_stash(
-			$handler_class->ht_root_class, $res[1], $args{ht});
+			$handler_class->ht_root_class, $res, $args{ht});
 }
 
 sub _mech_ht_render {
@@ -90,9 +97,10 @@ sub _mech_ht_update {
 }
 
 sub _make_test_function {
-	my ($class, $handler_class, $op) = @_; 
+	my ($class, $handler_class, $op, $url) = @_; 
 	return sub {
 		my ($self, %a) = @_;
+		$a{url_to_make} = $url;
 		my $f = $self->mech ? "_mech_$op" : "_direct_$op";
 		return $self->$f($handler_class, %a);
 	};
@@ -105,11 +113,15 @@ sub make_aliases {
 		no strict 'refs';
 		while (my ($f, $t) = each %trans) {
 			my $func = "$n\_$f";
-			*{ "$class\::$func" } = $class->_make_test_function($v, $t);
+			$func =~ s/\//_/g;
+			my $url = "$n/$f";
+			*{ "$class\::$func" } = 
+				$class->_make_test_function($v, $t, $url);
 			*{ "$class\::ht_$func" } = 
-				$class->_make_test_function($v, "ht_$t");
+				$class->_make_test_function($v, "ht_$t", $url);
 		}
 		my $r_func = "ht_$n\_r";
+		$r_func =~ s/\//_/g;
 		*{ "$class\::ok_$r_func" } = sub {
 			is_deeply([ shift()->$r_func(@_) ], []);
 		};

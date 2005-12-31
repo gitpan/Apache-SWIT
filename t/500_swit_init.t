@@ -1,21 +1,13 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 53;
+use Test::More tests => 61;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
 use Test::TempDatabase;
 
 BEGIN { use_ok('Apache::SWIT::Maker'); }
-
-sub read_file {
-	my $f = shift;
-	open(my $fh, $f) or die "Unable to open $f\n";
-	my $res = join('', <$fh>);
-	close $fh;
-	return $res;
-}
 
 delete $ENV{TEST_FILES};
 delete $ENV{MAKEFLAGS};
@@ -29,19 +21,24 @@ ok(-f './TTT/LICENSE');
 chdir 'TTT';
 
 Apache::SWIT::Maker->new->write_initial_files();
-my $swit_str = read_file('conf/swit.yaml');
+my $swit_str = Apache::SWIT::Maker::rf('conf/swit.yaml');
 like($swit_str, qr/TTT/);
 like($swit_str, qr/\/ttt/);
 like($swit_str, qr/TTT::Session/);
 ok(-f "conf/httpd.conf.in");
 ok(-f "lib/TTT/Session.pm");
 
+`./scripts/swit_app.pl add_test t/dual/newdir/987_test.t`;
+ok(-f 't/dual/newdir/987_test.t');
+
 `perl Makefile.PL`;
 my $tres = join('', `make test 2>&1`);
 like($tres, qr/All tests successful/);
 like($tres, qr/t\/dual\/001_load/);
 like($tres, qr/started\n.*dual/);
-like($tres, qr/Files=1/);
+like($tres, qr/Files=2/);
+unlike($tres, qr/Error/);
+like($tres, qr/987_test/);
 ok(-d 't/logs');
 ok(-f 'conf/httpd.conf');
 ok(-d '/tmp/ttt_sessions');
@@ -50,7 +47,7 @@ is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);
 
 #diag($td);
 #readline(\*STDIN);
-like(read_file('t/logs/access_log'), qr/ttt\/index.*200/);
+like(Apache::SWIT::Maker::rf('t/logs/access_log'), qr/ttt\/index.*200/);
 
 # Check that we run configuration only once
 $tres = join('', `make 2>&1`);
@@ -71,25 +68,29 @@ unlike($tres, qr/started/);
 unlike($tres, qr/t\/001_load/);
 like($tres, qr/dual/);
 
-Apache::SWIT::Maker->new->add_page('First::Page');
-like(read_file('conf/swit.yaml'), qr/TTT::First::Page/);
+`./scripts/swit_app.pl add_page First::Page`;
+like(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
 
 ok(-f "templates/first/page.tt");
-ok(-f "lib/TTT/First/Page.pm");
+ok(-f "lib/TTT/UI/First/Page.pm");
 ok(-f "conf/startup.pl");
 
 open(my $fh, ">>conf/httpd.conf.in");
 print $fh "# Custom\n";
 close $fh;
 
+my $ht_conf = Apache::SWIT::Maker::rf('conf/httpd.conf.in');
+unlike($ht_conf, qr/TTT::Session/);
+like($ht_conf, qr/SessionClass/);
+
 `make 2>&1`;
-my $ht_conf = read_file('conf/httpd.conf');
+$ht_conf = Apache::SWIT::Maker::rf('conf/httpd.conf');
 like($ht_conf, qr/Location \/ttt\/first\/page/);
 like($ht_conf, qr/Custom/);
 like($ht_conf, qr/TTT::Session/);
 
-my $mani = read_file('MANIFEST');
-like($mani, qr/TTT\/First\/Page\.pm/);
+my $mani = Apache::SWIT::Maker::rf('MANIFEST');
+like($mani, qr/TTT\/UI\/First\/Page\.pm/);
 like($mani, qr/templates\/first\/page\.tt/);
 like($mani, qr/conf\/httpd\.conf\.in/);
 like($mani, qr/conf\/startup\.pl/);
@@ -108,26 +109,29 @@ ok(! -f 'conf/httpd.conf');
 is_deeply([ glob('t/conf/*') ], [ 't/conf/extra.conf.in' ]);
 
 Apache::SWIT::Maker->remove_page('First::Page');
-unlike(read_file('conf/swit.yaml'), qr/TTT::First::Page/);
-$mani = read_file('MANIFEST');
-unlike($mani, qr/TTT\/First\/Page\.pm/);
+unlike(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
+$mani = Apache::SWIT::Maker::rf('MANIFEST');
+unlike($mani, qr/TTT\/UI\/First\/Page\.pm/);
 unlike($mani, qr/templates\/first\/page\.tt/);
 ok(! -f "templates/first/page.tt");
-ok(! -f "lib/TTT/First/Page.pm");
+ok(! -f "lib/TTT/UI/First/Page.pm");
 
 Apache::SWIT::Maker->new->add_ht_page('First::Page');
-like(read_file('conf/swit.yaml'), qr/TTT::First::Page/);
-like(read_file('lib/TTT/First/Page.pm'), qr/ht_root_class/);
-ok(require("lib/TTT/First/Page.pm"));
+like(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
+like(Apache::SWIT::Maker::rf('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
+ok(require("lib/TTT/UI/First/Page.pm"));
 
-my $at = read_file('t/apache_test.pl');
+my $at = Apache::SWIT::Maker::rf('t/apache_test.pl');
 open($fh, ">t/apache_test.pl");
-print $fh "use TTT::First::Page;\n$at";
+print $fh "use TTT::UI::First::Page;\n$at";
 close $fh;
 
+is_deeply([ `psql -l | grep ttt_test_db` ], []);
 `perl Makefile.PL`;
 $tres = join('', `make test_apache 2>&1`);
 like($tres, qr/All tests successful/);
+unlike($tres, qr/Fail/);
+is_deeply([ `psql -l | grep ttt_test_db` ], []);
 
 $tres = join('', `make disttest 2>&1`);
 unlike($tres, qr/Fail/);
