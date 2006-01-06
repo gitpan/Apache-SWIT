@@ -252,7 +252,7 @@ ENDM
 	my $tests = $self->this_subsystem_tests;
 	while (my ($n, $t) = each %$tests) {
 		$t =~ s/T::$sn/$full_name/g;
-		$t =~ s/ht_([^\(]+_[ru])/ht_$lcm\_$1/g;
+		$t =~ s/ht_([^\(\)]+_[ru])/ht_$lcm\_$1/g;
 		Apache::SWIT::Maker::mani_wf("t/dual/$lcm/$n", $t);
 	}
 }

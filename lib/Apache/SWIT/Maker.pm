@@ -233,6 +233,7 @@ sub write_db_connection_pm {
 	$self->write_pm_file($self->connection_class, <<ENDM);
 use base 'Class::Singleton', 'Class::Accessor';
 use DBI;
+use DBIx::ContextualFetch;
 
 __PACKAGE__->mk_accessors('db_handle');
 
@@ -241,7 +242,8 @@ sub _new_instance {
 	die "No $db_var\_NAME given!" unless \$ENV{$db_var\_NAME};
 	my \$dbh = \$handle || DBI->connect("dbi:Pg:dbname=" 
 			. \$ENV{$db_var\_NAME}, undef, undef, {
-			RaiseError => 1, AutoCommit => 1, })
+			RaiseError => 1, AutoCommit => 1,
+			RootClass => 'DBIx::ContextualFetch', })
 		or die "Unable to connect to \$ENV{$db_var\_NAME} db";
 	return \$class->new({ db_handle => \$dbh });
 }
@@ -283,8 +285,12 @@ use $sc;
 use $conn;
 
 \$ENV{$db_var\_NAME} = '$an\_test_db';
-our \$test_db = Test::TempDatabase->create(dbname => '$an\_test_db',
-                        schema => '$sc');
+our \$test_db = Test::TempDatabase->create(
+			dbname => '$an\_test_db',
+                        schema => '$sc', dbi_args => {
+				RaiseError => 1, AutoCommit => 1,
+				RootClass => 'DBIx::ContextualFetch', 
+			});
 $conn\->instance(\$test_db->handle);
 END { \$test_db->destroy; }
 ENDM
@@ -536,7 +542,9 @@ __PACKAGE__->make_tested_marked_value('first');
 package $full_class;
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return $ht_root; }
+sub ht_root_class { 
+	return $ht_root;
+}
 
 sub ht_swit_render {
 	my (\$class, \$r, \$root) = \@_;

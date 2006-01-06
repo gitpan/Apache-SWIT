@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 36;
+use Test::More tests => 37;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 
@@ -20,7 +20,8 @@ is(-f './lib/TTT/DB/Connection.pm', undef);
 isnt(-f './t/T/TTT/DB/Connection.pm', undef);
 is(-f './t/001_load.t', undef);
 unlike(Apache::SWIT::Maker::rf('lib/TTT/DB/Base.pm'), qr/Connection/);
-like(Apache::SWIT::Maker::rf('Makefile.PL'), qr/TTT[^\']+write_installation_content_pm/);
+like(Apache::SWIT::Maker::rf('Makefile.PL'),
+	       	qr/TTT[^\']+write_installation_content_pm/);
 
 Apache::SWIT::Subsystem::Maker->new->write_pm_file('TTT::DB::Random', <<ENDF);
 sub number { return 494; }
@@ -79,6 +80,12 @@ unlike($res, qr/Error/) or do {
 #	readline(\*STDIN);
 };
 like($res, qr/950_install/);
+Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDS);
+# \$t->ok_ht_userlist_r(make_url => 1, ht => {
+# 		user_list => [ { ht_id => 1, name => 'admin' } ] });
+# \$t->ok_ht_userform_r(make_url => 1, ht => {
+#		                        username => '', password => '', });
+ENDS
 
 my $m_str2 = Apache::SWIT::Maker::rf('MANIFEST');
 is($m_str2, $m_str);
@@ -111,6 +118,7 @@ is(require 'lib/MU/TheSub.pm', 1);
 is(MU::TheSub->connection_class, 'MU::DB::Connection');
 is(MU::TheSub->templates_dir, 'templates/thesub');
 ok(-f "t/dual/thesub/001_load.t");
+like(Apache::SWIT::Maker::rf("t/dual/thesub/001_load.t"), qr/ht_id/);
 
 my $tree = Apache::SWIT::Maker->load_yaml_conf;
 my $ind = $tree->{pages}->{"thesub/index"};
@@ -118,7 +126,8 @@ isnt($ind, undef) or diag(Dumper($tree));
 is($ind->{location}, '/mu/thesub/index');
 is($ind->{template}, 'templates/thesub/index.tt');
 is($ind->{class}, 'MU::TheSub::UI::Index');
-is(Apache::SWIT::Maker::rf('templates/thesub/index.tt'), Apache::SWIT::Maker::rf('templates/index.tt'));
+is(Apache::SWIT::Maker::rf('templates/thesub/index.tt'), 
+		Apache::SWIT::Maker::rf('templates/index.tt'));
 
 $mt->replace_in_file('conf/httpd.conf.in', 'PerlModule MU::TheSub',
 	"<Perl>\nuse lib '$td/TTT/blib/lib'\n</Perl>\nPerlModule MU::TheSub");
