@@ -425,6 +425,8 @@ sub write_db_base_pm {
 	my $conn = $self->db_base_pm_connection;
 	$self->write_pm_file($self->root_class . "::DB::Base", <<ENDS);
 use base 'Class::DBI';
+
+\$Class::DBI::Weaken_Is_Available = 0;
 sub db_Main {
 	return $conn->instance->db_handle;
 }
@@ -528,7 +530,6 @@ sub add_ht_page {
 	my $p = $self->add_page(@_, '[% first %]');
 	my $module_file = "lib/" . $p->{class} . ".pm";
 	$module_file =~ s/::/\//g;
-	my $loc = $p->{location};
 	my $full_class = $p->{class};
 	my $ht_root = $self->ht_root_class_name($p);
 	wf_path($module_file, <<ENDM);
@@ -553,7 +554,7 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my (\$class, \$r, \$root) = \@_;
-	return "$loc/r";
+	return "r";
 }
 
 1;

@@ -137,8 +137,7 @@ $mt->replace_in_file('t/dual/001_load.t', '=> 2', '=> 3');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 use lib '$td/TTT/blib/lib';
 use MU::TheSub;
-\$t->ok_ht_thesub_index_r(base_url => "/mu/thesub/index/r", 
-		ht => { first => '' });
+\$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
 ENDT
 $res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or do {
@@ -157,9 +156,11 @@ my \$arr = \$class->main_subsystem_class->connection_class
 return \$
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 2', '=> 3');
+$mt->replace_in_file('t/dual/001_load.t', '=> 2', '=> 4');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_username');
+\$t->ht_index_u(ht => {});
+\$t->ok_ht_index_r(ht => { first => '' });
 ENDT
 
 $mt->replace_in_file('t/950_install.t', "TheSub'\\);", <<ENDM);
@@ -174,7 +175,7 @@ unlike($res, qr/Error/) or do {
 #	readline(\*STDIN);
 };
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 4');
+$mt->replace_in_file('t/dual/001_load.t', '=> 4', '=> 5');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_mu_thesub');
 ENDT

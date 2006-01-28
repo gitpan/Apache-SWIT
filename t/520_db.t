@@ -25,7 +25,7 @@ __PACKAGE__->sequence('ttt_table_id_seq');
 __PACKAGE__->columns(Essential => qw(id a));
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '2', '4');
+$mt->replace_in_file('t/dual/001_load.t', '2', '5');
 $mt->replace_in_file('t/dual/001_load.t', '\); \}', 
 	");\n\tuse_ok('TTT::DB::Connection'); }");
 $mt->insert_into_schema_pm('\$dbh->do("create table ttt_table ('
@@ -42,6 +42,7 @@ ENDM
 
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDM);
 isa_ok(\$t->session, 'TTT::Session');
+is(\$Class::DBI::Weaken_Is_Available, 0);
 ENDM
 
 Apache::SWIT::Maker::wf('>t/010_db.t', <<ENDM);
