@@ -31,6 +31,7 @@ ok(-f "lib/TTT/Session.pm");
 `./scripts/swit_app.pl add_test t/dual/newdir/987_test.t`;
 ok(-f 't/dual/newdir/987_test.t');
 
+my @tmp_contents = glob('/tmp/*');
 `perl Makefile.PL`;
 my $tres = join('', `make test 2>&1`);
 like($tres, qr/All tests successful/);
@@ -41,7 +42,7 @@ unlike($tres, qr/Error/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
 ok(-f 'conf/httpd.conf');
-ok(-d '/tmp/ttt_sessions');
+is_deeply([ glob("/tmp/*") ], \@tmp_contents);
 
 is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);
 

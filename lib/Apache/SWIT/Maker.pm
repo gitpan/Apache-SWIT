@@ -177,10 +177,6 @@ BEGIN {
 	push \@INC, \$ENV{%s} . "/blib/lib";
 };
 
-use $sess_class;
-my \$sess_dir = $sess_class\->sessions_dir;
-mkdir \$sess_dir if \$sess_dir;
-
 1;
 ENDM
 		, $self->root_var_name));
@@ -205,6 +201,8 @@ ENDM
 
 sub add_class { 
 	my ($self, $new_class, $str) = @_;
+	my $rc = $self->root_class;
+	$new_class = $rc . "::$new_class" if ($new_class !~ /^$rc\::/);
 	$self->write_pm_file($new_class, $str || "");
 }
 
@@ -215,7 +213,6 @@ sub write_session_pm {
 	$self->add_class($self->session_class, <<ENDM);
 use base 'Apache::SWIT::Session';
 
-sub sessions_dir { return '$sess_dir'; }
 sub cookie_name { return '$an'; }
 
 ENDM
@@ -313,6 +310,7 @@ sub write_httpd_conf_in {
 	my $self = shift;
 	my $root_location = $self->root_location;
 	my $more = $self->more_stuff_in_httpd_conf_in;
+	my $app_name = $self->app_name;
 	mani_wf('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
 PerlRequire \@ServerRoot\@/conf/startup.pl
@@ -321,6 +319,7 @@ $more
 <Location $root_location>
 	PerlSetVar SWITRoot \@ServerRoot\@/
 	PerlAccessHandler \@SessionClass\@\->access_handler
+	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
 </Location>
 ENDM
 		, $self->root_var_name));
@@ -338,13 +337,11 @@ sub write_apache_test_run_pl {
 	mani_wf('t/apache_test_run.pl', <<ENDM);
 # Do not add anything to this file
 # You can use t/apache_test.pl for custom stuff
-use Apache::TestRunPerl;
-use File::Basename qw(dirname);
-use Cwd qw(abs_path);
+# Apache::Test reforks it
+use Apache::SWIT::Test::Apache;
 
 \$ENV{SWIT_HAS_APACHE} = 1;
-push \@ARGV, '-top_dir', abs_path(dirname(\$0) . "/../");
-Apache::TestRunPerl->new->run(\@ARGV);
+Apache::SWIT::Test::Apache::Run('my.conf', 'my.conf');
 ENDM
 }
 
@@ -481,10 +478,17 @@ sub add_page {
 	$tmpl_str ||= '';
 	my $tree = YAML::LoadFile('conf/swit.yaml') 
 			or die "No conf/swit.yaml found";
+	my $rc = $tree->{root_class};
+	my $full_class;
+	if ($page_class =~ s/^$rc\:://) {
+		$full_class = $rc . "::$page_class";
+	} else {
+		$full_class = $rc . "::UI::$page_class";
+	}
+
 	my $entry_point = lc($page_class);
 	$entry_point =~ s/::/\//g;
 	my $tt_file = "templates/$entry_point.tt";
-	my $full_class = $tree->{root_class} . "::UI::$page_class";
 	my $entry = {
 		class => $full_class,
 		template => $tt_file,

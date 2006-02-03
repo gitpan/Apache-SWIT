@@ -3,6 +3,8 @@ use warnings FATAL => 'all';
 
 use Test::More tests => 7;
 use File::Temp qw(tempdir);
+use Test::TempDatabase;
+Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
 

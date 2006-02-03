@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 use File::Temp qw(tempdir);
 
 BEGIN { use_ok('Apache::SWIT::Maker');
@@ -42,6 +42,15 @@ Apache::SWIT::Maker->new->write_initial_files();
 
 `./scripts/swit_app.pl add_class TTT::SomeClass`;
 ok(-f 'lib/TTT/SomeClass.pm');
+
+`./scripts/swit_app.pl add_class AnotherClass`;
+ok(-f 'lib/TTT/AnotherClass.pm');
+
+`./scripts/swit_app.pl add_ht_page TTT::SomePage`;
+ok(-f 'lib/TTT/SomePage.pm');
+
+`./scripts/swit_app.pl add_ht_page AnotherPage`;
+ok(-f 'lib/TTT/UI/AnotherPage.pm');
 
 `perl Makefile.PL`;
 my @lines = `make install SITEPREFIX=$td/inst 2>&1`;

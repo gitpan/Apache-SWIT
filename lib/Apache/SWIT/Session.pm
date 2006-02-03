@@ -15,7 +15,8 @@ sub access_handler($$) {
 
 sub begin {
 	my ($class, $r) = @_;
-	my %args = (_request => $r);
+	my %args = (_request => $r, 
+		_sessions_dir => $r->dir_config('SWITSessionsDir'));
 	my %cookies = Apache::Cookie->fetch;
 	$args{session_id} = $cookies{$class->cookie_name}->value
 		if $cookies{$class->cookie_name};
@@ -123,5 +124,7 @@ sub read_stash {
 	}
 	$self->{_stash} = \%stash;
 }
+
+sub sessions_dir { return shift()->{_sessions_dir} }
 
 1;

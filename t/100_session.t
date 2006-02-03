@@ -33,11 +33,9 @@ __PACKAGE__->add_var('infdef', depends_on => [ 'bye' ],
 		deflate => sub { $_[0] =~ s/_foooooo//; return $_[0]; });
 __PACKAGE__->add_class_dbi_var('obj', 'Obj');
 
-sub sessions_dir { return $td; }
-
 package main;
 
-my $s = MySession->new(_stash => { hello => 'world' });
+my $s = MySession->new(_sessions_dir => $td, _stash => { hello => 'world' });
 is($s->get_hello, 'world');
 
 is($s->delete_hello, 'world');
@@ -68,7 +66,7 @@ is($s->get_infdef, 'defme_foooooo');
 
 isnt($s->session_id, undef);
 
-my $s2 = MySession->new(session_id => $s->session_id);
+my $s2 = MySession->new(_sessions_dir => $td, session_id => $s->session_id);
 is($s2->session_id, $s->session_id);
 
 $s->write_stash;

@@ -5,6 +5,7 @@
 PerlModule T::Session
 <Location /test>
 	PerlAccessHandler T::Session->access_handler
+	PerlSetVar SWITSessionsDir UNKNOWN YET
 </Location>
 
 <Location /test/basic_handler>

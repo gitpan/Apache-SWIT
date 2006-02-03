@@ -4,6 +4,8 @@ use warnings FATAL => 'all';
 use Test::More tests => 37;
 use File::Temp qw(tempdir);
 use Data::Dumper;
+use Test::TempDatabase;
+Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
