@@ -9,6 +9,8 @@ BEGIN { use_ok('Apache::SWIT::HTPage');
 	use_ok('Apache::SWIT::Test');
 }
 
+$ENV{SWIT_HAS_APACHE} = 0;
+
 my $td = tempdir("/tmp/swit_ht_page_XXXXXXX", CLEANUP => 1);
 
 Apache::SWIT::Test->make_aliases(another_page => 'T::HTPage',

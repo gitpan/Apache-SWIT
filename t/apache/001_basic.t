@@ -1,10 +1,12 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use File::Temp qw(tempdir);
 
 BEGIN { use_ok('Apache::SWIT::Test::Mechanize'); }
+
+is($ENV{SWIT_HAS_APACHE}, 1);
 
 my $mech = Apache::SWIT::Test::Mechanize->new;
 $mech->get_base("/test/basic_handler");

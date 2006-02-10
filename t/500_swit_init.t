@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 61;
+use Test::More tests => 59;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -74,7 +74,6 @@ like(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
 
 ok(-f "templates/first/page.tt");
 ok(-f "lib/TTT/UI/First/Page.pm");
-ok(-f "conf/startup.pl");
 
 open(my $fh, ">>conf/httpd.conf.in");
 print $fh "# Custom\n";
@@ -94,7 +93,6 @@ my $mani = Apache::SWIT::Maker::rf('MANIFEST');
 like($mani, qr/TTT\/UI\/First\/Page\.pm/);
 like($mani, qr/templates\/first\/page\.tt/);
 like($mani, qr/conf\/httpd\.conf\.in/);
-like($mani, qr/conf\/startup\.pl/);
 like($mani, qr/direct_test/);
 
 $tres = join('', `make dist 2>&1`);

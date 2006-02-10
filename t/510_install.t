@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 use File::Temp qw(tempdir);
 
 BEGIN { use_ok('Apache::SWIT::Maker');
@@ -56,12 +56,11 @@ ok(-f 'lib/TTT/UI/AnotherPage.pm');
 my @lines = `make install SITEPREFIX=$td/inst 2>&1`;
 isnt(-d "$td/inst/share/ttt", undef) or do {
 	diag(join('', @lines));
-#	diag("$td");
-#	readline(\*STDIN);
+	diag("$td");
+	readline(\*STDIN);
 };
 is(-d "$td/inst/share/perl", undef);
 
-isnt(-f "$td/inst/share/ttt/conf/startup.pl", undef);
 like(Apache::SWIT::Maker::rf("$td/inst/share/ttt/conf/httpd.conf"), 
 		qr#TTT_ROOT $td/inst/share/ttt\n#);
 

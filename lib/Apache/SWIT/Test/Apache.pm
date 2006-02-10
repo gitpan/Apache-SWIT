@@ -11,6 +11,13 @@ use File::Slurp;
 
 my ($_sess_dir, $_pid);
 
+sub Switch_Sessions_Dir {
+	my ($from, $to, $dir) = @_;
+	my $s = read_file($from);
+	$s =~ s/SWITSessionsDir[^\n]+/SWITSessionsDir $dir/;
+	write_file($to, $s);
+}
+
 sub Run {
 	my ($from, $to) = @_;
 	my $top_dir = abs_path(dirname($0) . "/../");
@@ -22,13 +29,12 @@ sub Run {
 		$_sess_dir = tempdir('/tmp/apache_swit_sessions_XXXXXX'); 
 		`chown nobody $_sess_dir` unless $<;
 
-		my $cf_dir = "$top_dir/t/conf/";
-		my $s = read_file("$cf_dir/$from");
-		$s =~ s/SWITSessionsDir[^\n]+/SWITSessionsDir $_sess_dir/;
-		write_file("$cf_dir/$to", $s);
+		my $cf_dir = "$top_dir/t/conf";
+		Switch_Sessions_Dir("$cf_dir/$from", "$cf_dir/$to", $_sess_dir);
 		$_pid = $$;
 	}
 
+	$ENV{SWIT_HAS_APACHE} = 1;
 	Apache::TestRunPerl->new->run(@ARGV);
 }
 

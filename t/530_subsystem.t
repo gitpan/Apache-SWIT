@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 37;
+use Test::More tests => 38;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -9,6 +9,7 @@ Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
+	use_ok('Apache::SWIT::Test::Apache');
 }
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
@@ -78,7 +79,7 @@ unlike($m_str, qr/PageClasses\.pm/);
 
 my $res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or do {
-#diag("$td");
+#	diag("$td");
 #	readline(\*STDIN);
 };
 like($res, qr/950_install/);

@@ -117,7 +117,8 @@ sub write_makefile_pl {
 	my $self = shift;
 	my $app_name = $self->app_name;
 	my $mf_str = rf('Makefile.PL');
-	wf('Makefile.PL', <<ENDM . $self->makefile_install_string);
+	my $more = $self->makefile_install_string;
+	wf('Makefile.PL', <<ENDM . $more);
 package MY;
 use Apache::SWIT::Maker;
 
@@ -150,37 +151,31 @@ realclean ::
 ENDM
 }
 
-sub makefile_install_string {
+sub makefile_constants_string {
 	my $app_name = shift()->app_name;
 	return <<ENDM;
+sub constants {
+	my \$str = shift()->SUPER::constants(\@_);
+	\$str =~ s#INSTALLSITELIB[^\\n]+#INSTALLSITELIB = \\\$(SITEPREFIX)/share\/$app_name#;
+	return \$str;
+}
+ENDM
+}
+
+sub makefile_install_string {
+	my $self = shift;
+	my $app_name = $self->app_name;
+	return $self->makefile_constants_string . <<ENDM;
 sub install {
 	return <<ENDS;
 install :: all 
-	mkdir -p \\\$(SITEPREFIX)/share/$app_name/conf
-	cp -a \\\$(INST_LIB) \\\$(SITEPREFIX)/share/$app_name
-	perl -p -e \\"s#\\\\\\\@ServerRoot\\\\@#\\\$(SITEPREFIX)/share/$app_name#g\\" < conf/httpd.conf > \\\$(SITEPREFIX)/share/$app_name/conf/httpd.conf
-	cp conf/startup.pl \\\$(SITEPREFIX)/share/$app_name/conf
-	cp -a templates \\\$(SITEPREFIX)/share/$app_name
+	mkdir -p \\\$(INSTALLSITELIB)/conf
+	cp -a \\\$(INST_LIB) \\\$(INSTALLSITELIB)
+	perl -p -e \\"s#\\\\\\\@ServerRoot\\\\@#\\\$(INSTALLSITELIB)#g\\" < conf/httpd.conf > \\\$(INSTALLSITELIB)/conf/httpd.conf
+	cp -a templates \\\$(INSTALLSITELIB)
 ENDS
 }
 ENDM
-}
-
-sub write_startup_pl {
-	my $self = shift;
-	my $sess_class = $self->session_class;
-	wf('conf/startup.pl', sprintf(<<ENDM
-use strict;
-use warnings FATAL => 'all';
-
-BEGIN {
-	push \@INC, \$ENV{%s} . "/blib/lib";
-};
-
-1;
-ENDM
-		, $self->root_var_name));
-	wf('>MANIFEST', "conf/startup.pl\n");
 }
 
 sub write_pm_file {
@@ -313,7 +308,9 @@ sub write_httpd_conf_in {
 	my $app_name = $self->app_name;
 	mani_wf('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
-PerlRequire \@ServerRoot\@/conf/startup.pl
+<Perl>
+	use lib '\@ServerRoot\@/lib';
+</Perl>
 
 $more
 <Location $root_location>
@@ -335,12 +332,7 @@ ENDM
 
 sub write_apache_test_run_pl {
 	mani_wf('t/apache_test_run.pl', <<ENDM);
-# Do not add anything to this file
-# You can use t/apache_test.pl for custom stuff
-# Apache::Test reforks it
 use Apache::SWIT::Test::Apache;
-
-\$ENV{SWIT_HAS_APACHE} = 1;
 Apache::SWIT::Test::Apache::Run('my.conf', 'my.conf');
 ENDM
 }
@@ -460,7 +452,6 @@ sub write_initial_files {
 	$self->write_apache_test_pl;
 	$self->write_makefile_rules_yaml;
 	$self->write_makefile_pl;
-	$self->write_startup_pl;
 	$self->write_db_base_pm;
 	$self->write_010_db_t;
 	$self->write_swit_app_pl;
@@ -619,6 +610,7 @@ sub regenerate_httpd_conf {
 	} values %{ $tree->{pages} }));
 	my $c = rf('conf/httpd.conf');
 	my $ap = abs_path('.');
+	$c =~ s/\@ServerRoot\@\/lib/$ap\/blib\/lib/g;
 	$c =~ s/\@ServerRoot\@/$ap/g;
 	wf('t/conf/my.conf', $c);
 

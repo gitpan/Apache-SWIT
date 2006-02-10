@@ -11,6 +11,8 @@ BEGIN { use_ok('T::Session');
 	$SIG{__DIE__} = sub { print STDERR "# " . Carp::longmess(@_); };
 }
 
+$ENV{SWIT_HAS_APACHE} = 0;
+
 Apache::SWIT::Test->make_aliases(sess_page => 'T::SessPage');
 
 my $t = Apache::SWIT::Test->new({ session_class => 'T::Session' });

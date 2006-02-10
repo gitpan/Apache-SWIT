@@ -12,6 +12,8 @@ BEGIN {
 	use_ok('T::Res');
 }
 
+$ENV{SWIT_HAS_APACHE} = 0;
+
 my $td = tempdir("/tmp/swit_tester_XXXXXXX", CLEANUP => 1);
 
 Apache::SWIT::Test->make_aliases(the_page => 'T::SWIT', res => 'T::Res');
