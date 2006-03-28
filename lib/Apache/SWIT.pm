@@ -49,11 +49,11 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
-sub swit_update_i {
+sub swit_update_handler($$) {
 	my($class, $r) = @_;
-	my $to = $class->swit_update($r);
+	my $to = $class->swit_update(Apache::Request->new($r));
 	$r->status(302);
 	$r->header_out(Location => $to);
 	$r->pnotes('SWITSession')->end;
@@ -61,10 +61,10 @@ sub swit_update_i {
 	return 302;
 }
 
-sub swit_render_i {
+sub swit_render_handler($$) {
 	my($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
-	my $vars = $class->swit_render($r);
+	my $vars = $class->swit_render(Apache::Request->new($r));
 	my $t = Template->new({ ABSOLUTE => 1 }) or die "No template";
 	my $file = $r->pnotes('SWITTemplate') or die "No template file";
 
@@ -75,18 +75,6 @@ sub swit_render_i {
 		or die "No result for $file: " . $t->error;
 	$r->print($out);
 	return 200;
-}
-
-my %_handlers = (r => 'render', u => 'update');
-
-sub handler($$) {
-	my($class, $r) = @_;
-	my $loc = $r->location;
-	$r->uri =~ /^$loc\/(\w+)/;
-	my $t = $1 or die "Unable to find request type";
-	my $h = $_handlers{$t} or die "Unable to find handler for $t";
-	my $f = "swit_$h\_i";
-	return $class->$f(Apache::Request->new($r));
 }
 
 1;

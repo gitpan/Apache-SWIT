@@ -9,11 +9,11 @@ WriteMakefile(
     AUTHOR       => 'Boris Sukholitko (boriss@gmail.com)',
     ABSTRACT     => '',
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
-	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '',
+	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.1',
 	'ExtUtils::ModuleMaker' => '',
 	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
-	'Test::TempDatabase' => '', 'Class::Singleton' => '',
+	'Test::TempDatabase' => '',
 	'Class::DBI' => '', 'File::Slurp' => '',
     },
 );

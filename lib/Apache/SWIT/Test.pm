@@ -3,9 +3,8 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Test;
 use base 'Class::Accessor', 'Class::Data::Inheritable';
-use Apache::FakeRequest;
 use Apache::SWIT::Test::Mechanize;
-use Apache::SWIT::Test::Request;
+use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
 
@@ -26,7 +25,7 @@ sub new {
 
 sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
-	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
+	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
 	$r->_param($args{param}) if $args{param};
 	$r->pnotes('SWITSession', $self->session);
 	return $handler_class->swit_render($r);
@@ -36,7 +35,7 @@ sub _do_swit_update {
 	my ($self, $handler_class, $r) = @_;
 	$r->pnotes('SWITSession', $self->session);
 	my @res = $handler_class->swit_update($r);
-	my $new_r = Apache::SWIT::Test::Request->new;
+	my $new_r = HTML::Tested::Test::Request->new;
 	$new_r->parse_url($res[0]);
 	$self->fake_request($new_r);
 	return @res;
@@ -44,7 +43,7 @@ sub _do_swit_update {
 
 sub _direct_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = Apache::SWIT::Test::Request->new({ _param => $args{fields} });
+	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
 	return $self->_do_swit_update($handler_class, $r);
 }
 
@@ -80,7 +79,7 @@ sub _mech_ht_render {
 
 sub _direct_ht_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = Apache::SWIT::Test::Request->new({ _param => $args{fields} });
+	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
 	HTML::Tested::Test->convert_tree_to_param(
 			$handler_class->ht_root_class, $r, $args{ht});
 	return $self->_do_swit_update($handler_class, $r);
@@ -88,7 +87,7 @@ sub _direct_ht_update {
 
 sub _mech_ht_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = Apache::SWIT::Test::Request->new({ _param => $args{fields} });
+	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
 	HTML::Tested::Test->convert_tree_to_param(
 			$handler_class->ht_root_class, $r, $args{ht});
 	$args{fields} = $r->_param;

@@ -25,6 +25,8 @@ use base 'TTT::DB::Base';
 __PACKAGE__->table('ttt_table');
 __PACKAGE__->sequence('ttt_table_id_seq');
 __PACKAGE__->columns(Essential => qw(id a));
+
+__PACKAGE__->db_Main->do('select * from ttt_table');
 ENDM
 
 $mt->replace_in_file('t/dual/001_load.t', '2', '5');

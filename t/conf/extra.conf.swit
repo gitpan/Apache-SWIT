@@ -13,31 +13,55 @@ PerlModule T::Session
   PerlHandler T::Basic
 </Location>
 
-<Location /test/swit>
+PerlModule T::SWIT
+<Location /test/swit/r>
   SetHandler perl-script
-  PerlHandler T::SWIT
+  PerlHandler T::SWIT->swit_render_handler
 </Location>
 
-<Location /test/another/page>
+<Location /test/swit/u>
   SetHandler perl-script
-  PerlHandler T::SWIT
+  PerlHandler T::SWIT->swit_update_handler
 </Location>
 
-<Location /test/ht_page>
+<Location /test/another/page/r>
+  SetHandler perl-script
+  PerlHandler T::SWIT->swit_render_handler
+</Location>
+
+<Location /test/another/page/u>
+  SetHandler perl-script
+  PerlHandler T::SWIT->swit_update_handler
+</Location>
+
+PerlModule T::HTPage
+<Location /test/ht_page/r>
   SetHandler perl-script
   PerlSetVar SWITTemplate @ServerRoot@/templates/htpage.tt
-  PerlHandler T::HTPage
+  PerlHandler T::HTPage->swit_render_handler
 </Location>
 
-<Location /test/res>
+<Location /test/ht_page/u>
   SetHandler perl-script
-  PerlHandler T::Res
+  PerlHandler T::HTPage->swit_update_handler
 </Location>
 
-<Location /test/sess_page>
+PerlModule T::Res
+<Location /test/res/r>
+  SetHandler perl-script
+  PerlHandler T::Res->swit_render_handler
+</Location>
+
+PerlModule T::SessPage
+<Location /test/sess_page/r>
   SetHandler perl-script
   PerlSetVar SWITTemplate @ServerRoot@/templates/sess_page.tt
-  PerlHandler T::SessPage
+  PerlHandler T::SessPage->swit_render_handler
+</Location>
+
+<Location /test/sess_page/u>
+  SetHandler perl-script
+  PerlHandler T::SessPage->swit_update_handler
 </Location>
 
 

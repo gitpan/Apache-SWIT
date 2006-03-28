@@ -1,11 +1,15 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 38;
+use Test::More tests => 40;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
+use YAML;
 Test::TempDatabase->become_postgres_user;
+
+use Carp;
+#BEGIN { $SIG{__DIE__} = sub { diag(Carp::longmess(@_)); }; }
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
@@ -64,7 +68,17 @@ can_ok(T::TTT::Session, 'get_t_ttt');
 ENDT
 close $fh;
 
-`perl Makefile.PL && make 2>&1`;
+my $tree = Apache::SWIT::Maker->load_yaml_conf;
+$tree->{pages}->{"index"}->{entry_points}->{r}->{foo} = 'boo';
+YAML::DumpFile('conf/swit.yaml', $tree);
+
+$tree = Apache::SWIT::Maker->load_yaml_conf;
+my $ind = $tree->{pages}->{"index"};
+is($ind->{entry_points}->{r}->{foo}, 'boo');
+
+my $res = join('', `perl Makefile.PL && make 2>&1`);
+is($?, 0) or diag($res);
+
 my $ht_conf = Apache::SWIT::Maker::rf('conf/httpd.conf');
 like($ht_conf, qr/T::TTT::UI::Index/);
 like($ht_conf, qr/T::TTT::Session/);
@@ -77,7 +91,7 @@ my $m_str = Apache::SWIT::Maker::rf('MANIFEST');
 unlike($m_str, qr/Test\.pm/);
 unlike($m_str, qr/PageClasses\.pm/);
 
-my $res = join('', `make test 2>&1`);
+$res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or do {
 #	diag("$td");
 #	readline(\*STDIN);
@@ -123,11 +137,12 @@ is(MU::TheSub->templates_dir, 'templates/thesub');
 ok(-f "t/dual/thesub/001_load.t");
 like(Apache::SWIT::Maker::rf("t/dual/thesub/001_load.t"), qr/ht_id/);
 
-my $tree = Apache::SWIT::Maker->load_yaml_conf;
-my $ind = $tree->{pages}->{"thesub/index"};
+$tree = Apache::SWIT::Maker->load_yaml_conf;
+$ind = $tree->{pages}->{"thesub/index"};
 isnt($ind, undef) or diag(Dumper($tree));
-is($ind->{location}, '/mu/thesub/index');
-is($ind->{template}, 'templates/thesub/index.tt');
+is($ind->{entry_points}->{r}->{template}, 'templates/thesub/index.tt');
+is($ind->{entry_points}->{r}->{foo}, 'boo')
+	 or diag(Dumper($tree));
 is($ind->{class}, 'MU::TheSub::UI::Index');
 is(Apache::SWIT::Maker::rf('templates/thesub/index.tt'), 
 		Apache::SWIT::Maker::rf('templates/index.tt'));

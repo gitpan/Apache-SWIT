@@ -4,6 +4,7 @@ use warnings FATAL => 'all';
 package Apache::SWIT::Subsystem::Maker;
 use base 'Apache::SWIT::Maker';
 use Data::Dumper;
+use Apache::SWIT::Maker::GeneratorsQueue;
 
 sub makefile_install_string {
 	my $rc = shift()->root_class;
@@ -18,15 +19,10 @@ ENDM
 
 sub make_this_subsystem_dumps {
 	my $self = shift;
-	my $rc = $self->root_class;
-	my $tree = $self->load_yaml_conf;
-	my %pages;
-	my $rl = $tree->{root_location} . "/";
-	while (my ($n, $v) = each %{ $tree->{pages} }) {
-		$pages{$n} = $self->strip_roots($v, location => $rl, 
-						template => 'templates/',
-						class => "$rc\::");
-		$pages{$n}->{file} = Apache::SWIT::Maker::rf($v->{template});
+	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
+	my $orig_tree = $gq->tree;
+	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
+		$orig_tree->{pages}->{$n} = $gq->run('dump_page_entry', $v);
 	}
 	open(my $fh, 'MANIFEST');
 	my @dual_tests = map { s/t\/dual\///; $_ } 
@@ -35,7 +31,8 @@ sub make_this_subsystem_dumps {
 		($_, Apache::SWIT::Maker::rf("t/dual/$_")) 
 	} @dual_tests;
 	close $fh;
-	return (tests => \%tests, pages => \%pages);
+	$orig_tree->{dumped_tests} = \%tests;
+	return (original_tree => $orig_tree);
 }
 
 sub write_installation_content_pm {
@@ -163,7 +160,7 @@ sub regenerate_httpd_conf {
 		my $f_stem = lc($base);
 		$f_stem =~ s/::/_/g;
 
-		my $t_basename = $p->{template};
+		my $t_basename = $p->{entry_points}->{r}->{template};
 		$t_basename =~ s/templates\///;
 
 		$funcs .= <<ENDF;
@@ -182,11 +179,9 @@ ENDM
 	});
 }
 
-sub location_section {
-	my ($self, $entry) = @_;
-	my $res = $self->SUPER::location_section($entry);
-	my $ec = $entry->{class};
-	$res =~ s/$ec/T::$ec/;
+sub initial_swit_yaml_tree {
+	my $res = shift()->SUPER::initial_swit_yaml_tree;
+	push @{ $res->{generators} }, 'Apache::SWIT::Subsystem::Generator';
 	return $res;
 }
 
@@ -223,17 +218,13 @@ sub install_subsystem {
 	my $rc = $self->root_class;
 	my $full_name =  $rc . '::' . $module;
 
-	my $tree = $self->load_yaml_conf;
-	my $pages = $self->this_subsystem_pages;
-	while (my ($n, $v) = each %$pages) {
-		my $entry = {
-			location => ($tree->{root_location} 
-					. "/$lcm/" . $v->{location}),
-			template => "templates/$lcm/" . $v->{template},
-			class => "$rc\::$module\::" . $v->{class},
-		};
-		$tree->{pages}->{"$lcm/$n"} = $entry;
-		Apache::SWIT::Maker::mani_wf($entry->{template}, $v->{file});
+	my $orig_tree = $self->this_subsystem_original_tree;
+	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new({
+			generator_classes => $orig_tree->{generators} });
+	my $tree = $gq->tree;
+	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
+		$tree->{pages}->{"$lcm/$n"} = 
+			$gq->run('install_page_entry', $v, $module);
 	}
 	$self->dump_yaml_conf($tree);
 
@@ -249,7 +240,7 @@ ENDM
 	Apache::SWIT::Maker::wf('>conf/httpd.conf.in', 
 			"PerlModule $full_name\n");
 
-	my $tests = $self->this_subsystem_tests;
+	my $tests = $self->this_subsystem_original_tree->{dumped_tests};
 	while (my ($n, $t) = each %$tests) {
 		$t =~ s/T::$sn/$full_name/g;
 		$t =~ s/ht_([^\(\)]+_[ru])/ht_$lcm\_$1/g;
@@ -271,12 +262,8 @@ sub get_installation_content {
 	return $ic->$func;
 }
 
-sub this_subsystem_pages { 
-	shift()->get_installation_content('this_subsystem_pages');
-}
-
-sub this_subsystem_tests {
-	shift()->get_installation_content('this_subsystem_tests');
+sub this_subsystem_original_tree { 
+	return shift()->get_installation_content('this_subsystem_original_tree');
 }
 
 1;

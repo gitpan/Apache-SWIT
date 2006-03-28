@@ -15,9 +15,11 @@ use File::Basename qw(dirname basename);
 use YAML;
 use File::Copy;
 use Cwd qw(abs_path);
+use Apache::SWIT::Maker::GeneratorsQueue;
+use Apache::SWIT::Maker::FileWriterData;
 
 __PACKAGE__->mk_accessors(qw(root_class root_location app_name root_var_name
-			session_class lib_dir));
+			session_class lib_dir file_writer));
 
 sub rf {
 	my $file = shift;
@@ -43,12 +45,13 @@ sub wf_path {
 sub mani_wf {
 	my ($f, $str) = @_;
 	wf_path($f, $str);
-	wf('>MANIFEST', "$f\n");
+	wf('>MANIFEST', "\n$f");
 }
 
 sub new {
 	my $self = shift->SUPER::new(@_);
 	$self->lib_dir("lib") unless $self->lib_dir;
+	$self->{file_writer} ||= Apache::SWIT::Maker::FileWriterData->new;
 	unless ($self->root_class) {
 		my $mf_str = rf('Makefile.PL');
 		my ($root_class) = ($mf_str =~ /NAME[^\n\']+\'([^\']+)/);
@@ -80,31 +83,36 @@ sub new {
 sub schema_class { return shift()->root_class . '::DB::Schema'; }
 sub connection_class { return shift()->root_class . '::DB::Connection'; }
 
+sub initial_swit_yaml_tree {
+	my $self = shift;
+	return {
+		root_class => $self->root_class, 
+		root_location => $self->root_location,
+		session_class => $self->session_class,
+		pages => {},
+		generators => [ 'Apache::SWIT::Maker::Generator' ],
+	};
+}
+
 sub write_swit_yaml {
 	my $self = shift;
-	mani_wf('conf/swit.yaml', sprintf(<<ENDM
-root_class: %s
-root_location: "%s"
-session_class: %s
-pages: {}
-ENDM
-		, $self->root_class, $self->root_location, $self->session_class));
+	mani_wf('conf/swit.yaml', Dump($self->initial_swit_yaml_tree));
 }
 
 sub write_makefile_rules_yaml {
 	mani_wf('conf/makefile_rules.yaml', <<ENDS);
-- target: config
+- targets: [ config ]
   dependencies: 
     - t/conf/httpd.conf
     - conf/httpd.conf
   actions:
     - \$(NOECHO) \$(NOOP)
-- target: t/conf/httpd.conf
+- targets: [ t/conf/httpd.conf ]
   dependencies: 
     - t/conf/extra.conf.in
   actions:
     - PERL_DL_NONLAZY=1 \$(FULLPERLRUN) t/apache_test_run.pl -config
-- target: conf/httpd.conf
+- targets: [ conf/httpd.conf ]
   dependencies:
     - conf/swit.yaml
     - conf/httpd.conf.in
@@ -133,7 +141,7 @@ sub test {
 sub postamble { return Apache::SWIT::Maker->get_makefile_rules . q{
 test :: test_direct test_apache 
 
-APACHE_TEST_FILES = `find t/dual -name "*.t"`
+APACHE_TEST_FILES = `find t/dual -name "*.t" | sort`
 
 test_direct :: pure_all
 	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I t -I blib/lib t/direct_test.pl \$(APACHE_TEST_FILES)
@@ -191,7 +199,7 @@ $str
 
 1;
 ENDM
-	wf('>MANIFEST', "$module_file\n") unless $no_manifest;
+	wf('>MANIFEST', "\n$module_file") unless $no_manifest;
 }
 
 sub add_class { 
@@ -222,23 +230,10 @@ sub db_env_var {
 sub write_db_connection_pm {
 	my $self = shift;
 	my $db_var = $self->db_env_var;
+	$db_var =~ s/_DB$//;
 	$self->write_pm_file($self->connection_class, <<ENDM);
-use base 'Class::Singleton', 'Class::Accessor';
-use DBI;
-use DBIx::ContextualFetch;
-
-__PACKAGE__->mk_accessors('db_handle');
-
-sub _new_instance {
-	my (\$class, \$handle) = \@_;
-	die "No $db_var\_NAME given!" unless \$ENV{$db_var\_NAME};
-	my \$dbh = \$handle || DBI->connect("dbi:Pg:dbname=" 
-			. \$ENV{$db_var\_NAME}, undef, undef, {
-			RaiseError => 1, AutoCommit => 1,
-			RootClass => 'DBIx::ContextualFetch', })
-		or die "Unable to connect to \$ENV{$db_var\_NAME} db";
-	return \$class->new({ db_handle => \$dbh });
-}
+use base 'Apache::SWIT::DB::Connection';
+__PACKAGE__->AppName('$db_var');
 ENDM
 }
 
@@ -279,10 +274,7 @@ use $conn;
 \$ENV{$db_var\_NAME} = '$an\_test_db';
 our \$test_db = Test::TempDatabase->create(
 			dbname => '$an\_test_db',
-                        schema => '$sc', dbi_args => {
-				RaiseError => 1, AutoCommit => 1,
-				RootClass => 'DBIx::ContextualFetch', 
-			});
+                        schema => '$sc', dbi_args => $conn\->DBIArgs);
 $conn\->instance(\$test_db->handle);
 END { \$test_db->destroy; }
 ENDM
@@ -294,8 +286,8 @@ sub write_t_extra_conf_in {
 	my $an = $self->app_name;
 	my $db_var = $self->db_env_var;
 	mani_wf('t/conf/extra.conf.in', <<ENDM);
-Include conf/my.conf
 PerlSetEnv $db_var\_NAME $an\_test_db
+Include conf/my.conf
 ENDM
 }
 
@@ -424,20 +416,13 @@ ENDS
 
 sub write_swit_app_pl {
 	my $self = shift;
-	my $self_class = ref($self);
-	mani_wf('scripts/swit_app.pl', <<ENDS);
-#!/usr/bin/perl -w
-use strict;
-use $self_class;
-my \$f = shift(\@ARGV);
-$self_class\->new->\$f(\@ARGV);
-ENDS
+	$self->file_writer->write_scripts_swit_app_pl({
+				class => ref($self) });
 	chmod 0755, 'scripts/swit_app.pl';
 }
 
 sub write_initial_files {
 	my $self = shift;
-	wf('>MANIFEST', "\n");
 
 	$self->write_swit_yaml;
 	$self->write_session_pm;
@@ -482,8 +467,15 @@ sub add_page {
 	my $tt_file = "templates/$entry_point.tt";
 	my $entry = {
 		class => $full_class,
-		template => $tt_file,
-		location => $tree->{root_location} . "/$entry_point",
+		entry_points => {
+			r => {
+				template => $tt_file,
+				handler => 'swit_render_handler',
+			},
+			u => {
+				handler => 'swit_update_handler',
+			},
+		},
 	};
 	$tree->{pages}->{$entry_point} = $entry;
 	$self->dump_yaml_conf($tree);
@@ -556,17 +548,6 @@ sub ht_swit_update {
 ENDM
 }
 
-sub location_section {
-	my ($self, $entry) = @_;
-	return <<ENDS
-<Location $entry->{location}>
-	SetHandler perl-script
-	PerlSetVar SWITTemplate \@ServerRoot\@/$entry->{template}
-	PerlHandler $entry->{class}
-</Location>
-ENDS
-}
-
 sub alias_class { return $_[1]; }
 sub dual_use_ok_class { return shift()->root_class . "::UI::Index"; }
 
@@ -579,50 +560,47 @@ sub dump_yaml_conf {
 	YAML::DumpFile('conf/swit.yaml', $_[1]);
 }
 
-sub strip_root {
-	my ($self, $val, $root) = @_;
-	$val =~ s/^$root//;
-	return $val;
-}
-
-sub strip_roots {
-	my ($self, $entry, %strips) = @_;
-	my %res;
-	while (my ($n, $v) = each %strips) {
-		$res{$n} = $self->strip_root($entry->{$n}, $v);
-	}
-	return \%res;
-}
-
 sub session_class_for_httpd_conf {
 	return $_[1]->{session_class};
 }
 
+sub httpd_location_section {
+	my ($self, $gq, $loc, $entry) = @_;
+	my $res = $gq->run('location_section_prolog', $loc, $entry);
+	my $l = $gq->tree->{root_location} . "/$loc";
+	while (my ($n, $v) = each %{ $entry->{entry_points} }) {
+		$res .= "<Location $l/$n>\n";
+		$res .= "\tSetHandler perl-script\n";
+		$res .= "\tPerlHandler $entry->{class}\->$v->{handler}\n";
+		$res .= $gq->run('location_section_contents', $n, $v);
+		$res .= "</Location>\n";
+	}
+	$res .= ($gq->run('location_section_epilogue', $loc, $entry) || '');
+	return $res;
+}
+
 sub regenerate_httpd_conf {
 	my $self = shift;
-	my $tree = $self->load_yaml_conf;
-	my $ht_in = rf('conf/httpd.conf.in');
-	my $sc = $self->session_class_for_httpd_conf($tree);
-	$ht_in =~ s/\@SessionClass\@/$sc/g;
-
-	wf('conf/httpd.conf', "$ht_in\n" . join("\n", map { 
-		$self->location_section($_); 
-	} values %{ $tree->{pages} }));
-	my $c = rf('conf/httpd.conf');
-	my $ap = abs_path('.');
-	$c =~ s/\@ServerRoot\@\/lib/$ap\/blib\/lib/g;
-	$c =~ s/\@ServerRoot\@/$ap/g;
-	wf('t/conf/my.conf', $c);
+	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
+	my $tree = $gq->tree;
+	my $ht_in = $gq->run('httpd_conf_start');
+	my $sess_class = $self->session_class_for_httpd_conf($tree);
 
 	my $aliases = "";
 	my $rl = $tree->{root_location};
-	for my $p (values %{ $tree->{pages} }) {
-		my $new_loc = $self->strip_root($p->{location}, "$rl/");
-		$aliases .= "\"$new_loc\" => '" 
-				. $self->alias_class($p->{class}) . "',\n";
+
+	while (my ($n, $v) = each %{ $tree->{pages} }) {
+		$ht_in .= $self->httpd_location_section($gq, $n, $v) . "\n";
+		$aliases .= "\"$n\" => '"
+				. $self->alias_class($v->{class}) . "',\n";
 	}
 
-	my $sess_class = $self->session_class_for_httpd_conf($tree);
+	wf('conf/httpd.conf', $ht_in);
+	my $ap = abs_path('.');
+	$ht_in =~ s/\@ServerRoot\@\/lib/$ap\/blib\/lib/g;
+	$ht_in =~ s/\@ServerRoot\@/$ap/g;
+	wf('t/conf/my.conf', $ht_in);
+
 	$self->with_lib_dir('t', sub {
 		$self->write_pm_file('T::Test', <<ENDS, 1);
 use base 'Apache::SWIT::Test';
@@ -669,7 +647,7 @@ sub remove_page {
 	my $module_file = "lib/" . $p->{class} . ".pm";
 	$module_file =~ s/::/\//g;
 	$class->remove_file($module_file);
-	$class->remove_file($p->{template});
+	$class->remove_file($p->{entry_points}->{r}->{template});
 	YAML::DumpFile('conf/swit.yaml', $tree);
 }
 
@@ -678,7 +656,7 @@ sub get_makefile_rules {
 		or die "No makefile rules found";
 	my $res = "";
 	for my $r (@$rules) {
-		$res .= $r->{target} . " :: ";
+		$res .= join(' ',  @{ $r->{targets} }) . " :: ";
 		$res .= join(' ', @{ $r->{dependencies} }) . "\n\t";
 		$res .= join("\n\t", @{ $r->{actions} }) . "\n\n";
 	}

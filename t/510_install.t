@@ -13,13 +13,13 @@ my $td = $mt->root_dir;
 chdir $td;
 
 Apache::SWIT::Maker::wf_path('conf/makefile_rules.yaml', <<ENDS);
-- target: config
+- targets: [ config ]
   dependencies: 
     - t/conf/httpd.conf
     - conf/httpd.conf
   actions:
     - \$(NOECHO) \$(NOOP)
-- target: t/conf/httpd.conf
+- targets: [ t/conf/httpd.conf ]
   dependencies: 
     - t/conf/extra.conf.in
   actions:
@@ -56,8 +56,8 @@ ok(-f 'lib/TTT/UI/AnotherPage.pm');
 my @lines = `make install SITEPREFIX=$td/inst 2>&1`;
 isnt(-d "$td/inst/share/ttt", undef) or do {
 	diag(join('', @lines));
-	diag("$td");
-	readline(\*STDIN);
+#	diag("$td");
+#	readline(\*STDIN);
 };
 is(-d "$td/inst/share/perl", undef);
 
