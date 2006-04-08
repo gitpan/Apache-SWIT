@@ -2,21 +2,15 @@ use strict;
 use warnings FATAL => 'all';
 
 use Test::More tests => 7;
-use File::Temp qw(tempdir);
 use Test::TempDatabase;
 Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
-my $td = $mt->root_dir;
-
-chdir $td;
-`modulemaker -I -n TTT`;
-ok(-f './TTT/LICENSE');
-chdir 'TTT';
-
-Apache::SWIT::Maker->new->write_initial_files();
+chdir $mt->root_dir;
+$mt->make_swit_project;
+ok(-f 'LICENSE');
 ok(-f 'lib/TTT/DB/Schema.pm');
 ok(-f 't/T/TempDB.pm');
 
@@ -29,13 +23,13 @@ __PACKAGE__->columns(Essential => qw(id a));
 __PACKAGE__->db_Main->do('select * from ttt_table');
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '2', '5');
-$mt->replace_in_file('t/dual/001_load.t', '\); \}', 
-	");\n\tuse_ok('TTT::DB::Connection'); }");
+$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 6');
+$mt->replace_in_file('t/dual/001_load.t', '\};', 
+	"\n\tuse_ok('TTT::DB::Connection'); };");
 $mt->insert_into_schema_pm('\$dbh->do("create table ttt_table ('
 	. 'id serial primary key, a text)")');
-$mt->replace_in_file('t/dual/001_load.t', "\\}\\\n", <<ENDM);
-}
+$mt->replace_in_file('t/dual/001_load.t', "\\};\\\n", <<ENDM);
+};
 TTT::DB::Connection->instance->db_handle->do(
 		"insert into ttt_table (a) values ('aaa')");
 ENDM
@@ -66,9 +60,7 @@ ENDM
 
 my $tres = join('', `perl Makefile.PL && make disttest 2>&1`);
 like($tres, qr/success/);
-unlike($tres, qr/Fail/);
+unlike($tres, qr/Fail/); # or readline(\*STDIN);
 is_deeply([ `psql -l |grep ttt_test_db` ], []) or diag($tres);
 
-#diag($td);
-#readline(\*STDIN);
 chdir '/'

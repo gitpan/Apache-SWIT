@@ -84,7 +84,8 @@ sub install_subsystem {
 sub replace_in_file {
 	my ($self, $f, $from, $to) = @_;
 	my $str = Apache::SWIT::Maker::rf($f);
-	$str =~ s/$from/$to/g;
+	$str =~ s/$from/$to/g
+		or die "Unable to replace $from to $to in $f";
 	Apache::SWIT::Maker::wf($f, $str);
 }
 

@@ -17,6 +17,7 @@ use File::Copy;
 use Cwd qw(abs_path);
 use Apache::SWIT::Maker::GeneratorsQueue;
 use Apache::SWIT::Maker::FileWriterData;
+use Apache::SWIT::Maker::Conversions;
 
 __PACKAGE__->mk_accessors(qw(root_class root_location app_name root_var_name
 			session_class lib_dir file_writer));
@@ -329,30 +330,6 @@ Apache::SWIT::Test::Apache::Run('my.conf', 'my.conf');
 ENDM
 }
 
-sub write_direct_test_pl {
-	mani_wf('t/direct_test.pl', <<ENDM);
-use strict;
-use warnings FATAL => 'all';
-use Test::Harness;
-use T::TempDB;
-
-runtests(\@ARGV);
-ENDM
-}
-
-sub write_t_dual_001_load_t {
-	my $self = shift;
-	my $use_ok_class = $self->dual_use_ok_class;
-	$self->add_test('t/dual/001_load.t', 2, <<ENDM);
-use T::Test;
-
-BEGIN { use_ok('$use_ok_class'); }
-
-my \$t = T::Test->new;
-\$t->ok_ht_index_r(make_url => 1, ht => { first => '' });
-ENDM
-}
-
 sub t_dbi_base_class { return shift()->root_class . "::DB::Base"; }
 
 sub use_ok_in_010_db_t { return shift()->root_class; }
@@ -401,19 +378,6 @@ ENDM
 
 sub db_base_pm_connection { return shift()->connection_class; }
 
-sub write_db_base_pm {
-	my $self = shift;
-	my $conn = $self->db_base_pm_connection;
-	$self->write_pm_file($self->root_class . "::DB::Base", <<ENDS);
-use base 'Class::DBI';
-
-\$Class::DBI::Weaken_Is_Available = 0;
-sub db_Main {
-	return $conn->instance->db_handle;
-}
-ENDS
-}
-
 sub write_swit_app_pl {
 	my $self = shift;
 	$self->file_writer->write_scripts_swit_app_pl({
@@ -431,36 +395,29 @@ sub write_initial_files {
 	$self->write_db_connection_pm;
 	$self->write_t_extra_conf_in;
 	$self->write_httpd_conf_in;
-	$self->write_t_dual_001_load_t;
-	$self->write_direct_test_pl;
+	$self->file_writer->write_dual_test("001_load", 1
+		, "\$t->ok_ht_index_r(make_url => 1, "
+			. "ht => { first => '' });\n"
+		, $self->dual_use_ok_class);
+	$self->file_writer->write_t_direct_test_pl;
 	$self->write_apache_test_run_pl;
 	$self->write_apache_test_pl;
 	$self->write_makefile_rules_yaml;
 	$self->write_makefile_pl;
-	$self->write_db_base_pm;
+	$self->file_writer->write_db_base_pm({
+			connection => $self->db_base_pm_connection
+	}, { class => $self->root_class . "::DB::Base" });
 	$self->write_010_db_t;
 	$self->write_swit_app_pl;
 	$self->add_ht_page('Index');
 }
 
-=head2 add_page(page)
-
-Adds page and related files. Page should be the name of the module, 
-e.g. 'Index'. See C<add_ht_page> for adding HTML::Tested enabled page.
-
-=cut
-sub add_page {
-	my ($self, $page_class, $tmpl_str) = @_;
-	$tmpl_str ||= '';
+sub _create_new_entry {
+	my ($self, $page_class) = @_;
 	my $tree = YAML::LoadFile('conf/swit.yaml') 
 			or die "No conf/swit.yaml found";
-	my $rc = $tree->{root_class};
-	my $full_class;
-	if ($page_class =~ s/^$rc\:://) {
-		$full_class = $rc . "::$page_class";
-	} else {
-		$full_class = $rc . "::UI::$page_class";
-	}
+	my $full_class = conv_make_full_class(
+				$tree->{root_class}, "UI", $page_class);
 
 	my $entry_point = lc($page_class);
 	$entry_point =~ s/::/\//g;
@@ -479,17 +436,21 @@ sub add_page {
 	};
 	$tree->{pages}->{$entry_point} = $entry;
 	$self->dump_yaml_conf($tree);
+	return $entry;
+}
 
-	mani_wf($tt_file, <<ENDM);
-<html>
-<body>
-<form action="u" method="post">
-$tmpl_str
-</form>
-</body>
-</html>
-ENDM
-	$self->write_pm_file($full_class, <<ENDM);
+=head2 add_page(page)
+
+Adds page and related files. Page should be the name of the module, 
+e.g. 'Index'. See C<add_ht_page> for adding HTML::Tested enabled page.
+
+=cut
+sub add_page {
+	my ($self, $page_class, $tmpl_str) = @_;
+	my $e = $self->_create_new_entry($page_class);
+	$self->file_writer->write_tt_file({}, {
+			path => $e->{entry_points}->{r}->{template} });
+	$self->write_pm_file($e->{class}, <<ENDM);
 use base qw(Apache::SWIT);
 
 sub swit_render {
@@ -498,7 +459,7 @@ sub swit_render {
 	return \$res;
 }
 ENDM
-	return $entry;
+	return $e;
 }
 
 sub ht_root_class_name {
@@ -513,39 +474,15 @@ Page should be the name of the module, e.g. 'Index'.
 
 =cut
 sub add_ht_page {
-	my $self = shift;
-	my $p = $self->add_page(@_, '[% first %]');
-	my $module_file = "lib/" . $p->{class} . ".pm";
-	$module_file =~ s/::/\//g;
-	my $full_class = $p->{class};
-	my $ht_root = $self->ht_root_class_name($p);
-	wf_path($module_file, <<ENDM);
-use strict;
-use warnings FATAL => 'all';
-
-package $full_class\::Root;
-use base 'HTML::Tested';
-__PACKAGE__->make_tested_marked_value('first');
-
-package $full_class;
-use base qw(Apache::SWIT::HTPage);
-
-sub ht_root_class { 
-	return $ht_root;
-}
-
-sub ht_swit_render {
-	my (\$class, \$r, \$root) = \@_;
-	return \$root;
-}
-
-sub ht_swit_update {
-	my (\$class, \$r, \$root) = \@_;
-	return "r";
-}
-
-1;
-ENDM
+	my ($self, $page_class) = @_;
+	my $p = $self->_create_new_entry($page_class);
+	$self->file_writer->write_tt_file({ content => '[% first %]' }, {
+			path => $p->{entry_points}->{r}->{template} });
+	$self->file_writer->write_ht_page_pm({
+		full_class => $p->{class},
+		ht_root => $self->ht_root_class_name($p)
+	}, { path => "lib/" . $p->{class} . ".pm" });
+	return $p;
 }
 
 sub alias_class { return $_[1]; }
@@ -661,6 +598,72 @@ sub get_makefile_rules {
 		$res .= join("\n\t", @{ $r->{actions} }) . "\n\n";
 	}
 	return $res;
+}
+
+sub add_db_class {
+	my ($self, $table) = @_;
+	my $ct = conv_table_to_class($table);
+	my $c = $self->root_class . "::DB::" . $ct;
+	$self->file_writer->write_db_pm({ class => $c, table => $table
+			, root => $self->root_class }
+			, { path =>  "lib/$c.pm" });
+	return $ct;
+}
+
+sub _extract_columns {
+	my ($self, $c) = @_;
+	push @INC, "t", "lib";
+	eval "use T::TempDB";
+	die "Cannot use T::TempDB: $@" if $@;
+	eval "use $c";
+	die "Cannot use $c: $@" if $@;
+	my %pc = map { ($_, 1) } $c->primary_columns;
+	return grep { !$pc{$_} } $c->columns;
+}
+
+sub scaffold {
+	my ($self, $table) = @_;
+	my $ct = $self->add_db_class($table);
+	my $db_class = $self->root_class . "::DB::$ct";
+
+	my @cols = $self->_extract_columns($db_class);
+	my $tt_cols = join("\n", map { "[% $_ %]" } @cols);
+
+	my $le = $self->_create_new_entry("$ct\::List");
+	$self->file_writer->write_tt_file({ 
+		content => "[% FOREACH $table\_list %]\n$tt_cols\n[% END %]"
+	}, { path => $le->{entry_points}->{r}->{template} });
+	$self->file_writer->write_list_ht_page_pm({
+		full_class => $le->{class},
+		fields => [ map { { field => $_ } } @cols ],
+		db_class => $db_class,
+		list_name => "$table\_list",
+	}, { path => "lib/" . $le->{class} . ".pm" });
+
+	my $fe = $self->_create_new_entry("$ct\::Form");
+	$self->file_writer->write_tt_file({ content => $tt_cols }, {
+			path => $fe->{entry_points}->{r}->{template} });
+	$self->file_writer->write_form_ht_page_pm({
+		full_class => $fe->{class},
+		db_class => $db_class,
+		fields => [ map { { field => $_ } } @cols ],
+	}, { path => "lib/" . $fe->{class} . ".pm" });
+
+	my ($lt, $ft) = map { lc($ct) . "_$_" } qw(list form);
+
+	my $cols99 = join(",\n\t", map { "$_ => '99'" } @cols);
+	my $form_ok_test = "\$t->ok_ht_$ft\_r(make_url => 1, ht => {\n\t"
+		. join(",\n\t", map { "$_ => ''" } @cols) . "\n});\n"
+		. "\$t->ht_$ft\_u(ht => {\n\t$cols99\n});";
+
+	$self->file_writer->write_dual_test(
+			conv_next_dual_test(rf('MANIFEST')) . "_$table", 2
+			, <<ENDC, map { $_->{class} } ($le, $fe));
+$form_ok_test
+\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
+	ht_id => 1, $cols99
+} ] });
+ENDC
 }
 
 1;

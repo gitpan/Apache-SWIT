@@ -119,6 +119,9 @@ ENDM
 
 sub write_db_connection_pm {
 	my $self = shift;
+	my $db_base_opts = $self->file_writer->Files->{'db_base_pm'};
+	$db_base_opts->{contents} =~ s/use \[% connection[^\n]+\n//;
+
 	$self->rewrite_root_module;
 	$self->write_950_install_t;
 	$self->write_maker_pm;

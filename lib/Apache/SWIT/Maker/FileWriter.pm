@@ -20,6 +20,18 @@ sub _normalize_options {
 	my %res = map { $_, 
 		exists($new_opts->{$_}) ? $new_opts->{$_} : $orig_opts->{$_}
 	} (keys(%$orig_opts), keys(%$new_opts));
+	if (my $c = $res{class}) {
+		$res{path} = "lib/$c.pm";
+		$res{contents} = <<ENDS;
+use strict;
+use warnings FATAL => 'all';
+
+package $c;
+$res{contents}
+1;
+ENDS
+	}
+	$res{path} =~ s/::/\//g;
 	return \%res;
 }
 
@@ -43,10 +55,25 @@ sub _mangle_name_to_path {
 	return $p;
 }
 
-sub add_file {
+sub _prepare_contents {
 	my ($class, $opts, $contents) = @_;
+	return $contents unless ref($contents);
+	my $uses = $opts->{uses} or return $contents->[0];
+	my $u_opts = $class->Files->{$uses} or die "Unable to find $uses";
+	my $t = Template->new or die "No template";
+	my $u_cont = $class->_prepare_contents($u_opts, $u_opts->{contents});
+	my $res;
+	my %h = @$contents;
+	$h{$_} = "[% $_ %]" for @{ $opts->{propagate} || [] };
+	$t->process(\$u_cont, \%h, \$res)
+		or die "No result for $uses: " . $t->error;
+	return $res;
+}
+
+sub add_file {
+	my ($class, $opts, @contents) = @_;
 	my $n = $opts->{name} or die "No name found";
-	$opts->{contents} ||= $contents;
+	$opts->{contents} ||= $class->_prepare_contents($opts, \@contents);
 	$opts->{path} ||= $class->_mangle_name_to_path(\$n);
 	$class->Files->{$n} = $opts;
 	no strict 'refs';

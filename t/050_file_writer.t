@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 7;
+use Test::More tests => 16;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
@@ -32,6 +32,47 @@ H->add_file({ name => 'M/C.pm', manifest => 1 }, 'Mani [% v %]');
 $fw->write_m_c_pm({ v => 'pm' });
 is(read_file("$td/M/C.pm"), "Mani pm");
 is(read_file("$td/MANIFEST"), "1\nM/C.pm");
+
+H->add_file({ name => 'tmpl' }, 'Template [% cont1 %] is [% cont2 %]');
+H->add_file({ name => 'M/N.pm', uses => 'tmpl', manifest => 1 },
+		cont1 => 'strange [% d %]', cont2 => 'good [% e %]');
+$fw->write_m_n_pm({ d => 'thing', e => 'laugh' });
+
+is(read_file("$td/M/N.pm"), "Template strange thing is good laugh");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm");
+
+H->add_file({ name => 'tmpl2', uses => 'tmpl' },
+		cont1 => 'A [% a %]', cont2 => 'B [% b %]');
+H->add_file({ name => 'M/M.pm', uses => 'tmpl2', manifest => 1 },
+		a => 'a', b => 'b');
+$fw->write_m_m_pm;
+is(read_file("$td/M/M.pm"), "Template A a is B b");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm\nM/M.pm");
+
+$fw->write_m_m_pm({}, { path => 'lib/A::C.pm' });
+is(read_file("$td/lib/A/C.pm"), "Template A a is B b");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm\nM/M.pm\nlib/A/C.pm");
+
+H->add_file({ name => 'N/N.pm', uses => 'tmpl2', manifest => 1,
+		propagate => [ 'a' ] }, b => 'b');
+$fw->write_n_n_pm({ a => 'one' });
+is(read_file("$td/N/N.pm"), "Template A one is B b");
+like(read_file("$td/MANIFEST"), qr/N\.pm/);
+
+H->add_file({ name => 'm1' }, <<EM);
+[% c %]
+EM
+
+$fw->write_m1({ c => 'hoho' }, { class => 'M1::M2' });
+is(read_file("$td/lib/M1/M2.pm"), <<EM);
+use strict;
+use warnings FATAL => 'all';
+
+package M1::M2;
+hoho
+
+1;
+EM
 
 my $cur = H->new;
 is($cur->root_dir, '.');

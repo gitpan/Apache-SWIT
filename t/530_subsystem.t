@@ -151,7 +151,7 @@ $mt->replace_in_file('conf/httpd.conf.in', 'PerlModule MU::TheSub',
 	"<Perl>\nuse lib '$td/TTT/blib/lib'\n</Perl>\nPerlModule MU::TheSub");
 `perl Makefile.PL && make 2>&1`;
 like(Apache::SWIT::Maker::rf('t/T/Test.pm'), qr/\bthesub\/index/);
-$mt->replace_in_file('t/dual/001_load.t', '=> 2', '=> 3');
+$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 4');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 use lib '$td/TTT/blib/lib';
 use MU::TheSub;
@@ -174,7 +174,7 @@ my \$arr = \$class->main_subsystem_class->connection_class
 return \$
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 2', '=> 4');
+$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 5');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_username');
 \$t->ht_index_u(ht => {});
@@ -193,7 +193,7 @@ unlike($res, qr/Error/) or do {
 #	readline(\*STDIN);
 };
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 4', '=> 5');
+$mt->replace_in_file('t/dual/001_load.t', '=> 5', '=> 6');
 Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_mu_thesub');
 ENDT

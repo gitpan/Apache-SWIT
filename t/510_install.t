@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 use File::Temp qw(tempdir);
 
 BEGIN { use_ok('Apache::SWIT::Maker');
@@ -48,6 +48,8 @@ ok(-f 'lib/TTT/AnotherClass.pm');
 
 `./scripts/swit_app.pl add_ht_page TTT::SomePage`;
 ok(-f 'lib/TTT/SomePage.pm');
+my @recs = `grep SomePage MANIFEST`;
+is(scalar(@recs), 1);
 
 `./scripts/swit_app.pl add_ht_page AnotherPage`;
 ok(-f 'lib/TTT/UI/AnotherPage.pm');

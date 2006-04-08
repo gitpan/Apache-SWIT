@@ -7,6 +7,7 @@ lib/Apache/SWIT/Maker.pm
 lib/Apache/SWIT/Maker/FileWriter.pm
 lib/Apache/SWIT/Maker/FileWriterData.pm
 lib/Apache/SWIT/Maker/Generator.pm
+lib/Apache/SWIT/Maker/Conversions.pm
 lib/Apache/SWIT/Maker/GeneratorBase.pm
 lib/Apache/SWIT/Maker/GeneratorsQueue.pm
 lib/Apache/SWIT/Subsystem/Maker.pm
@@ -21,12 +22,15 @@ lib/Apache/SWIT/Test/ModuleTester.pm
 lib/Apache/SWIT/Test/Apache.pm
 t/100_session.t
 t/050_file_writer.t
+t/045_conversions.t
 t/200_db_connection.t
 t/500_swit_init.t
 t/510_install.t
 t/520_db.t
 t/525_sub_install.t
 t/530_subsystem.t
+t/540_db_class.t
+t/550_scaffold.t
 t/conf/extra.conf.swit
 t/apache_test.pl
 t/apache/001_basic.t
