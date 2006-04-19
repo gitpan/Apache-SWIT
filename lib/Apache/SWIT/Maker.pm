@@ -100,28 +100,6 @@ sub write_swit_yaml {
 	mani_wf('conf/swit.yaml', Dump($self->initial_swit_yaml_tree));
 }
 
-sub write_makefile_rules_yaml {
-	mani_wf('conf/makefile_rules.yaml', <<ENDS);
-- targets: [ config ]
-  dependencies: 
-    - t/conf/httpd.conf
-    - conf/httpd.conf
-  actions:
-    - \$(NOECHO) \$(NOOP)
-- targets: [ t/conf/httpd.conf ]
-  dependencies: 
-    - t/conf/extra.conf.in
-  actions:
-    - PERL_DL_NONLAZY=1 \$(FULLPERLRUN) t/apache_test_run.pl -config
-- targets: [ conf/httpd.conf ]
-  dependencies:
-    - conf/swit.yaml
-    - conf/httpd.conf.in
-  actions:
-    - ./scripts/swit_app.pl regenerate_httpd_conf
-ENDS
-}
-
 sub write_makefile_pl {
 	my $self = shift;
 	my $app_name = $self->app_name;
@@ -402,7 +380,7 @@ sub write_initial_files {
 	$self->file_writer->write_t_direct_test_pl;
 	$self->write_apache_test_run_pl;
 	$self->write_apache_test_pl;
-	$self->write_makefile_rules_yaml;
+	$self->file_writer->write_conf_makefile_rules_yaml;
 	$self->write_makefile_pl;
 	$self->file_writer->write_db_base_pm({
 			connection => $self->db_base_pm_connection

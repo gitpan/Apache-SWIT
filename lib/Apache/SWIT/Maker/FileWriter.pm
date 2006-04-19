@@ -38,7 +38,8 @@ ENDS
 sub _write_file {
 	my ($self, $n, $vars, $new_opts) = @_;
 	my $opts = $self->_normalize_options($self->Files->{$n}, $new_opts);
-	my $t = Template->new({ OUTPUT_PATH => $self->root_dir })
+	my $t = Template->new({ OUTPUT_PATH => $self->root_dir,
+				%{ $opts->{tmpl_options} || {} } })
 			or die "No template";
 	$t->process(\$opts->{contents}, $vars, $opts->{path})
 		or die "No result for $n: " . $t->error;

@@ -19,7 +19,8 @@ use warnings FATAL => 'all';
 
 package [% full_class %]::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_marked_value('first');
+__PACKAGE__->make_tested_form(form => default_value => u => children => [
+		first => 'marked_value' ]);
 
 package [% full_class %];
 use base qw(Apache::SWIT::HTPage);
@@ -41,11 +42,12 @@ sub ht_swit_update {
 1;
 EM
 
-__PACKAGE__->add_file({ name => 'tt_file', manifest => 1 }, <<'EM');
+__PACKAGE__->add_file({ name => 'tt_file', manifest => 1
+	, tmpl_options => { START_TAG => '<%', END_TAG => '%>' } }, <<'EM');
 <html>
 <body>
-<form action="u" method="post">
-[% content %]
+[% form %]
+<% content %>
 </form>
 </body>
 </html>
@@ -67,7 +69,7 @@ use warnings FATAL => 'all';
 package [% class %];
 use base '[% root %]::DB::Base';
 
-__PACKAGE__->set_up_table('[% table %]');
+__PACKAGE__->set_up_table('[% table %]', ColumnGroup => 'Essential');
 
 1;
 EM
@@ -102,11 +104,11 @@ use warnings FATAL => 'all';
 package [% full_class %]::Root;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class %];
-[% FOREACH fields %]__PACKAGE__->make_tested_edit_box('[% field %]');
-[% END %]
-__PACKAGE__->bind_to_class_dbi('[% db_class %]'
-[% FOREACH fields %]	, [% field %] => '[% field %]'
-[% END %]);
+__PACKAGE__->make_tested_form(form => default_value => u => children => [
+	[% FOREACH fields %][% field %] => edit_box => { cdbi_bind => '' },
+[% END %]]);
+__PACKAGE__->bind_to_class_dbi('[% db_class %]');
+__PACKAGE__->load_db_constraints;
 
 package [% full_class %];
 use base qw(Apache::SWIT::HTPage);
@@ -136,14 +138,13 @@ use warnings FATAL => 'all';
 package [% full_class %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class %];
-[% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]');
+[% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]', cdbi_bind => '');
 [% END %]
-__PACKAGE__->bind_to_class_dbi('[% db_class %]'
-[% FOREACH fields %]	, [% field %] => '[% field %]'
-[% END %]);
+__PACKAGE__->bind_to_class_dbi('[% db_class %]');
 
 package [% full_class %]::Root;
 use base 'HTML::Tested';
+__PACKAGE__->make_tested_form('form', default_value => 'u');
 __PACKAGE__->make_tested_list('[% list_name %]', __PACKAGE__ . '::Item');
 
 package [% full_class %];
@@ -175,6 +176,27 @@ $Class::DBI::Weaken_Is_Available = 0;
 sub db_Main {
 	return [% connection %]->instance->db_handle;
 }
+EM
+
+__PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
+		, <<'EM');
+- targets: [ config ]
+  dependencies: 
+    - t/conf/httpd.conf
+    - conf/httpd.conf
+  actions:
+    - $(NOECHO) $(NOOP)
+- targets: [ t/conf/httpd.conf ]
+  dependencies: 
+    - t/conf/extra.conf.in
+  actions:
+    - PERL_DL_NONLAZY=1 $(FULLPERLRUN) t/apache_test_run.pl -config
+- targets: [ conf/httpd.conf ]
+  dependencies:
+    - conf/swit.yaml
+    - conf/httpd.conf.in
+  actions:
+    - ./scripts/swit_app.pl regenerate_httpd_conf
 EM
 
 1;
