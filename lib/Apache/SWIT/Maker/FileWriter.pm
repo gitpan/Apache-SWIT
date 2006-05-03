@@ -45,7 +45,7 @@ sub _write_file {
 		or die "No result for $n: " . $t->error;
 
 	write_file($self->root_dir . "/MANIFEST", { append => 1 }
-			, "\n" . $opts->{path}) if $opts->{manifest};
+			, "\n" . $opts->{path} . "\n") if $opts->{manifest};
 }
 
 sub _mangle_name_to_path {

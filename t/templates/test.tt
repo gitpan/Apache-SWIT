@@ -3,6 +3,7 @@
 <form action="u">
 hello [% hello %]
 <input type="text" name="file" />
+<input type="submit" name="but" value="Push" />
 </form>
 </body>
 </html>

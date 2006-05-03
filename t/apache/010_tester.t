@@ -1,10 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 14;
+use Test::More tests => 22;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
+use File::Slurp;
 
 BEGIN { 
 	use_ok('Apache::SWIT::Test');
@@ -26,6 +27,13 @@ my @res = $t->the_page_r(base_url => '/test/swit');
 is_deeply(\@res, [ { hello => 'world' } ]);
 
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
+is(read_file("$td/uuu"), '');
+is(unlink("$td/uuu"), 1);
+is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
+
+@res = $t->the_page_u(button => [ but => 'Push' ]
+			, fields => { file => "$td/uuu" });
+is(read_file("$td/uuu"), 'Push');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
@@ -43,12 +51,21 @@ is_deeply(\@res, [ <<ENDS ]);
 <form action="u">
 hello world
 <input type="text" name="file" />
+<input type="submit" name="but" value="Push" />
 </form>
 </body>
 </html>
 ENDS
 
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
+is(read_file("$td/uuu"), '');
+is(unlink("$td/uuu"), 1);
+is_deeply(\@res, [ "hhhh\n" ]);
+
+$t->the_page_r(base_url => '/test/swit/r');
+@res = $t->the_page_u(button => [ but => 'Push' ]
+		, fields => { file => "$td/uuu" });
+is(read_file("$td/uuu"), 'Push');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ "hhhh\n" ]);
 
@@ -61,6 +78,7 @@ is_deeply(\@res, [ <<ENDS ]);
 <form action="u">
 hello world
 <input type="text" name="file" />
+<input type="submit" name="but" value="Push" />
 </form>
 </body>
 </html>

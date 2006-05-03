@@ -41,9 +41,17 @@ sub _do_swit_update {
 	return @res;
 }
 
+sub _make_test_request {
+	my ($self, $args) = @_;
+	my $r = HTML::Tested::Test::Request->new({ _param => $args->{fields} });
+	my $b = delete $args->{button};
+	$r->param($b->[0], $b->[1]) if ($b);
+	return $r;
+}
+
 sub _direct_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
+	my $r = $self->_make_test_request(\%args);
 	return $self->_do_swit_update($handler_class, $r);
 }
 
@@ -59,6 +67,8 @@ sub _mech_render {
 sub _mech_update {
 	my ($self, $handler_class, %args) = @_;
 	delete $args{url_to_make};
+	my $b = delete $args{button};
+	$args{button} = $b->[0] if $b;
 	$self->mech->submit_form(%args);
 	return $self->mech->content;
 }
@@ -79,7 +89,7 @@ sub _mech_ht_render {
 
 sub _direct_ht_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
+	my $r = $self->_make_test_request(\%args);
 	HTML::Tested::Test->convert_tree_to_param(
 			$handler_class->ht_root_class, $r, $args{ht});
 	return $self->_do_swit_update($handler_class, $r);

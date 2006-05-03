@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 
 BEGIN { use_ok('Apache::SWIT::Maker::Conversions'); }
 
@@ -15,3 +15,4 @@ is(conv_next_dual_test("a/b.pm\nt/323_one.t\nt/dual/110_two.t\n"
 			. "t/dual/222_e.t\n"), "232");
 is(conv_next_dual_test("t/dual/001_load.t"), "011");
 
+is(conv_class_to_app_name("Hello::World"), "hello_world");

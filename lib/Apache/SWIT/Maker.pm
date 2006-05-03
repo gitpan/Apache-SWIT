@@ -46,7 +46,7 @@ sub wf_path {
 sub mani_wf {
 	my ($f, $str) = @_;
 	wf_path($f, $str);
-	wf('>MANIFEST', "\n$f");
+	wf('>MANIFEST', "\n$f\n");
 }
 
 sub new {
@@ -68,10 +68,7 @@ sub new {
 		$self->root_location($rl);
 	}
 	unless($self->app_name) {
-		my $app_name = $self->root_location;
-		$app_name =~ s/\//_/g;
-		$app_name =~ s/^_//;
-		$self->app_name($app_name);
+		$self->app_name(conv_class_to_app_name($self->root_class));
 	}
 	unless($self->root_var_name) {
 		my $rvn = uc($self->root_class) . "_ROOT";
@@ -607,41 +604,86 @@ sub scaffold {
 	my @cols = $self->_extract_columns($db_class);
 	my $tt_cols = join("\n", map { "[% $_ %]" } @cols);
 
-	my $le = $self->_create_new_entry("$ct\::List");
-	$self->file_writer->write_tt_file({ 
-		content => "[% FOREACH $table\_list %]\n$tt_cols\n[% END %]"
-	}, { path => $le->{entry_points}->{r}->{template} });
-	$self->file_writer->write_list_ht_page_pm({
-		full_class => $le->{class},
-		fields => [ map { { field => $_ } } @cols ],
-		db_class => $db_class,
-		list_name => "$table\_list",
-	}, { path => "lib/" . $le->{class} . ".pm" });
-
-	my $fe = $self->_create_new_entry("$ct\::Form");
-	$self->file_writer->write_tt_file({ content => $tt_cols }, {
-			path => $fe->{entry_points}->{r}->{template} });
-	$self->file_writer->write_form_ht_page_pm({
-		full_class => $fe->{class},
-		db_class => $db_class,
-		fields => [ map { { field => $_ } } @cols ],
-	}, { path => "lib/" . $fe->{class} . ".pm" });
-
-	my ($lt, $ft) = map { lc($ct) . "_$_" } qw(list form);
+	my $cr_sub = sub {
+		my ($bn, $f, $c, %args) = @_;
+		my $e = $self->_create_new_entry("$ct\::$bn");
+		$self->file_writer->write_tt_file({ content => $c }
+			, { path => $e->{entry_points}->{r}->{template} });
+		$self->file_writer->$f({
+			full_class => $e->{class},
+			fields => [ map { { field => $_ } } @cols ],
+			db_class => $db_class,
+			%args,
+		}, { path => "lib/" . $e->{class} . ".pm" });
+		return $e;
+	};
+	my $fe = $cr_sub->("Form", "write_form_ht_page_pm"
+			, "$tt_cols\n[% ht_id %]\n[% submit_button %]"
+				. "\n[% delete_button %]");
+	my $ie = $cr_sub->("Info", "write_info_ht_page_pm"
+			, "$tt_cols\n[% edit_link %]");
 
 	my $cols99 = join(",\n\t", map { "$_ => '99'" } @cols);
+	my $col1 = shift(@cols);
+	my $le = $cr_sub->("List", "write_list_ht_page_pm"
+			, "[% FOREACH $table\_list %]\n$tt_cols\n[% END %]"
+			, list_name => "$table\_list", link_field => $col1);
+	my $cols99_list = join(",\n\t", map { "$_ => '99'" } @cols);
+
+	my ($lt, $ft, $it) = map { lc($ct) . "_$_" } qw(list form info);
+
+	my $cols_empty = join(",\n\t", map { "$_ => ''" } @cols);
 	my $form_ok_test = "\$t->ok_ht_$ft\_r(make_url => 1, ht => {\n\t"
-		. join(",\n\t", map { "$_ => ''" } @cols) . "\n});\n"
-		. "\$t->ht_$ft\_u(ht => {\n\t$cols99\n});";
+		. "$cols_empty\n});\n\$t->ht_$ft\_u(ht => {\n\t$cols99\n});";
+
+	my $cols333 = $cols99;
+	$cols333 =~ s/99/333/g;
+	my $cols333_list = $cols99_list;
+	$cols333_list =~ s/99/333/g;
 
 	$self->file_writer->write_dual_test(
-			conv_next_dual_test(rf('MANIFEST')) . "_$table", 2
-			, <<ENDC, map { $_->{class} } ($le, $fe));
-$form_ok_test
+			conv_next_dual_test(rf('MANIFEST')) . "_$table", 7
+			, <<ENDC
+\$t->ok_ht_$ft\_r(make_url => 1, ht => {
+	$cols_empty
+});
+\$t->ht_$ft\_u(ht => {
+	$cols99
+});
 \$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
-	ht_id => 1, $cols99
+	ht_id => 1, $cols99_list, $col1 => [ 99, 1 ],
 } ] });
+\$t->mech->follow_link(text => 99) if \$t->mech;
+\$t->ok_ht_$it\_r(param => { ht_id => 1 }, ht => {
+	$cols99, edit_link => [ 1 ],
+});
+
+\$t->mech->follow_link(text => 'Edit') if \$t->mech;
+\$t->ok_ht_$ft\_r(param => { ht_id => 1 }, ht => {
+	$cols99
+});
+
+\$t->ht_$ft\_u(ht => {
+	$cols333, ht_id => 1,
+});
+\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
+	ht_id => 1, $cols333_list, $col1 => [ 333, 1 ],
+} ] });
+
+if (\$t->mech) {
+	\$t->mech->follow_link(text => 333);
+	\$t->mech->follow_link(text => 'Edit');
+}
+\$t->ok_ht_$ft\_r(param => { ht_id => 1 }, ht => {
+	$cols333, ht_id => 1, delete_button => 'Delete',
+});
+\$t->ht_$ft\_u(button => [ delete_button => 'Delete' ], ht => {
+	$cols333, ht_id => 1,
+});
+
+\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [] });
 ENDC
+	, map { $_->{class} } ($le, $fe, $ie));
 }
 
 1;

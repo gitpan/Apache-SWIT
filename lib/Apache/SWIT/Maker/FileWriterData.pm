@@ -104,6 +104,9 @@ use warnings FATAL => 'all';
 package [% full_class %]::Root;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class %];
+__PACKAGE__->make_tested_hidden('ht_id', cdbi_bind => 'Primary');
+__PACKAGE__->make_tested_submit('submit_button', default_value => 'Submit');
+__PACKAGE__->make_tested_submit('delete_button', default_value => 'Delete');
 __PACKAGE__->make_tested_form(form => default_value => u => children => [
 	[% FOREACH fields %][% field %] => edit_box => { cdbi_bind => '' },
 [% END %]]);
@@ -119,12 +122,51 @@ sub ht_root_class {
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
+	$root->cdbi_load;
 	return $root;
 }
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
-	$root->cdbi_create_or_update;
+	$root->delete_button
+		? $root->cdbi_delete
+		: $root->cdbi_create_or_update;
+	return "r";
+}
+
+1;
+EM
+
+__PACKAGE__->add_file({ name => 'info_ht_page_pm' , manifest => 1 }, <<'EM');
+use strict;
+use warnings FATAL => 'all';
+
+package [% full_class %]::Root;
+use base 'HTML::Tested::ClassDBI';
+use [% db_class %];
+__PACKAGE__->make_tested_form(form => default_value => u => children => [
+	[% FOREACH fields %][% field %] => marked_value => { cdbi_bind => '' },
+[% END %]]);
+__PACKAGE__->make_tested_link('edit_link'
+		, href_format => '../form/r?ht_id=%s'
+		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
+__PACKAGE__->bind_to_class_dbi('[% db_class %]');
+
+package [% full_class %];
+use base qw(Apache::SWIT::HTPage);
+
+sub ht_root_class { 
+	return '[% full_class %]::Root';
+}
+
+sub ht_swit_render {
+	my ($class, $r, $root) = @_;
+	$root->cdbi_load;
+	return $root;
+}
+
+sub ht_swit_update {
+	my ($class, $r, $root) = @_;
 	return "r";
 }
 
@@ -138,6 +180,9 @@ use warnings FATAL => 'all';
 package [% full_class %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class %];
+__PACKAGE__->make_tested_link('[% link_field %]'
+		, href_format => '../info/r?ht_id=%s'
+		, cdbi_bind => [ [% link_field %] => 'Primary' ]);
 [% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]', cdbi_bind => '');
 [% END %]
 __PACKAGE__->bind_to_class_dbi('[% db_class %]');

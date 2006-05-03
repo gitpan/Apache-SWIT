@@ -31,7 +31,7 @@ write_file("$td/MANIFEST", "1");
 H->add_file({ name => 'M/C.pm', manifest => 1 }, 'Mani [% v %]');
 $fw->write_m_c_pm({ v => 'pm' });
 is(read_file("$td/M/C.pm"), "Mani pm");
-is(read_file("$td/MANIFEST"), "1\nM/C.pm");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\n");
 
 H->add_file({ name => 'tmpl' }, 'Template [% cont1 %] is [% cont2 %]');
 H->add_file({ name => 'M/N.pm', uses => 'tmpl', manifest => 1 },
@@ -39,7 +39,7 @@ H->add_file({ name => 'M/N.pm', uses => 'tmpl', manifest => 1 },
 $fw->write_m_n_pm({ d => 'thing', e => 'laugh' });
 
 is(read_file("$td/M/N.pm"), "Template strange thing is good laugh");
-is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\n\nM/N.pm\n");
 
 H->add_file({ name => 'tmpl2', uses => 'tmpl' },
 		cont1 => 'A [% a %]', cont2 => 'B [% b %]');
@@ -47,11 +47,11 @@ H->add_file({ name => 'M/M.pm', uses => 'tmpl2', manifest => 1 },
 		a => 'a', b => 'b');
 $fw->write_m_m_pm;
 is(read_file("$td/M/M.pm"), "Template A a is B b");
-is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm\nM/M.pm");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\n\nM/N.pm\n\nM/M.pm\n");
 
 $fw->write_m_m_pm({}, { path => 'lib/A::C.pm' });
 is(read_file("$td/lib/A/C.pm"), "Template A a is B b");
-is(read_file("$td/MANIFEST"), "1\nM/C.pm\nM/N.pm\nM/M.pm\nlib/A/C.pm");
+is(read_file("$td/MANIFEST"), "1\nM/C.pm\n\nM/N.pm\n\nM/M.pm\n\nlib/A/C.pm\n");
 
 H->add_file({ name => 'N/N.pm', uses => 'tmpl2', manifest => 1,
 		propagate => [ 'a' ] }, b => 'b');

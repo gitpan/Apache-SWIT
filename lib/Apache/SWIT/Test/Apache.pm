@@ -11,27 +11,31 @@ use File::Slurp;
 
 my ($_sess_dir, $_pid);
 
-sub Switch_Sessions_Dir {
-	my ($from, $to, $dir) = @_;
+sub Switch_Dir_Vars {
+	my ($from, $to, $dir, @vars) = @_;
 	my $s = read_file($from);
-	$s =~ s/SWITSessionsDir[^\n]+/SWITSessionsDir $dir/;
+	$s =~ s/$_[^\n]+/$_ $dir\/$_/ for @vars;
 	write_file($to, $s);
 }
 
 sub Run {
-	my ($from, $to) = @_;
+	my ($from, $to, @vars) = @_;
+	push @vars, 'SWITSessionsDir';
 	my $top_dir = abs_path(dirname($0) . "/../");
 
 	my $not_config = ($ARGV[0] !~ /^-\w+$/);
 	push @ARGV, '-top_dir', $top_dir;
 
 	if ($not_config) {
-		$_sess_dir = tempdir('/tmp/apache_swit_sessions_XXXXXX'); 
-		`chown nobody $_sess_dir` unless $<;
+		$_sess_dir = tempdir('/tmp/apache_swit_dirs_XXXXXX'); 
+		mkdir "$_sess_dir/$_" for @vars;
 
 		my $cf_dir = "$top_dir/t/conf";
-		Switch_Sessions_Dir("$cf_dir/$from", "$cf_dir/$to", $_sess_dir);
+		Switch_Dir_Vars("$cf_dir/$from", "$cf_dir/$to", $_sess_dir
+				, @vars);
+		`chown -R nobody $_sess_dir` unless $<;
 		$_pid = $$;
+		$ENV{SWIT_TEST_DIR} = $_sess_dir;
 	}
 
 	$ENV{SWIT_HAS_APACHE} = 1;

@@ -3,6 +3,7 @@ use warnings FATAL => 'all';
 
 package T::SWIT;
 use base 'Apache::SWIT';
+use File::Slurp;
 
 sub swit_render {
 	my ($class, $r) = @_;
@@ -14,8 +15,7 @@ sub swit_render {
 sub swit_update {
 	my ($class, $r) = @_;
 	my $f = $r->param('file') or die "No file given";
-	open(my $fh, ">$f") or die "Unable to open $f";
-	close $fh;
+	write_file($f, $r->param('but') || '');
 	return '/test/res/r?res=hhhh';
 }
 

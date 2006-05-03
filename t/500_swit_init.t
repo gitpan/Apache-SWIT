@@ -6,6 +6,7 @@ use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
 use Test::TempDatabase;
+use Apache::SWIT::Test::ModuleTester;
 
 BEGIN { use_ok('Apache::SWIT::Maker'); }
 
@@ -14,13 +15,11 @@ delete $ENV{MAKEFLAGS};
 delete $ENV{MAKEOVERRIDES};
 
 Test::TempDatabase->become_postgres_user;
-my $td = tempdir('/tmp/swit_init_XXXXXX', CLEANUP => 1);
-chdir $td;
-`modulemaker -I -n TTT`;
-ok(-f './TTT/LICENSE');
-chdir 'TTT';
+my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
+chdir $mt->root_dir;
+$mt->make_swit_project;
+ok(-f 'LICENSE');
 
-Apache::SWIT::Maker->new->write_initial_files();
 my $swit_str = Apache::SWIT::Maker::rf('conf/swit.yaml');
 like($swit_str, qr/TTT/);
 like($swit_str, qr/\/ttt/);
@@ -30,6 +29,18 @@ ok(-f "lib/TTT/Session.pm");
 
 `./scripts/swit_app.pl add_test t/dual/newdir/987_test.t`;
 ok(-f 't/dual/newdir/987_test.t');
+
+$mt->replace_in_file('t/apache_test_run.pl', '\);', ', "gogog");');
+$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 5');
+Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<'ENDM');
+if ($t->mech) {
+	ok(-d $ENV{SWIT_TEST_DIR});
+	ok(-d $ENV{SWIT_TEST_DIR} . "/gogog");
+} else {
+	ok(1);
+	ok(1);
+}
+ENDM
 
 my @tmp_contents = glob('/tmp/*');
 `perl Makefile.PL`;
