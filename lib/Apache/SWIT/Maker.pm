@@ -345,7 +345,8 @@ __PACKAGE__->table('test_table');
 __PACKAGE__->columns(Essential => qw/a b/);
 
 package main;
-$conn->instance->db_handle->do("create table test_table (a integer, b text)");
+$conn->instance->db_handle->do(
+		"create table test_table (a integer, b text)");
 is_deeply([ T::DBI->retrieve_all ], []);
 
 ENDM

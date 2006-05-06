@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 17;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -38,5 +38,8 @@ like($res, qr/success/);
 $res = `make test_apache APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 unlike($res, qr/Failed/);
 like($res, qr/success/);
+
+# HTML::Form input readonly warning on hidden
+unlike($res, qr/readonly/);
 
 chdir '/';

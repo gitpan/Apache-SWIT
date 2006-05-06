@@ -69,6 +69,8 @@ sub _mech_update {
 	delete $args{url_to_make};
 	my $b = delete $args{button};
 	$args{button} = $b->[0] if $b;
+	delete $args{fields}->{$_} for map { $_->name } grep { $_->readonly }
+		$self->mech->current_form->inputs;
 	$self->mech->submit_form(%args);
 	return $self->mech->content;
 }
