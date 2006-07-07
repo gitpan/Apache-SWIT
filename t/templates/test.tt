@@ -4,6 +4,7 @@
 hello [% hello %]
 <input type="text" name="file" />
 <input type="submit" name="but" value="Push" />
+<a href="r">This</a>
 </form>
 </body>
 </html>

@@ -181,9 +181,10 @@ package [% full_class %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class %];
 __PACKAGE__->make_tested_link('[% link_field %]'
-		, href_format => '../info/r?ht_id=%s'
+		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ [% link_field %] => 'Primary' ]);
-[% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]', cdbi_bind => '');
+[% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]'
+		, cdbi_bind => '');
 [% END %]
 __PACKAGE__->bind_to_class_dbi('[% db_class %]');
 

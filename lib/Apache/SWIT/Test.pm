@@ -7,6 +7,9 @@ use Apache::SWIT::Test::Mechanize;
 use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
+use HTML::Tested::Seal;
+use Carp;
+use Data::Dumper;
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
@@ -20,13 +23,14 @@ sub new {
 	if ($args->{session_class}) {
 		$args->{session} = $args->{session_class}->new;
 	}
+	HTML::Tested::Seal->instance($ENV{APACHE_SWIT_HT_SEAL} || 'unknown');
 	return $class->SUPER::new($args);
 }
 
 sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
-	$r->_param($args{param}) if $args{param};
+	$r->set_params($args{param}) if $args{param};
 	$r->pnotes('SWITSession', $self->session);
 	return $handler_class->swit_render($r);
 }
@@ -43,7 +47,8 @@ sub _do_swit_update {
 
 sub _make_test_request {
 	my ($self, $args) = @_;
-	my $r = HTML::Tested::Test::Request->new({ _param => $args->{fields} });
+	my $r = HTML::Tested::Test::Request->new({
+			_param => $args->{fields} });
 	my $b = delete $args->{button};
 	$r->param($b->[0], $b->[1]) if ($b);
 	return $r;
@@ -99,7 +104,8 @@ sub _direct_ht_update {
 
 sub _mech_ht_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = HTML::Tested::Test::Request->new({ _param => $args{fields} });
+	my $r = HTML::Tested::Test::Request->new({
+			_param => $args{fields} });
 	HTML::Tested::Test->convert_tree_to_param(
 			$handler_class->ht_root_class, $r, $args{ht});
 	$args{fields} = $r->_param;
@@ -129,14 +135,25 @@ sub make_aliases {
 			*{ "$class\::$func" } = 
 				$class->_make_test_function($v, $t, $url);
 			*{ "$class\::ht_$func" } = 
-				$class->_make_test_function($v, "ht_$t", $url);
+				$class->_make_test_function($v
+						, "ht_$t", $url);
 		}
 		my $r_func = "ht_$n\_r";
 		$r_func =~ s/\//_/g;
 		*{ "$class\::ok_$r_func" } = sub {
-			is_deeply([ shift()->$r_func(@_) ], []);
+			is_deeply([ shift()->$r_func(@_) ], []) or carp('#');
 		};
 	}
+}
+
+sub ok_follow_link {
+	my ($self, %arg) = @_;
+SKIP: {
+	skip "Not in apache test", 1 unless $self->mech;
+	isnt($self->mech->follow_link(%arg), undef)
+		or carp('# Unable to follow: ' . Dumper(\%arg)
+				. "in\n" . $self->mech->content);
+};
 }
 
 1;

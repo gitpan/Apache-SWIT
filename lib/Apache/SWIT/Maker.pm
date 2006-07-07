@@ -274,6 +274,7 @@ sub write_httpd_conf_in {
 	my $root_location = $self->root_location;
 	my $more = $self->more_stuff_in_httpd_conf_in;
 	my $app_name = $self->app_name;
+	my $seed = $$ . int(rand(65530)) . time;
 	mani_wf('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
 <Perl>
@@ -285,6 +286,10 @@ $more
 	PerlSetVar SWITRoot \@ServerRoot\@/
 	PerlAccessHandler \@SessionClass\@\->access_handler
 	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
+	<Perl>
+		use HTML::Tested::Seal;
+		HTML::Tested::Seal->instance('$seed');
+	</Perl>
 </Location>
 ENDM
 		, $self->root_var_name));
@@ -630,6 +635,7 @@ sub scaffold {
 			, "[% FOREACH $table\_list %]\n$tt_cols\n[% END %]"
 			, list_name => "$table\_list", link_field => $col1);
 	my $cols99_list = join(",\n\t", map { "$_ => '99'" } @cols);
+	$cols99_list .= "," if $cols99_list;
 
 	my ($lt, $ft, $it) = map { lc($ct) . "_$_" } qw(list form info);
 
@@ -643,7 +649,7 @@ sub scaffold {
 	$cols333_list =~ s/99/333/g;
 
 	$self->file_writer->write_dual_test(
-			conv_next_dual_test(rf('MANIFEST')) . "_$table", 7
+			conv_next_dual_test(rf('MANIFEST')) . "_$table", 11
 			, <<ENDC
 \$t->ok_ht_$ft\_r(make_url => 1, ht => {
 	$cols_empty
@@ -652,34 +658,32 @@ sub scaffold {
 	$cols99
 });
 \$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
-	ht_id => 1, $cols99_list, $col1 => [ 99, 1 ],
+	$cols99_list HT_SEALED_$col1 => [ 99, 1 ],
 } ] });
-\$t->mech->follow_link(text => 99) if \$t->mech;
-\$t->ok_ht_$it\_r(param => { ht_id => 1 }, ht => {
-	$cols99, edit_link => [ 1 ],
+\$t->ok_follow_link(text => 99);
+\$t->ok_ht_$it\_r(param => { HT_SEALED_edit_link => 1 }, ht => {
+	$cols99, HT_SEALED_edit_link => [ 1 ],
 });
 
-\$t->mech->follow_link(text => 'Edit') if \$t->mech;
-\$t->ok_ht_$ft\_r(param => { ht_id => 1 }, ht => {
+\$t->ok_follow_link(text => 'Edit');
+\$t->ok_ht_$ft\_r(param => { HT_SEALED_ht_id => 1 }, ht => {
 	$cols99
 });
 
 \$t->ht_$ft\_u(ht => {
-	$cols333, ht_id => 1,
+	$cols333, HT_SEALED_ht_id => 1,
 });
 \$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
-	ht_id => 1, $cols333_list, $col1 => [ 333, 1 ],
+	$cols333_list HT_SEALED_$col1 => [ 333, 1 ],
 } ] });
 
-if (\$t->mech) {
-	\$t->mech->follow_link(text => 333);
-	\$t->mech->follow_link(text => 'Edit');
-}
-\$t->ok_ht_$ft\_r(param => { ht_id => 1 }, ht => {
-	$cols333, ht_id => 1, delete_button => 'Delete',
+\$t->ok_follow_link(text => 333);
+\$t->ok_follow_link(text => 'Edit');
+\$t->ok_ht_$ft\_r(param => { HT_SEALED_ht_id => 1 }, ht => {
+	$cols333, HT_SEALED_ht_id => 1, delete_button => 'Delete',
 });
 \$t->ht_$ft\_u(button => [ delete_button => 'Delete' ], ht => {
-	$cols333, ht_id => 1,
+	$cols333, HT_SEALED_ht_id => 1,
 });
 
 \$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [] });

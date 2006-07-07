@@ -16,6 +16,10 @@ sub Switch_Dir_Vars {
 	my $s = read_file($from);
 	$s =~ s/$_[^\n]+/$_ $dir\/$_/ for @vars;
 	write_file($to, $s);
+
+	if ($s =~ /Seal->instance\(\'([^\']+)/) {
+		$ENV{APACHE_SWIT_HT_SEAL} = $1;
+	}
 }
 
 sub Run {

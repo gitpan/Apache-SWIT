@@ -49,7 +49,7 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.13;
+our $VERSION = 0.14;
 
 sub swit_update_handler($$) {
 	my($class, $r) = @_;

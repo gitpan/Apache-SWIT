@@ -31,6 +31,7 @@ t/525_sub_install.t
 t/530_subsystem.t
 t/540_db_class.t
 t/550_scaffold.t
+t/560_ht_seal.t
 t/conf/extra.conf.swit
 t/apache_test.pl
 t/apache/001_basic.t

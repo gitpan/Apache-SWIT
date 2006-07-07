@@ -6,6 +6,10 @@ PerlModule T::Session
 <Location /test>
 	PerlAccessHandler T::Session->access_handler
 	PerlSetVar SWITSessionsDir UNKNOWN YET
+	<Perl>
+		use HTML::Tested::Seal;
+		HTML::Tested::Seal->instance('boo boo boo');
+	</Perl>
 </Location>
 
 <Location /test/basic_handler>

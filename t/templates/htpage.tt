@@ -3,6 +3,7 @@
 <form action="u">
 hello [% hello %]
 file: [% file %]
+[% hid %]
 </form>
 </body>
 </html>

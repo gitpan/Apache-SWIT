@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 22;
+use Test::More tests => 24;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -37,6 +37,9 @@ is(read_file("$td/uuu"), 'Push');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
+# does nothing
+$t->ok_follow_link(text => 'This');
+
 @res = $t->res_r;
 is_deeply(\@res, [ { res => 'hhhh' } ])
 	or diag(Dumper(\@res));
@@ -52,6 +55,7 @@ is_deeply(\@res, [ <<ENDS ]);
 hello world
 <input type="text" name="file" />
 <input type="submit" name="but" value="Push" />
+<a href="r">This</a>
 </form>
 </body>
 </html>
@@ -79,8 +83,11 @@ is_deeply(\@res, [ <<ENDS ]);
 hello world
 <input type="text" name="file" />
 <input type="submit" name="but" value="Push" />
+<a href="r">This</a>
 </form>
 </body>
 </html>
 ENDS
 
+# works
+$t->ok_follow_link(text => 'This');
