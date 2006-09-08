@@ -2,7 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Test::Apache;
-use Apache::TestRunPerl;
+use base 'Apache::TestRunPerl';
 use File::Basename qw(dirname);
 use Cwd qw(abs_path);
 use File::Path qw(rmtree);
@@ -16,10 +16,6 @@ sub Switch_Dir_Vars {
 	my $s = read_file($from);
 	$s =~ s/$_[^\n]+/$_ $dir\/$_/ for @vars;
 	write_file($to, $s);
-
-	if ($s =~ /Seal->instance\(\'([^\']+)/) {
-		$ENV{APACHE_SWIT_HT_SEAL} = $1;
-	}
 }
 
 sub Run {
@@ -27,7 +23,7 @@ sub Run {
 	push @vars, 'SWITSessionsDir';
 	my $top_dir = abs_path(dirname($0) . "/../");
 
-	my $not_config = ($ARGV[0] !~ /^-\w+$/);
+	my $not_config = (@ARGV && $ARGV[0] ne '-config');
 	push @ARGV, '-top_dir', $top_dir;
 
 	if ($not_config) {
@@ -40,10 +36,22 @@ sub Run {
 		`chown -R nobody $_sess_dir` unless $<;
 		$_pid = $$;
 		$ENV{SWIT_TEST_DIR} = $_sess_dir;
+
+		$ENV{APACHE_SWIT_HT_SEAL} =
+			read_file("$top_dir/blib/conf/seal.key");
 	}
 
 	$ENV{SWIT_HAS_APACHE} = 1;
-	Apache::TestRunPerl->new->run(@ARGV);
+	__PACKAGE__->new->run(@ARGV);
+}
+
+sub run_tests {
+	return shift()->SUPER::run_tests(@_)
+		unless $ENV{__APACHE_SWIT_RUN_SERVER__};
+	print STDERR "# Server url is http://"
+			. Apache::TestRequest::hostport ."\n";
+	print STDERR "# Press Enter to finish ...\n";
+	readline(\*STDIN);
 }
 
 END {

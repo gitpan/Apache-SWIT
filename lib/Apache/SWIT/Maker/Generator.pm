@@ -19,7 +19,7 @@ sub location_section_contents {
 
 sub httpd_conf_start {
 	my ($self, $res) = @_;
-	my $sc = $self->tree->{session_class};
+	my $sc = Apache::SWIT::Maker::Config->instance->session_class;
 	$res = read_file('conf/httpd.conf.in') . "\n";
 	$res =~ s/\@SessionClass\@/$sc/g;
 	return $res;

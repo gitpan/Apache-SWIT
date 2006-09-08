@@ -6,6 +6,8 @@ use base 'Class::Accessor';
 use File::Temp qw(tempdir);
 use File::Basename qw(basename);
 use Apache::SWIT::Maker;
+use File::Slurp;
+use Carp;
 
 __PACKAGE__->mk_accessors(qw(root_dir root_class install_dir project_class
 			subsystem_name));
@@ -24,6 +26,7 @@ sub new {
 
 sub run_modulemaker {
 	my $rc = shift()->root_class;
+	undef $Apache::SWIT::Maker::Config::_instance;
 	`modulemaker -I -n $rc`;
 }
 
@@ -83,10 +86,10 @@ sub install_subsystem {
 
 sub replace_in_file {
 	my ($self, $f, $from, $to) = @_;
-	my $str = Apache::SWIT::Maker::rf($f);
+	my $str = read_file($f);
 	$str =~ s/$from/$to/g
-		or die "Unable to replace $from to $to in $f";
-	Apache::SWIT::Maker::wf($f, $str);
+		or confess "# Unable to replace $from to $to in $f:\n$str";
+	write_file($f, $str);
 }
 
 sub insert_into_schema_pm {

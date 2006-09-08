@@ -1,24 +1,10 @@
-package MY;
+use strict;
+use warnings FATAL => 'all';
+use lib 'lib';
+use Apache::SWIT::Maker::Makefile;
 
-use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-WriteMakefile(
-    NAME         => 'Apache::SWIT',
-    VERSION_FROM => 'lib/Apache/SWIT.pm', # finds $VERSION
-    AUTHOR       => 'Boris Sukholitko (boriss@gmail.com)',
-    ABSTRACT     => '',
-    PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
-	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.17',
-	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.06',
-	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
-	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
-	'Test::TempDatabase' => '',
-	'Class::DBI' => '', 'Class::DBI::Pg' => '', 'File::Slurp' => '',
-    },
-);
-
-sub postamble { return q{
+Apache::SWIT::Maker::Makefile->new({ no_swit_overrides => 1, overrides => {
+postamble => sub { return q{
 config :: t/conf/httpd.conf
 	$(NOECHO) $(NOOP)
 			
@@ -36,5 +22,19 @@ realclean ::
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	$(RM_F) t/conf/extra.conf.in
-}}
+}}, } })->write_makefile(
+    NAME         => 'Apache::SWIT',
+    VERSION_FROM => 'lib/Apache/SWIT.pm', # finds $VERSION
+    AUTHOR       => 'Boris Sukholitko (boriss@gmail.com)',
+    ABSTRACT     => '',
+    PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
+	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.17',
+	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.06',
+	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
+	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
+	'Test::TempDatabase' => '',
+	'Class::DBI' => '', 'Class::DBI::Pg' => '', 'File::Slurp' => '',
+	'IPC::Run' => '',
+    },
+);
 

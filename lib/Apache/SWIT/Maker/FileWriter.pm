@@ -31,21 +31,28 @@ $res{contents}
 1;
 ENDS
 	}
-	$res{path} =~ s/::/\//g;
+	$res{path} =~ s/::/\//g if $res{path};
 	return \%res;
 }
 
 sub _write_file {
 	my ($self, $n, $vars, $new_opts) = @_;
 	my $opts = $self->_normalize_options($self->Files->{$n}, $new_opts);
+	my $p = $opts->{path};
+	$p = $p->($opts) if ref($p);
+	my $f = $self->root_dir . "/$p";
+	die "Cowardly refusing to overwrite $f"
+		if (-f $f && !$opts->{overwrite});
+	$vars = $self->_normalize_options($opts->{vars}, $vars)
+			if $opts->{vars};
 	my $t = Template->new({ OUTPUT_PATH => $self->root_dir,
 				%{ $opts->{tmpl_options} || {} } })
 			or die "No template";
-	$t->process(\$opts->{contents}, $vars, $opts->{path})
+	$t->process(\$opts->{contents}, $vars, $p)
 		or die "No result for $n: " . $t->error;
 
 	write_file($self->root_dir . "/MANIFEST", { append => 1 }
-			, "\n" . $opts->{path} . "\n") if $opts->{manifest};
+			, "\n$p\n") if $opts->{manifest};
 }
 
 sub _mangle_name_to_path {
@@ -75,7 +82,8 @@ sub add_file {
 	my ($class, $opts, @contents) = @_;
 	my $n = $opts->{name} or die "No name found";
 	$opts->{contents} ||= $class->_prepare_contents($opts, \@contents);
-	$opts->{path} ||= $class->_mangle_name_to_path(\$n);
+	my $new_path = $class->_mangle_name_to_path(\$n);
+	$opts->{path} ||= $new_path;
 	$class->Files->{$n} = $opts;
 	no strict 'refs';
 	*{ "$class\::write_$n" } = sub {

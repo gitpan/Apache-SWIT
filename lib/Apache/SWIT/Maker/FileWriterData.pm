@@ -3,6 +3,7 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Maker::FileWriterData;
 use base 'Apache::SWIT::Maker::FileWriter';
+use Apache::SWIT::Maker::Config;
 
 __PACKAGE__->add_file({ name => 'scripts/swit_app.pl'
 		, manifest => 1 }, <<'EM');
@@ -11,35 +12,6 @@ use strict;
 use [% class %];
 my $f = shift(@ARGV);
 [% class %]->new->$f(@ARGV);
-EM
-
-__PACKAGE__->add_file({ name => 'ht_page_pm' , manifest => 1 }, <<'EM');
-use strict;
-use warnings FATAL => 'all';
-
-package [% full_class %]::Root;
-use base 'HTML::Tested';
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-		first => 'marked_value' ]);
-
-package [% full_class %];
-use base qw(Apache::SWIT::HTPage);
-
-sub ht_root_class { 
-	return [% ht_root %];
-}
-
-sub ht_swit_render {
-	my ($class, $r, $root) = @_;
-	return $root;
-}
-
-sub ht_swit_update {
-	my ($class, $r, $root) = @_;
-	return "r";
-}
-
-1;
 EM
 
 __PACKAGE__->add_file({ name => 'tt_file', manifest => 1
@@ -74,6 +46,29 @@ __PACKAGE__->set_up_table('[% table %]', ColumnGroup => 'Essential');
 1;
 EM
 
+__PACKAGE__->add_file({ name => 't/T/Test.pm', overwrite => 1 }, <<'EM');
+use strict;
+use warnings FATAL => 'all';
+
+package T::Test;
+use base 'Apache::SWIT::Test';
+use [% session_class %];
+
+__PACKAGE__->root_location('[% root_location %]');
+__PACKAGE__->make_aliases(
+[% aliases %]
+);
+
+sub new {
+	my ($class, $args) = @_;
+	$args->{session_class} = '[% httpd_session_class %]'
+		unless exists($args->{session_class});
+	return $class->SUPER::new($args);
+}
+
+1;
+EM
+
 __PACKAGE__->add_file({ name => 'test', manifest => 1 }, <<'EM');
 use strict;
 use warnings FATAL => 'all';
@@ -87,133 +82,6 @@ BEGIN { [% FOREACH use_oks %]
 [% content %]
 EM
 
-sub write_dual_test {
-	my ($self, $f, $plan, $content, @uses) = @_;
-	$self->write_test({
-			plan => $plan + 1 + scalar(@uses),
-			use_oks => [ { module => 'T::Test' }
-				, map { { module => $_ } } @uses ],
-			content => "my \$t = T::Test->new;\n$content",
-		} , { path => "t/dual/$f.t" });
-}
-
-__PACKAGE__->add_file({ name => 'form_ht_page_pm' , manifest => 1 }, <<'EM');
-use strict;
-use warnings FATAL => 'all';
-
-package [% full_class %]::Root;
-use base 'HTML::Tested::ClassDBI';
-use [% db_class %];
-__PACKAGE__->make_tested_hidden('ht_id', cdbi_bind => 'Primary');
-__PACKAGE__->make_tested_submit('submit_button', default_value => 'Submit');
-__PACKAGE__->make_tested_submit('delete_button', default_value => 'Delete');
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-	[% FOREACH fields %][% field %] => edit_box => { cdbi_bind => '' },
-[% END %]]);
-__PACKAGE__->bind_to_class_dbi('[% db_class %]');
-__PACKAGE__->load_db_constraints;
-
-package [% full_class %];
-use base qw(Apache::SWIT::HTPage);
-
-sub ht_root_class { 
-	return '[% full_class %]::Root';
-}
-
-sub ht_swit_render {
-	my ($class, $r, $root) = @_;
-	$root->cdbi_load;
-	return $root;
-}
-
-sub ht_swit_update {
-	my ($class, $r, $root) = @_;
-	$root->delete_button
-		? $root->cdbi_delete
-		: $root->cdbi_create_or_update;
-	return "r";
-}
-
-1;
-EM
-
-__PACKAGE__->add_file({ name => 'info_ht_page_pm' , manifest => 1 }, <<'EM');
-use strict;
-use warnings FATAL => 'all';
-
-package [% full_class %]::Root;
-use base 'HTML::Tested::ClassDBI';
-use [% db_class %];
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-	[% FOREACH fields %][% field %] => marked_value => { cdbi_bind => '' },
-[% END %]]);
-__PACKAGE__->make_tested_link('edit_link'
-		, href_format => '../form/r?ht_id=%s'
-		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
-__PACKAGE__->bind_to_class_dbi('[% db_class %]');
-
-package [% full_class %];
-use base qw(Apache::SWIT::HTPage);
-
-sub ht_root_class { 
-	return '[% full_class %]::Root';
-}
-
-sub ht_swit_render {
-	my ($class, $r, $root) = @_;
-	$root->cdbi_load;
-	return $root;
-}
-
-sub ht_swit_update {
-	my ($class, $r, $root) = @_;
-	return "r";
-}
-
-1;
-EM
-
-__PACKAGE__->add_file({ name => 'list_ht_page_pm' , manifest => 1 }, <<'EM');
-use strict;
-use warnings FATAL => 'all';
-
-package [% full_class %]::Root::Item;
-use base 'HTML::Tested::ClassDBI';
-use [% db_class %];
-__PACKAGE__->make_tested_link('[% link_field %]'
-		, href_format => '../info/r?edit_link=%s'
-		, cdbi_bind => [ [% link_field %] => 'Primary' ]);
-[% FOREACH fields %]__PACKAGE__->make_tested_marked_value('[% field %]'
-		, cdbi_bind => '');
-[% END %]
-__PACKAGE__->bind_to_class_dbi('[% db_class %]');
-
-package [% full_class %]::Root;
-use base 'HTML::Tested';
-__PACKAGE__->make_tested_form('form', default_value => 'u');
-__PACKAGE__->make_tested_list('[% list_name %]', __PACKAGE__ . '::Item');
-
-package [% full_class %];
-use base qw(Apache::SWIT::HTPage);
-
-sub ht_root_class { 
-	return '[% full_class %]::Root';
-}
-
-sub ht_swit_render {
-	my ($class, $r, $root) = @_;
-	$root->[% list_name %]_containee_do(query_class_dbi => 'retrieve_all');
-	return $root;
-}
-
-sub ht_swit_update {
-	my ($class, $r, $root) = @_;
-	return "r";
-}
-
-1;
-EM
-
 __PACKAGE__->add_file({ name => 'db_base_pm', manifest => 1 }, <<'EM');
 use base 'Class::DBI::Pg';
 use [% connection %];
@@ -224,12 +92,26 @@ sub db_Main {
 }
 EM
 
+__PACKAGE__->add_file({ name => 'conf/startup.pl', manifest => 1 }, <<'ES');
+use strict;
+use warnings FATAL => 'all';
+
+use HTML::Tested::Seal;
+use File::Slurp;
+use File::Basename qw(dirname);
+
+HTML::Tested::Seal->instance(read_file(dirname($0) . '/seal.key'));
+
+1;
+ES
+
 __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
 		, <<'EM');
 - targets: [ config ]
   dependencies: 
     - t/conf/httpd.conf
-    - conf/httpd.conf
+    - blib/conf/httpd.conf
+    - blib/conf/seal.key
   actions:
     - $(NOECHO) $(NOOP)
 - targets: [ t/conf/httpd.conf ]
@@ -237,12 +119,60 @@ __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
     - t/conf/extra.conf.in
   actions:
     - PERL_DL_NONLAZY=1 $(FULLPERLRUN) t/apache_test_run.pl -config
-- targets: [ conf/httpd.conf ]
+- targets: [ blib/conf/seal.key ]
+  dependencies:
+    - Makefile
+  actions:
+    - ./scripts/swit_app.pl regenerate_seal_key
+- targets: [ blib/conf/httpd.conf ]
   dependencies:
     - conf/swit.yaml
     - conf/httpd.conf.in
   actions:
     - ./scripts/swit_app.pl regenerate_httpd_conf
+EM
+
+sub add_root_class_file {
+	my ($class, $opts, $content) = @_;
+	my $n = $opts->{name};
+	goto OUT unless ($opts->{name} =~ s/\%s[\/\.]//);
+	$opts->{path} = sub {
+		my $o = shift;
+		my $rc = $o->{new_root} || Apache::SWIT::Maker::Config
+						->instance->root_class;
+		$o->{vars}->{root_class} = $rc;
+		$rc =~ s/::/\//g;
+		return sprintf($n, $rc);
+	};
+OUT:
+	$class->add_file($opts, $content);
+}
+
+__PACKAGE__->add_root_class_file({ overwrite => 1,
+		name => 'blib/lib/%s/InstallationContent.pm' }, <<'EM');
+use strict;
+use warnings FATAL => 'all';
+
+package [% root_class %]::InstallationContent;
+
+[% FOREACH dumps %]
+sub this_subsystem_[% name %] {
+	my [% dump %];
+	return $VAR1;
+}
+[% END %]
+
+1;
+EM
+
+__PACKAGE__->add_root_class_file({ name => 'lib/%s.pm'
+		, manifest => 1 }, <<'EM');
+use strict;
+use warnings FATAL => 'all';
+
+package [% root_class %];
+[% content %]
+1;
 EM
 
 1;

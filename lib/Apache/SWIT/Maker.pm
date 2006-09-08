@@ -12,153 +12,83 @@ package Apache::SWIT::Maker;
 use base 'Class::Accessor';
 use File::Path;
 use File::Basename qw(dirname basename);
-use YAML;
 use File::Copy;
 use Cwd qw(abs_path);
 use Apache::SWIT::Maker::GeneratorsQueue;
 use Apache::SWIT::Maker::FileWriterData;
 use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Maker::Config;
+use Apache::SWIT::Maker::Makefile;
+use File::Slurp;
+use Apache::SWIT::Maker::Manifest;
 
-__PACKAGE__->mk_accessors(qw(root_class root_location app_name root_var_name
-			session_class lib_dir file_writer));
+__PACKAGE__->mk_accessors(qw(root_var_name lib_dir file_writer));
 
-sub rf {
-	my $file = shift;
-	open(my $fh, $file) or die "Unable to open $file";
-	my $mf_str = join('', <$fh>);
-	close $fh;
-	return $mf_str;
+my @_initial_skels = qw(apache_test apache_test_run dual_001_load);
+
+sub _load_skeleton {
+	my ($class, $skel_class, $func) = @_;
+	my $s = 'Apache::SWIT::Maker::Skeleton::' . $skel_class;
+	conv_eval_use($s);
+
+	no strict 'refs';
+	*{ __PACKAGE__ . "::$func" } = sub { return $s; }
+		unless __PACKAGE__->can($func);
 }
 
-sub wf {
-	my ($file, $content) = @_;
-	open(my $fh, ">$file") or die "Unable to open $file";
-	print $fh $content;
-	close $fh;
+__PACKAGE__->_load_skeleton(conv_table_to_class($_), $_) for @_initial_skels;
+
+my %_page_skels = (qw(skel_page Page skel_template Template
+		skel_ht_page HT::Page skel_ht_template HT::Template
+		skel_db_class DB::Class scaffold_dual_test Scaffold::DualTest)
+		, map { ("scaffold_".lc($_), "Scaffold::$_"
+			, "scaffold_".lc($_)."_template"
+			, "Scaffold::$_"."Template") } qw(List Form Info));
+
+while (my ($n, $v) = each %_page_skels) {
+	__PACKAGE__->_load_skeleton($v, $n);
 }
 
-sub wf_path {
-	my ($f, $str) = @_;
-	mkpath(dirname($f));
-	wf($f, $str);
-}
-
-sub mani_wf {
-	my ($f, $str) = @_;
-	wf_path($f, $str);
-	wf('>MANIFEST', "\n$f\n");
-}
+sub makefile_class { return 'Apache::SWIT::Maker::Makefile'; }
 
 sub new {
 	my $self = shift->SUPER::new(@_);
 	$self->lib_dir("lib") unless $self->lib_dir;
 	$self->{file_writer} ||= Apache::SWIT::Maker::FileWriterData->new;
-	unless ($self->root_class) {
-		my $mf_str = rf('Makefile.PL');
-		my ($root_class) = ($mf_str =~ /NAME[^\n\']+\'([^\']+)/);
-		die "Unable to get root_class from $mf_str" unless $root_class;
-		$self->root_class($root_class);
-	}
-	unless ($self->session_class) {
-		$self->session_class($self->root_class . "::Session");
-	}
-	unless ($self->root_location) {
-		my $rl = lc("/" . $self->root_class);
-		$rl =~ s/::/\//g;
-		$self->root_location($rl);
-	}
-	unless($self->app_name) {
-		$self->app_name(conv_class_to_app_name($self->root_class));
-	}
 	unless($self->root_var_name) {
-		my $rvn = uc($self->root_class) . "_ROOT";
+		my $rvn = uc(Apache::SWIT::Maker::Config->instance
+				->root_class) . "_ROOT";
 		$rvn =~ s/::/_/g;
 		$self->root_var_name($rvn);
 	}
 	return $self;
 }
 
-sub schema_class { return shift()->root_class . '::DB::Schema'; }
-sub connection_class { return shift()->root_class . '::DB::Connection'; }
+sub schema_class {
+	return Apache::SWIT::Maker::Config->instance->root_class
+		. '::DB::Schema';
+}
 
-sub initial_swit_yaml_tree {
-	my $self = shift;
-	return {
-		root_class => $self->root_class, 
-		root_location => $self->root_location,
-		session_class => $self->session_class,
-		pages => {},
-		generators => [ 'Apache::SWIT::Maker::Generator' ],
-	};
+sub connection_class {
+	return Apache::SWIT::Maker::Config->instance->root_class
+		. '::DB::Connection';
 }
 
 sub write_swit_yaml {
-	my $self = shift;
-	mani_wf('conf/swit.yaml', Dump($self->initial_swit_yaml_tree));
+	swmani_write_file('conf/swit.yaml', "");
+	Apache::SWIT::Maker::Config->instance->save;
 }
 
 sub write_makefile_pl {
 	my $self = shift;
-	my $app_name = $self->app_name;
-	my $mf_str = rf('Makefile.PL');
-	my $more = $self->makefile_install_string;
-	wf('Makefile.PL', <<ENDM . $more);
-package MY;
-use Apache::SWIT::Maker;
+	my $args = Apache::SWIT::Maker::Makefile::Args();
+	my $mc = $self->makefile_class;
+	write_file('Makefile.PL', <<ENDM);
+use strict;
+use warnings FATAL => 'all';
+use $mc;
 
-$mf_str
-
-sub test {
-	my \$res = shift()->SUPER::test(\@_);
-	\$res =~ s/PERLRUN\\)/PERLRUN) -I t\\//g;
-	return \$res;
-}
-
-sub postamble { return Apache::SWIT::Maker->get_makefile_rules . q{
-test :: test_direct test_apache 
-
-APACHE_TEST_FILES = `find t/dual -name "*.t" | sort`
-
-test_direct :: pure_all
-	PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I t -I blib/lib t/direct_test.pl \$(APACHE_TEST_FILES)
-
-test_apache :: pure_all
-	\$(RM_F) t/logs/access_log  t/logs/error_log
-	ulimit -c unlimited && PERL_DL_NONLAZY=1 \$(FULLPERLRUN) -I t -I blib/lib t/apache_test.pl \$(APACHE_TEST_FILES)
-
-realclean ::
-	\$(RM_RF) t/htdocs t/logs
-	\$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl t/T/Test.pm
-	\$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
-	\$(RM_F) conf/httpd.conf t/conf/my.conf
-}}
-ENDM
-}
-
-sub makefile_constants_string {
-	my $app_name = shift()->app_name;
-	return <<ENDM;
-sub constants {
-	my \$str = shift()->SUPER::constants(\@_);
-	\$str =~ s#INSTALLSITELIB[^\\n]+#INSTALLSITELIB = \\\$(SITEPREFIX)/share\/$app_name#;
-	return \$str;
-}
-ENDM
-}
-
-sub makefile_install_string {
-	my $self = shift;
-	my $app_name = $self->app_name;
-	return $self->makefile_constants_string . <<ENDM;
-sub install {
-	return <<ENDS;
-install :: all 
-	mkdir -p \\\$(INSTALLSITELIB)/conf
-	cp -a \\\$(INST_LIB) \\\$(INSTALLSITELIB)
-	perl -p -e \\"s#\\\\\\\@ServerRoot\\\\@#\\\$(INSTALLSITELIB)#g\\" < conf/httpd.conf > \\\$(INSTALLSITELIB)/conf/httpd.conf
-	cp -a templates \\\$(INSTALLSITELIB)
-ENDS
-}
+$mc\->new->write_makefile$args;
 ENDM
 }
 
@@ -166,7 +96,7 @@ sub write_pm_file {
 	my ($self, $module_class, $str, $no_manifest) = @_;
 	my $module_file = $self->lib_dir . "/$module_class.pm";
 	$module_file =~ s/::/\//g;
-	wf_path($module_file, <<ENDM);
+	mkpath_write_file($module_file, <<ENDM);
 use strict;
 use warnings FATAL => 'all';
 
@@ -175,21 +105,22 @@ $str
 
 1;
 ENDM
-	wf('>MANIFEST', "\n$module_file") unless $no_manifest;
+	append_file('MANIFEST', "\n$module_file") unless $no_manifest;
 }
 
 sub add_class { 
 	my ($self, $new_class, $str) = @_;
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	$new_class = $rc . "::$new_class" if ($new_class !~ /^$rc\::/);
-	$self->write_pm_file($new_class, $str || "");
+	$self->file_writer->write_lib_pm({ content => $str }
+			, { new_root => $new_class });
 }
 
 sub write_session_pm {
 	my $self = shift;
-	my $an = $self->app_name;
-	my $sess_dir = "/tmp/$an\_sessions";
-	$self->add_class($self->session_class, <<ENDM);
+	my $an = Apache::SWIT::Maker::Config->instance->app_name;
+	$self->add_class(Apache::SWIT::Maker::Config->instance
+			->session_class, <<ENDM);
 use base 'Apache::SWIT::Session';
 
 sub cookie_name { return '$an'; }
@@ -215,7 +146,7 @@ ENDM
 
 sub write_db_schema_file {
 	my $self = shift;
-	my $an = $self->app_name;
+	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	$self->write_pm_file($self->schema_class, <<ENDM);
 use base 'DBIx::VersionedSchema';
 __PACKAGE__->Name('$an');
@@ -238,7 +169,7 @@ sub with_lib_dir {
 sub write_test_db_file {
 	my $self = shift;
 	my $sc = $self->schema_class;
-	my $an = $self->app_name;
+	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	my $db_var = $self->db_env_var;
 	my $conn = $self->connection_class;
 	$self->with_lib_dir('t', sub {
@@ -259,23 +190,38 @@ ENDM
 
 sub write_t_extra_conf_in {
 	my $self = shift;
-	my $an = $self->app_name;
+	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	my $db_var = $self->db_env_var;
-	mani_wf('t/conf/extra.conf.in', <<ENDM);
+	swmani_write_file('t/conf/extra.conf.in', <<ENDM);
 PerlSetEnv $db_var\_NAME $an\_test_db
-Include conf/my.conf
+Include ../blib/conf/httpd.conf
 ENDM
 }
 
-sub more_stuff_in_httpd_conf_in { return 'PerlModule @SessionClass@'; }
+sub more_stuff_in_httpd_conf_in {
+	my $self = shift;
+	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
+	return <<ENDS
+RewriteEngine on
+RewriteRule ^/\$ $rl/index/r [R]
+PerlModule \@SessionClass\@;
+PerlRequire \@ServerRoot\@/conf/startup.pl
+ENDS
+}
+
+sub write_startup_pl {
+	my $self = shift;
+	$self->file_writer->write_conf_startup_pl;
+}
 
 sub write_httpd_conf_in {
 	my $self = shift;
-	my $root_location = $self->root_location;
+	my $root_location = Apache::SWIT::Maker::Config->instance
+				->root_location;
 	my $more = $self->more_stuff_in_httpd_conf_in;
-	my $app_name = $self->app_name;
+	my $app_name = Apache::SWIT::Maker::Config->instance->app_name;
 	my $seed = $$ . int(rand(65530)) . time;
-	mani_wf('conf/httpd.conf.in', sprintf(<<ENDM
+	swmani_write_file('conf/httpd.conf.in', sprintf(<<ENDM
 PerlSetEnv %s \@ServerRoot\@
 <Perl>
 	use lib '\@ServerRoot\@/lib';
@@ -286,41 +232,31 @@ $more
 	PerlSetVar SWITRoot \@ServerRoot\@/
 	PerlAccessHandler \@SessionClass\@\->access_handler
 	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
-	<Perl>
-		use HTML::Tested::Seal;
-		HTML::Tested::Seal->instance('$seed');
-	</Perl>
 </Location>
+Alias $root_location/www \@ServerRoot\@/public_html 
 ENDM
 		, $self->root_var_name));
 
 }
 
-sub write_apache_test_pl {
-	mani_wf('t/apache_test.pl', <<ENDM);
-use T::TempDB;
-do "t/apache_test_run.pl";
-ENDM
+sub t_dbi_base_class {
+	return Apache::SWIT::Maker::Config->instance->root_class
+		. "::DB::Base";
 }
 
-sub write_apache_test_run_pl {
-	mani_wf('t/apache_test_run.pl', <<ENDM);
-use Apache::SWIT::Test::Apache;
-Apache::SWIT::Test::Apache::Run('my.conf', 'my.conf');
-ENDM
+sub use_ok_in_010_db_t {
+	return Apache::SWIT::Maker::Config->instance->root_class;
 }
-
-sub t_dbi_base_class { return shift()->root_class . "::DB::Base"; }
-
-sub use_ok_in_010_db_t { return shift()->root_class; }
 
 sub add_test {
 	my ($self, $file, $number, $content) = @_;
 	unless ($number) {
 		$number = 1;
-		$content = "BEGIN { use_ok('" . $self->root_class ."'); }";
+		$content = "BEGIN { use_ok('"
+			. Apache::SWIT::Maker::Config->instance->root_class
+			."'); }";
 	}
-	mani_wf($file, <<ENDT);
+	swmani_write_file($file, <<ENDT);
 use strict;
 use warnings FATAL => 'all';
 
@@ -332,7 +268,7 @@ ENDT
 
 sub write_010_db_t {
 	my $self = shift;
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	my $more_uses = $self->use_ok_in_010_db_t;
 	my $conn = $self->connection_class;
 	my $t_dbi_base = $self->t_dbi_base_class;
@@ -366,8 +302,14 @@ sub write_swit_app_pl {
 	chmod 0755, 'scripts/swit_app.pl';
 }
 
+sub install {
+	my ($self, $inst_dir) = @_;
+	$self->makefile_class->do_install("blib", $inst_dir);
+}
+
 sub write_initial_files {
 	my $self = shift;
+	$self->$_->new->write_output for @_initial_skels;
 
 	$self->write_swit_yaml;
 	$self->write_session_pm;
@@ -375,49 +317,32 @@ sub write_initial_files {
 	$self->write_test_db_file;
 	$self->write_db_connection_pm;
 	$self->write_t_extra_conf_in;
+	$self->write_startup_pl;
 	$self->write_httpd_conf_in;
-	$self->file_writer->write_dual_test("001_load", 1
-		, "\$t->ok_ht_index_r(make_url => 1, "
-			. "ht => { first => '' });\n"
-		, $self->dual_use_ok_class);
+	swmani_write_file("public_html/main.css", "# Sample CSS file\n");
 	$self->file_writer->write_t_direct_test_pl;
-	$self->write_apache_test_run_pl;
-	$self->write_apache_test_pl;
 	$self->file_writer->write_conf_makefile_rules_yaml;
 	$self->write_makefile_pl;
 	$self->file_writer->write_db_base_pm({
 			connection => $self->db_base_pm_connection
-	}, { class => $self->root_class . "::DB::Base" });
+	}, { class => Apache::SWIT::Maker::Config->instance->root_class
+				. "::DB::Base" });
 	$self->write_010_db_t;
 	$self->write_swit_app_pl;
 	$self->add_ht_page('Index');
 }
 
-sub _create_new_entry {
-	my ($self, $page_class) = @_;
-	my $tree = YAML::LoadFile('conf/swit.yaml') 
-			or die "No conf/swit.yaml found";
-	my $full_class = conv_make_full_class(
-				$tree->{root_class}, "UI", $page_class);
-
-	my $entry_point = lc($page_class);
-	$entry_point =~ s/::/\//g;
-	my $tt_file = "templates/$entry_point.tt";
-	my $entry = {
-		class => $full_class,
-		entry_points => {
-			r => {
-				template => $tt_file,
-				handler => 'swit_render_handler',
-			},
-			u => {
-				handler => 'swit_update_handler',
-			},
-		},
-	};
-	$tree->{pages}->{$entry_point} = $entry;
-	$self->dump_yaml_conf($tree);
-	return $entry;
+sub _make_page {
+	my ($self, $page_class, $args, @funcs) = @_;
+	my $i = Apache::SWIT::Maker::Config->instance;
+	my $e = $i->create_new_page($page_class);
+	for my $f (@funcs) {
+		my $p = $self->$f->new($args);
+		$p->config_entry($e);
+		$p->write_output;
+	}
+	$i->save;
+	return $e;
 }
 
 =head2 add_page(page)
@@ -427,25 +352,8 @@ e.g. 'Index'. See C<add_ht_page> for adding HTML::Tested enabled page.
 
 =cut
 sub add_page {
-	my ($self, $page_class, $tmpl_str) = @_;
-	my $e = $self->_create_new_entry($page_class);
-	$self->file_writer->write_tt_file({}, {
-			path => $e->{entry_points}->{r}->{template} });
-	$self->write_pm_file($e->{class}, <<ENDM);
-use base qw(Apache::SWIT);
-
-sub swit_render {
-	my (\$class, \$req) = \@_;
-	my \$res = {};
-	return \$res;
-}
-ENDM
-	return $e;
-}
-
-sub ht_root_class_name {
-	my ($self, $entry) = @_;
-	return "'" . $entry->{class} . "::Root'";
+	my ($self, $pc) = @_;
+	return $self->_make_page($pc, {}, qw(skel_template skel_page));
 }
 
 =head2 add_ht_page(page)
@@ -455,28 +363,11 @@ Page should be the name of the module, e.g. 'Index'.
 
 =cut
 sub add_ht_page {
-	my ($self, $page_class) = @_;
-	my $p = $self->_create_new_entry($page_class);
-	$self->file_writer->write_tt_file({ content => '[% first %]' }, {
-			path => $p->{entry_points}->{r}->{template} });
-	$self->file_writer->write_ht_page_pm({
-		full_class => $p->{class},
-		ht_root => $self->ht_root_class_name($p)
-	}, { path => "lib/" . $p->{class} . ".pm" });
-	return $p;
+	my ($self, $pc) = @_;
+	return $self->_make_page($pc, {}, qw(skel_ht_template skel_ht_page));
 }
 
 sub alias_class { return $_[1]; }
-sub dual_use_ok_class { return shift()->root_class . "::UI::Index"; }
-
-sub load_yaml_conf {
-	return YAML::LoadFile('conf/swit.yaml') 
-			or die "No conf/swit.yaml found";
-}
-
-sub dump_yaml_conf {
-	YAML::DumpFile('conf/swit.yaml', $_[1]);
-}
 
 sub session_class_for_httpd_conf {
 	return $_[1]->{session_class};
@@ -485,7 +376,7 @@ sub session_class_for_httpd_conf {
 sub httpd_location_section {
 	my ($self, $gq, $loc, $entry) = @_;
 	my $res = $gq->run('location_section_prolog', $loc, $entry);
-	my $l = $gq->tree->{root_location} . "/$loc";
+	my $l = Apache::SWIT::Maker::Config->instance->root_location ."/$loc";
 	while (my ($n, $v) = each %{ $entry->{entry_points} }) {
 		$res .= "<Location $l/$n>\n";
 		$res .= "\tSetHandler perl-script\n";
@@ -497,58 +388,38 @@ sub httpd_location_section {
 	return $res;
 }
 
+sub regenerate_seal_key {
+	my $seed = $$ . int(rand(65530)) . time;
+	mkpath_write_file('blib/conf/seal.key', $seed);
+}
+
 sub regenerate_httpd_conf {
 	my $self = shift;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
-	my $tree = $gq->tree;
+	my $tree = Apache::SWIT::Maker::Config->instance;
 	my $ht_in = $gq->run('httpd_conf_start');
-	my $sess_class = $self->session_class_for_httpd_conf($tree);
 
 	my $aliases = "";
-	my $rl = $tree->{root_location};
-
 	while (my ($n, $v) = each %{ $tree->{pages} }) {
 		$ht_in .= $self->httpd_location_section($gq, $n, $v) . "\n";
 		$aliases .= "\"$n\" => '"
 				. $self->alias_class($v->{class}) . "',\n";
 	}
 
-	wf('conf/httpd.conf', $ht_in);
-	my $ap = abs_path('.');
-	$ht_in =~ s/\@ServerRoot\@\/lib/$ap\/blib\/lib/g;
-	$ht_in =~ s/\@ServerRoot\@/$ap/g;
-	wf('t/conf/my.conf', $ht_in);
-
-	$self->with_lib_dir('t', sub {
-		$self->write_pm_file('T::Test', <<ENDS, 1);
-use base 'Apache::SWIT::Test';
-use $tree->{session_class};
-
-__PACKAGE__->root_location('$rl');
-__PACKAGE__->make_aliases(
-$aliases
-);
-
-sub new {
-	my (\$class, \$args) = \@_;
-	\$args->{session_class} = '$sess_class'
-		unless exists(\$args->{session_class});
-	return \$class->SUPER::new(\$args);
-}
-
-1;
-ENDS
-	});
+	mkpath_write_file('blib/conf/httpd.conf', $ht_in);
+	$self->makefile_class->deploy_httpd_conf("blib", "blib");
+	$self->file_writer->write_t_t_test_pm({
+		session_class => $tree->{session_class}
+		, root_location => $tree->{root_location}
+		, aliases => $aliases, httpd_session_class =>
+			$self->session_class_for_httpd_conf($tree) });
 	return $tree;
 }
 
 sub remove_file {
 	my ($self, $file) = @_;
+	swmani_filter_out($file);
 	unlink($file);
-	open(my $fh, 'MANIFEST');
-	my @lines = grep { !(/$file/) } <$fh>;
-	close $fh;
-	wf('MANIFEST', join("", @lines));
 }
 
 =head2 remove_page(page)
@@ -558,7 +429,7 @@ Removes page and related files. Page is relative to the root location
 =cut
 sub remove_page {
 	my ($class, $page) = @_;
-	my $tree = $class->load_yaml_conf;
+	my $tree = Apache::SWIT::Maker::Config->instance;
 	my $ep = lc($page);
 	$ep =~ s/::/\//g;
 	my $p = delete $tree->{pages}->{$ep} or die "Unable to find $page";
@@ -566,129 +437,58 @@ sub remove_page {
 	$module_file =~ s/::/\//g;
 	$class->remove_file($module_file);
 	$class->remove_file($p->{entry_points}->{r}->{template});
-	YAML::DumpFile('conf/swit.yaml', $tree);
-}
-
-sub get_makefile_rules {
-	my $rules = YAML::LoadFile('conf/makefile_rules.yaml')
-		or die "No makefile rules found";
-	my $res = "";
-	for my $r (@$rules) {
-		$res .= join(' ',  @{ $r->{targets} }) . " :: ";
-		$res .= join(' ', @{ $r->{dependencies} }) . "\n\t";
-		$res .= join("\n\t", @{ $r->{actions} }) . "\n\n";
-	}
-	return $res;
+	$tree->save;
 }
 
 sub add_db_class {
 	my ($self, $table) = @_;
-	my $ct = conv_table_to_class($table);
-	my $c = $self->root_class . "::DB::" . $ct;
-	$self->file_writer->write_db_pm({ class => $c, table => $table
-			, root => $self->root_class }
-			, { path =>  "lib/$c.pm" });
-	return $ct;
+	$self->skel_db_class->new({ table => $table })->write_output;
 }
+
+sub use_to_extract { return conv_eval_use($_[1]); }
 
 sub _extract_columns {
 	my ($self, $c) = @_;
 	push @INC, "t", "lib";
-	eval "use T::TempDB";
-	die "Cannot use T::TempDB: $@" if $@;
-	eval "use $c";
-	die "Cannot use $c: $@" if $@;
+	conv_eval_use('T::TempDB');
+	$c = $self->use_to_extract($c);
 	my %pc = map { ($_, 1) } $c->primary_columns;
 	return grep { !$pc{$_} } $c->columns;
 }
 
 sub scaffold {
 	my ($self, $table) = @_;
-	my $ct = $self->add_db_class($table);
-	my $db_class = $self->root_class . "::DB::$ct";
+	$self->add_db_class($table);
+	my $ct = conv_table_to_class($table);
+	my $db_class = Apache::SWIT::Maker::Config->instance->root_class
+				. "::DB::$ct";
 
 	my @cols = $self->_extract_columns($db_class);
-	my $tt_cols = join("\n", map { "[% $_ %]" } @cols);
+	my $args = { columns => [ @cols ], table => $table };
+	$self->scaffold_dual_test->new($args)->write_output;
 
-	my $cr_sub = sub {
-		my ($bn, $f, $c, %args) = @_;
-		my $e = $self->_create_new_entry("$ct\::$bn");
-		$self->file_writer->write_tt_file({ content => $c }
-			, { path => $e->{entry_points}->{r}->{template} });
-		$self->file_writer->$f({
-			full_class => $e->{class},
-			fields => [ map { { field => $_ } } @cols ],
-			db_class => $db_class,
-			%args,
-		}, { path => "lib/" . $e->{class} . ".pm" });
-		return $e;
-	};
-	my $fe = $cr_sub->("Form", "write_form_ht_page_pm"
-			, "$tt_cols\n[% ht_id %]\n[% submit_button %]"
-				. "\n[% delete_button %]");
-	my $ie = $cr_sub->("Info", "write_info_ht_page_pm"
-			, "$tt_cols\n[% edit_link %]");
+	$self->_make_page("$ct\::$_", $args, "scaffold_".lc($_)
+		, "scaffold_".lc($_)."_template") for qw(List Info Form);
+}
 
-	my $cols99 = join(",\n\t", map { "$_ => '99'" } @cols);
-	my $col1 = shift(@cols);
-	my $le = $cr_sub->("List", "write_list_ht_page_pm"
-			, "[% FOREACH $table\_list %]\n$tt_cols\n[% END %]"
-			, list_name => "$table\_list", link_field => $col1);
-	my $cols99_list = join(",\n\t", map { "$_ => '99'" } @cols);
-	$cols99_list .= "," if $cols99_list;
+sub run_server {
+	my $dn = abs_path(dirname($0));
+	$ENV{__APACHE_SWIT_RUN_SERVER__} = 1;
+	system("make test_apache");
+}
 
-	my ($lt, $ft, $it) = map { lc($ct) . "_$_" } qw(list form info);
-
-	my $cols_empty = join(",\n\t", map { "$_ => ''" } @cols);
-	my $form_ok_test = "\$t->ok_ht_$ft\_r(make_url => 1, ht => {\n\t"
-		. "$cols_empty\n});\n\$t->ht_$ft\_u(ht => {\n\t$cols99\n});";
-
-	my $cols333 = $cols99;
-	$cols333 =~ s/99/333/g;
-	my $cols333_list = $cols99_list;
-	$cols333_list =~ s/99/333/g;
-
-	$self->file_writer->write_dual_test(
-			conv_next_dual_test(rf('MANIFEST')) . "_$table", 11
-			, <<ENDC
-\$t->ok_ht_$ft\_r(make_url => 1, ht => {
-	$cols_empty
-});
-\$t->ht_$ft\_u(ht => {
-	$cols99
-});
-\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
-	$cols99_list HT_SEALED_$col1 => [ 99, 1 ],
-} ] });
-\$t->ok_follow_link(text => 99);
-\$t->ok_ht_$it\_r(param => { HT_SEALED_edit_link => 1 }, ht => {
-	$cols99, HT_SEALED_edit_link => [ 1 ],
-});
-
-\$t->ok_follow_link(text => 'Edit');
-\$t->ok_ht_$ft\_r(param => { HT_SEALED_ht_id => 1 }, ht => {
-	$cols99
-});
-
-\$t->ht_$ft\_u(ht => {
-	$cols333, HT_SEALED_ht_id => 1,
-});
-\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [ {
-	$cols333_list HT_SEALED_$col1 => [ 333, 1 ],
-} ] });
-
-\$t->ok_follow_link(text => 333);
-\$t->ok_follow_link(text => 'Edit');
-\$t->ok_ht_$ft\_r(param => { HT_SEALED_ht_id => 1 }, ht => {
-	$cols333, HT_SEALED_ht_id => 1, delete_button => 'Delete',
-});
-\$t->ht_$ft\_u(button => [ delete_button => 'Delete' ], ht => {
-	$cols333, HT_SEALED_ht_id => 1,
-});
-
-\$t->ok_ht_$lt\_r(make_url => 1, ht => { $table\_list => [] });
-ENDC
-	, map { $_->{class} } ($le, $fe, $ie));
+sub override {
+	my ($self, $page) = @_;
+	my $c = Apache::SWIT::Maker::Config->instance;
+	my $p = $c->find_page($page) or die "Unable to find $page page";
+	my $rc = $c->root_class;
+	my $cc = $p->class;
+	$cc =~ /^$rc\::(\w+)::UI::(\S+)$/
+		or die "Unable to match " . Dumper($p);
+	$p->class("$rc\::UI::$1\::$2");
+	$p->do_not_use(undef);
+	$self->add_class($p->class, "use base '$cc';");
+	$c->save;
 }
 
 1;

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -28,7 +28,16 @@ $res = `make test_direct 2>&1`;
 unlike($res, qr/Failed/); # or readline(\*STDIN);
 like($res, qr/success/);
 
+append_file('t/dual/001_load.t', <<'ENDS');
+if ($t->mech) {
+	$t->mech->get_base('/ttt/www/main.css');
+	diag($t->mech->content);
+}
+ENDS
+
 $res = `make test_apache 2>&1`;
 unlike($res, qr/Failed/); # or readline(\*STDIN);
 like($res, qr/success/);
+like($res, qr/CSS/);
+
 chdir '/';

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 21;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
@@ -74,7 +74,34 @@ hoho
 1;
 EM
 
+eval { $fw->write_m1({ c => 'hoho' }, { class => 'M1::M2' }); };
+like($@, qr/refusing/);
+
+append_file("$td/lib/M1/M2.pm", "gjjg");
+eval { $fw->write_m1({ c => 'hoho' }
+		, { class => 'M1::M2', overwrite => 1 }); };
+is($@, '');
+unlike(read_file("$td/lib/M1/M2.pm"), qr/gjjg/);
+
 my $cur = H->new;
 is($cur->root_dir, '.');
 undef $cur;
 
+my $str = "ggg";
+H->add_file({ name => 'dyn/a', path => sub {
+	my $opts = shift;
+	$opts->{vars}->{v} = 'hi';
+	return "bb/$str.s";
+} }, <<EM);
+[% c %]
+[% v %]
+EM
+
+$fw->write_dyn_a({ c => 'mu' });
+is(read_file("$td/bb/ggg.s"), <<EM);
+mu
+hi
+EM
+
+$fw->write_dyn_a({ c => 'mu' }, { overwrite => 1, manifest => 1 });
+like(read_file("$td/MANIFEST"), qr/ggg\.s/);

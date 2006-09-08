@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 use YAML;
 use Data::Dumper;
 
@@ -17,12 +17,14 @@ ok(-f 'LICENSE');
 
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
 is(-f './t/001_load.t', undef);
+isnt(-f './conf/startup.pl', undef);
 
-my $tree = YAML::LoadFile('conf/swit.yaml');
+my $tree = Apache::SWIT::Maker::Config->instance;
 $tree->{pages}->{"index"}->{entry_points}->{r}->{foo} = 'boo';
-YAML::DumpFile('conf/swit.yaml', $tree);
+$tree->save;
 
-$tree = Apache::SWIT::Maker->load_yaml_conf;
+undef $Apache::SWIT::Maker::Config::_instance;
+$tree = Apache::SWIT::Maker::Config->instance;
 my $ind = $tree->{pages}->{"index"};
 is($ind->{entry_points}->{r}->{foo}, 'boo');
 
@@ -37,7 +39,8 @@ chdir $td;
 $mt->make_swit_project(root_class => 'MU');
 $mt->install_subsystem('TheSub');
 
-$tree = Apache::SWIT::Maker->load_yaml_conf;
+undef $Apache::SWIT::Maker::Config::_instance;
+$tree = Apache::SWIT::Maker::Config->instance;
 $ind = $tree->{pages}->{"thesub/index"};
 isnt($ind, undef) or diag(Dumper($tree));
 is($ind->{entry_points}->{r}->{template}, 'templates/thesub/index.tt');

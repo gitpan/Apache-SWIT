@@ -10,6 +10,7 @@ use Test::More;
 use HTML::Tested::Seal;
 use Carp;
 use Data::Dumper;
+use File::Slurp;
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
@@ -110,6 +111,27 @@ sub _mech_ht_update {
 			$handler_class->ht_root_class, $r, $args{ht});
 	$args{fields} = $r->_param;
 	delete $args{ht};
+
+	goto OUT unless $r->upload;
+
+	if (my $form_number = $args{'form_number'}) {
+		$self->mech->form_number($form_number);
+	} elsif (my $form_name = $args{'form_name'}) {
+		$self->mech->form_name($form_name);
+	}
+	my $form = $self->mech->current_form;
+	confess "Form method is not POST" if $form->method ne "POST";
+	confess "Form enctype is not multipart/form-data"
+	           if $form->enctype ne "multipart/form-data";
+
+	for my $u ($r->upload) {
+		my $i = $self->mech->current_form->find_input($u->name)
+			or die "Unable to find input for " . $u->name;
+		my $c = read_file($u->fh);
+		$i->content($c);
+		$i->filename($u->filename);
+	}
+OUT:
 	return $self->_mech_update($handler_class, %args);
 }
 
@@ -141,7 +163,9 @@ sub make_aliases {
 		my $r_func = "ht_$n\_r";
 		$r_func =~ s/\//_/g;
 		*{ "$class\::ok_$r_func" } = sub {
-			is_deeply([ shift()->$r_func(@_) ], []) or carp('#');
+			my $res = is_deeply([ shift()->$r_func(@_) ], []);
+			carp('#') unless $res;
+			return $res;
 		};
 	}
 }
@@ -155,5 +179,25 @@ SKIP: {
 				. "in\n" . $self->mech->content);
 };
 }
+
+sub ok_get {
+	my ($self, $uri, $status) = @_;
+	$status ||= 200;
+SKIP: {
+	skip "Not in apache test", 1 unless $self->mech;
+	$uri = $self->root_location . "/$uri" unless ($uri =~ /^\//);
+	$self->mech->get_base($uri);
+	is($self->mech->status, $status) or carp("# Unable to get: $uri");
+};
+}
+
+sub content_like {
+	my ($self, $qr) = @_;
+SKIP: {
+	skip "Not in apache test", 1 unless $self->mech;
+	like($self->mech->content, $qr) or carp("#");
+};
+}
+
 
 1;

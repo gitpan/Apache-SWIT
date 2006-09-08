@@ -7,6 +7,7 @@ use Data::Dumper;
 use File::Path qw(rmtree);
 use Test::TempDatabase;
 use Apache::SWIT::Test::ModuleTester;
+use File::Slurp;
 
 BEGIN { use_ok('Apache::SWIT::Maker'); }
 
@@ -20,7 +21,7 @@ chdir $mt->root_dir;
 $mt->make_swit_project;
 ok(-f 'LICENSE');
 
-my $swit_str = Apache::SWIT::Maker::rf('conf/swit.yaml');
+my $swit_str = read_file('conf/swit.yaml');
 like($swit_str, qr/TTT/);
 like($swit_str, qr/\/ttt/);
 like($swit_str, qr/TTT::Session/);
@@ -31,8 +32,8 @@ ok(-f "lib/TTT/Session.pm");
 ok(-f 't/dual/newdir/987_test.t');
 
 $mt->replace_in_file('t/apache_test_run.pl', '\);', ', "gogog");');
-$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 5');
-Apache::SWIT::Maker::wf('>t/dual/001_load.t', <<'ENDM');
+$mt->replace_in_file('t/dual/001_load.t', '=> 6', '=> 8');
+append_file('t/dual/001_load.t', <<'ENDM');
 if ($t->mech) {
 	ok(-d $ENV{SWIT_TEST_DIR});
 	ok(-d $ENV{SWIT_TEST_DIR} . "/gogog");
@@ -52,14 +53,14 @@ like($tres, qr/Files=2/);
 unlike($tres, qr/Error/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
-ok(-f 'conf/httpd.conf');
+ok(-f 'blib/conf/httpd.conf');
 is_deeply([ glob("/tmp/*") ], \@tmp_contents);
 
 is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);
 
 #diag($td);
 #readline(\*STDIN);
-like(Apache::SWIT::Maker::rf('t/logs/access_log'), qr/ttt\/index.*200/);
+like(read_file('t/logs/access_log'), qr/ttt\/index.*200/);
 
 # Check that we run configuration only once
 $tres = join('', `make 2>&1`);
@@ -81,7 +82,7 @@ unlike($tres, qr/t\/001_load/);
 like($tres, qr/dual/);
 
 `./scripts/swit_app.pl add_page First::Page`;
-like(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
+like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
 
 ok(-f "templates/first/page.tt");
 ok(-f "lib/TTT/UI/First/Page.pm");
@@ -90,17 +91,17 @@ open(my $fh, ">>conf/httpd.conf.in");
 print $fh "# Custom\n";
 close $fh;
 
-my $ht_conf = Apache::SWIT::Maker::rf('conf/httpd.conf.in');
+my $ht_conf = read_file('conf/httpd.conf.in');
 unlike($ht_conf, qr/TTT::Session/);
 like($ht_conf, qr/SessionClass/);
 
 `make 2>&1`;
-$ht_conf = Apache::SWIT::Maker::rf('conf/httpd.conf');
+$ht_conf = read_file('blib/conf/httpd.conf');
 like($ht_conf, qr/Location \/ttt\/first\/page/);
 like($ht_conf, qr/Custom/);
 like($ht_conf, qr/TTT::Session/);
 
-my $mani = Apache::SWIT::Maker::rf('MANIFEST');
+my $mani = read_file('MANIFEST');
 like($mani, qr/TTT\/UI\/First\/Page\.pm/);
 like($mani, qr/templates\/first\/page\.tt/);
 like($mani, qr/conf\/httpd\.conf\.in/);
@@ -115,23 +116,24 @@ like($tres, qr/extra/);
 ok(! -f 't/T/Test.pm');
 ok(! -d 't/htdocs');
 ok(! -d 't/logs');
-ok(! -f 'conf/httpd.conf');
+ok(! -f 'blib/conf/httpd.conf');
 is_deeply([ glob('t/conf/*') ], [ 't/conf/extra.conf.in' ]);
 
+undef $Apache::SWIT::Maker::Config::_instance;
 Apache::SWIT::Maker->remove_page('First::Page');
-unlike(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
-$mani = Apache::SWIT::Maker::rf('MANIFEST');
+unlike(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
+$mani = read_file('MANIFEST');
 unlike($mani, qr/TTT\/UI\/First\/Page\.pm/);
 unlike($mani, qr/templates\/first\/page\.tt/);
 ok(! -f "templates/first/page.tt");
 ok(! -f "lib/TTT/UI/First/Page.pm");
 
 Apache::SWIT::Maker->new->add_ht_page('First::Page');
-like(Apache::SWIT::Maker::rf('conf/swit.yaml'), qr/TTT::UI::First::Page/);
-like(Apache::SWIT::Maker::rf('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
+like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
+like(read_file('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
 ok(require("lib/TTT/UI/First/Page.pm"));
 
-my $at = Apache::SWIT::Maker::rf('t/apache_test.pl');
+my $at = read_file('t/apache_test.pl');
 open($fh, ">t/apache_test.pl");
 print $fh "use TTT::UI::First::Page;\n$at";
 close $fh;

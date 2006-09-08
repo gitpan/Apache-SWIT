@@ -1,12 +1,14 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 22;
+use Test::More tests => 27;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
 
-BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
+BEGIN { use_ok('Apache::SWIT::Test::ModuleTester');
+	use_ok('Apache::SWIT::Maker::Conversions');
+}
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 chdir $mt->root_dir;
@@ -27,6 +29,11 @@ ok(-f 'lib/TTT/UI/TheTable/Form.pm');
 ok(-f 'lib/TTT/UI/TheTable/Info.pm');
 ok(-f 't/dual/011_the_table.t');
 
+my $form_tt = read_file('templates/thetable/form.tt');
+like($form_tt, qr/Col1:/);
+like($form_tt, qr/Col2:/);
+like($form_tt, qr/Edit TheTable/);
+
 my $tstr = read_file('t/dual/011_the_table.t');
 unlike($tstr, qr/first/);
 unlike($tstr, qr/\bid/);
@@ -44,13 +51,21 @@ like($res, qr/success/);
 # HTML::Form input readonly warning on hidden
 unlike($res, qr/readonly/);
 
+my $mf = read_file('MANIFEST');
+is(conv_next_dual_test($mf), '021');
+
 @res = `./scripts/swit_app.pl scaffold one_col_table 2>&1`;
 is(@res, 0) or diag(join('', @res));
 ok(-f 'lib/TTT/DB/OneColTable.pm');
-ok(-f 't/dual/021_one_col_table.t');
+isnt(-f 't/dual/021_one_col_table.t', undef) or do {
+	diag($mt->root_dir);
+	# readline(\*STDIN);
+};
 
 $res = `$make test_direct APACHE_TEST_FILES=t/dual/021_one_col_table.t 2>&1`;
-unlike($res, qr/Failed/); # or readline(\*STDIN);
+unlike($res, qr/Failed/) or do {
+	diag(read_file('t/dual/021_one_col_table.t'));
+};
 like($res, qr/success/);
 
 chdir '/';

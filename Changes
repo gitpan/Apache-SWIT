@@ -1,4 +1,0 @@
-0.06
-	- set Class::DBI::Weaken_Is_Available = 0 to avoid using C::DBI cache
-
-

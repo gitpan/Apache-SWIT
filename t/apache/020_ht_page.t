@@ -1,8 +1,9 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 13;
+use Test::More tests => 18;
 use File::Temp qw(tempdir);
+use File::Slurp;
 
 BEGIN { use_ok('Apache::SWIT::HTPage'); 
 	use_ok('T::HTPage');
@@ -19,17 +20,23 @@ Apache::SWIT::Test->make_aliases(another_page => 'T::HTPage',
 my $t = Apache::SWIT::Test->new;
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => { 
 		hello => 'world', HT_SEALED_hid => 'secret', v1 => undef, });
-$t->ok_ht_another_page_r(base_url => '/test/ht_page', 
+my $res = $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { v1 => 'hi', },
 	ht => { hello => 'world', v1 => 'hi', });
+is($res, 1);
 
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { HT_SEALED_hid => 'momo', },
 	ht => { HT_SEALED_hid => 'momo' });
 
-my @x = $t->ht_another_page_u(ht => { file => "$td/uuu" });
+write_file("$td/up.txt", "Hello\nworld\n");
+
+my @x = $t->ht_another_page_u(ht => { file => "$td/uuu"
+					, up => "$td/up.txt" });
+my $ur = read_file("$td/uuu");
 is(unlink("$td/uuu"), 1);
 is_deeply(\@x, [ '/test/basic_handler' ]);
+is($ur, "up.txt\nHello\nworld\n");
 
 $ENV{SWIT_HAS_APACHE} = 1;
 $t = Apache::SWIT::Test->new;
@@ -39,10 +46,18 @@ $t->ok_ht_another_page_r(base_url => '/test/ht_page/r', ht => {
 		, ht => { hello => 'life' });
 isnt($x[0], undef);
 
-@x = $t->ht_another_page_u(ht => { file => "$td/uuu" });
+is(read_file("$td/up.txt"), "Hello\nworld\n");
+@x = $t->ht_another_page_u(ht => { file => "$td/uuu", up => "$td/up.txt" });
+$ur = read_file("$td/uuu");
 is(unlink("$td/uuu"), 1);
 is_deeply(\@x, [ 'hhhh' ]);
+is($ur, "up.txt\nHello\nworld\n");
 
 $t->ok_ht_and_another_r(base_url => '/test/ht_page/r', ht => { 
 		hello => 'world' });
 
+eval {
+	$t->ht_another_page_u(form_name => 'aa'
+			, ht => { inv_up => "$td/up.txt" });
+};
+like($@, qr/multipart/);

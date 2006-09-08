@@ -5,32 +5,46 @@ package Apache::SWIT::Subsystem::Maker;
 use base 'Apache::SWIT::Maker';
 use Data::Dumper;
 use Apache::SWIT::Maker::GeneratorsQueue;
+use Apache::SWIT::Maker::Manifest;
+use Apache::SWIT::Subsystem::Makefile;
+use File::Slurp;
+use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Subsystem::Skeleton::Class;
+use Apache::SWIT::Subsystem::Skeleton::PageClasses;
 
-sub makefile_install_string {
-	my $rc = shift()->root_class;
-	return <<ENDM;
-sub install {
-	my \$res = shift()->SUPER::install(\@_);
-	\$res =~ s/pure_(\\w+)_install ::/pure_\$1\_install ::\n\tperl -I lib -M$rc\::Maker -e '$rc\::Maker->new->write_installation_content_pm'/g;
-	return \$res;
+sub makefile_class { return 'Apache::SWIT::Subsystem::Makefile'; }
+
+my %_skel_overrides = qw(skel_db_class DB::Class dual_001_load Dual001Load
+		scaffold_dual_test Scaffold::DualTest
+		scaffold_form Scaffold::Form
+		scaffold_list Scaffold::List
+		scaffold_info Scaffold::Info);
+
+while (my ($n, $v) = each %_skel_overrides) {
+	my $sc = conv_eval_use("Apache::SWIT::Subsystem::Skeleton::" . $v);
+	no strict 'refs';
+	*{ __PACKAGE__ . "::" . $n } = sub { return $sc; };
 }
-ENDM
+
+for (qw(DB::Class)) {
+	no strict 'refs';
+	unshift @{ "Apache::SWIT::Subsystem::Skeleton::$_\::ISA" }
+			, 'Apache::SWIT::Subsystem::Skeleton::Class';
 }
 
 sub make_this_subsystem_dumps {
 	my $self = shift;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
-	my $orig_tree = $gq->tree;
+	my $orig_tree = Apache::SWIT::Maker::Config->instance;
+	undef $Apache::SWIT::Maker::Config::_instance;
 	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
 		$orig_tree->{pages}->{$n} = $gq->run('dump_page_entry', $v);
 	}
-	open(my $fh, 'MANIFEST');
-	my @dual_tests = map { s/t\/dual\///; $_ } 
-				grep { /t\/dual\/.+\.t$/ } <$fh>;
-	my %tests = map { 
-		($_, Apache::SWIT::Maker::rf("t/dual/$_")) 
+	my @dual_tests = map { s#t/dual/##; $_ } swmani_dual_tests();
+	my %tests = map {
+		my $t = read_file("t/dual/$_");
+		($_, $t)
 	} @dual_tests;
-	close $fh;
 	$orig_tree->{dumped_tests} = \%tests;
 	return (original_tree => $orig_tree);
 }
@@ -38,27 +52,16 @@ sub make_this_subsystem_dumps {
 sub write_installation_content_pm {
 	my $self = shift;
 	my %dumps = $self->make_this_subsystem_dumps;
-	my $res = "";
-	while (my ($n, $v) = each %dumps) {
-		my $v_str = Dumper($v);
-		$res .= <<ENDS;
-sub this_subsystem_$n {
-	my $v_str;
-	return \$VAR1;
-}
-ENDS
-	}
-
-	$self->with_lib_dir('blib/lib', sub {
-		$self->write_pm_file(
-			$self->root_class . "::InstallationContent", $res, 1);
-	});
+	$self->file_writer->write_blib_lib_installationcontent_pm({
+		dumps => [ map {
+			{ name => $_, 'dump' => Dumper($dumps{$_}) }
+	} keys %dumps ] })
 }
 
 sub write_t_module {
 	my $self = shift;
 	my $conn_class = $self->connection_class;
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	$self->write_pm_file("T::$rc", <<ENDM);
 use base '$rc';
 __PACKAGE__->inherit_classes("$conn_class");
@@ -66,11 +69,11 @@ ENDM
 }
 
 sub t_dbi_base_class { return "T::" . shift()->SUPER::t_dbi_base_class; }
-sub use_ok_in_010_db_t { return 'T::' . shift()->root_class; }
+sub use_ok_in_010_db_t { return 'T::' . Apache::SWIT::Maker::Config->instance->root_class; }
 
 sub rewrite_root_module {
 	my $self = shift;
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	$self->write_pm_file($rc, <<ENDM);
 use base '$rc\::PageClasses';
 
@@ -86,7 +89,7 @@ ENDM
 
 sub write_950_install_t {
 	my $self = shift;
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	$self->add_test('t/950_install.t', 1, <<ENDT);
 use Apache::SWIT::Maker;
 use Apache::SWIT::Test::ModuleTester;
@@ -107,12 +110,14 @@ ENDT
 }
 
 sub more_stuff_in_httpd_conf_in { 
-	return 'PerlModule T::' . shift()->root_class; 
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	return 'PerlModule T::' . "$rc\nPerlRequire "
+			. '@ServerRoot@/conf/startup.pl' . "\n"; 
 }
 
 sub write_maker_pm {
 	my $self = shift;
-	$self->write_pm_file($self->root_class . "::Maker", <<ENDM);
+	$self->write_pm_file(Apache::SWIT::Maker::Config->instance->root_class . "::Maker", <<ENDM);
 use base 'Apache::SWIT::Subsystem::Maker';
 ENDM
 }
@@ -137,75 +142,23 @@ sub connection_class { return "T::" . shift()->SUPER::connection_class }
 sub add_class {
 	my ($self, $new_class, $str) = @_;
 	$self->SUPER::add_class($new_class, $str);
-	my $tree = $self->load_yaml_conf;
-	$tree->{classes_for_inheritance} = [] 
-		unless $tree->{classes_for_inheritance};
-	push @{ $tree->{classes_for_inheritance} }, $new_class;
-	$self->dump_yaml_conf($tree);
+	Apache::SWIT::Subsystem::Skeleton::PageClasses->add($new_class);
 }
 
 sub regenerate_httpd_conf {
 	my $self = shift;
-	my $rc = $self->root_class;
-	my $tree = $self->SUPER::regenerate_httpd_conf;
-	my $page_classes = join("\n", map {
-		s/^$rc\:://;
-		$_;
-	} @{ $tree->{classes_for_inheritance} }) . "\n";
-	my $funcs = "";
-	for my $p (values %{ $tree->{pages} }) {
-		my $base = $p->{class};
-		my $root = "$base\::Root";
-
-		$base =~ s/^$rc\:://;
-		$page_classes .= "$base\n";
-
-		my $f_stem = lc($base);
-		$f_stem =~ s/::/_/g;
-
-		my $t_basename = $p->{entry_points}->{r}->{template};
-		$t_basename =~ s/templates\///;
-
-		$funcs .= <<ENDF;
-__PACKAGE__->mk_classdata('$f_stem\_root_class', '$root');
-__PACKAGE__->mk_classdata('$f_stem\_template', '$t_basename');\n
-ENDF
-	}
-	$self->with_lib_dir("blib/lib", sub {
-		$self->write_pm_file("$rc\::PageClasses", <<ENDM, 1);
-use base 'Apache::SWIT::Subsystem::Base';
-
-sub classes_for_inheritance { return qw($page_classes); }
-
-$funcs
-ENDM
-	});
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	$self->SUPER::regenerate_httpd_conf;
+	Apache::SWIT::Subsystem::Skeleton::PageClasses->new->write_output;
 }
 
-sub initial_swit_yaml_tree {
-	my $res = shift()->SUPER::initial_swit_yaml_tree;
-	push @{ $res->{generators} }, 'Apache::SWIT::Subsystem::Generator';
-	return $res;
-}
-
-sub base_func_name {
-	my ($self, $entry) = @_;
-	my $base = $entry->{class};
-	my $root = $self->root_class;
-	$base =~ s/$root\:://;
-	$base =~ s/::/_/g;
-	return lc($base)
-}
-
-sub ht_root_class_name {
-	my ($self, $entry) = @_;
-	my $func = $self->base_func_name($entry) . "_root_class";
-	return "shift()->main_subsystem_class->$func";
+sub write_swit_yaml {
+	my $gens = Apache::SWIT::Maker::Config->instance->generators;
+	push @$gens, 'Apache::SWIT::Subsystem::Generator';
+	shift()->SUPER::write_swit_yaml;
 }
 
 sub alias_class { return "T::" . $_[1]; }
-
-sub dual_use_ok_class { return "T::" . shift()->root_class; }
 
 sub db_base_pm_connection {
 	return 'shift()->main_subsystem_class->connection_class';
@@ -218,18 +171,18 @@ sub session_class_for_httpd_conf {
 sub install_subsystem {
 	my ($self, $module) = @_;
 	my $lcm = lc($module);
-	my $rc = $self->root_class;
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	my $full_name =  $rc . '::' . $module;
 
 	my $orig_tree = $self->this_subsystem_original_tree;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new({
 			generator_classes => $orig_tree->{generators} });
-	my $tree = $gq->tree;
+	my $tree = Apache::SWIT::Maker::Config->instance;
 	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
 		$tree->{pages}->{"$lcm/$n"} = 
 			$gq->run('install_page_entry', $v, $module);
 	}
-	$self->dump_yaml_conf($tree);
+	$tree->save;
 
 	my $sn = $self->this_subsystem_name;
 	my $conn_name = $self->SUPER::connection_class;
@@ -240,14 +193,13 @@ sub templates_dir { return 'templates/$lcm'; }
 
 __PACKAGE__->inherit_classes('$conn_name');
 ENDM
-	Apache::SWIT::Maker::wf('>conf/httpd.conf.in', 
-			"PerlModule $full_name\n");
+	append_file('conf/httpd.conf.in', "PerlModule $full_name\n");
 
 	my $tests = $self->this_subsystem_original_tree->{dumped_tests};
 	while (my ($n, $t) = each %$tests) {
 		$t =~ s/T::$sn/$full_name/g;
 		$t =~ s/ht_([^\(\)]+_[ru])/ht_$lcm\_$1/g;
-		Apache::SWIT::Maker::mani_wf("t/dual/$lcm/$n", $t);
+		swmani_write_file("t/dual/$lcm/$n", $t);
 	}
 }
 
@@ -259,14 +211,21 @@ sub this_subsystem_name {
 
 sub get_installation_content {
 	my ($self, $func) = @_;
-	my $ic = $self->this_subsystem_name . "::InstallationContent";
-	eval "use $ic";
-	die "Unable to use $ic: $@" if $@;
-	return $ic->$func;
+	return conv_eval_use($self->this_subsystem_name
+			. "::InstallationContent")->$func;
 }
 
 sub this_subsystem_original_tree { 
-	return shift()->get_installation_content('this_subsystem_original_tree');
+	return shift()->get_installation_content(
+				'this_subsystem_original_tree');
+}
+
+sub use_to_extract {
+	system("make > /dev/null");
+	use lib 'blib/lib';
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	conv_eval_use('T::' . $rc);
+	return 'T::' . $_[1];
 }
 
 1;

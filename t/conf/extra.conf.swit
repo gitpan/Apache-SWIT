@@ -68,4 +68,4 @@ PerlModule T::SessPage
   PerlHandler T::SessPage->swit_update_handler
 </Location>
 
-
+Alias /test/www @ServerRoot@/public_html 

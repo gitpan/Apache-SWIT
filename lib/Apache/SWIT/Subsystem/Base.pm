@@ -3,19 +3,16 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Subsystem::Base;
 use base 'Class::Data::Inheritable';
+use Apache::SWIT::Maker::Conversions;
 
 __PACKAGE__->mk_classdata('connection_class');
 __PACKAGE__->mk_classdata('templates_dir', 'templates/');
 
 sub inherit_from_class {
 	my ($class, $root, $basename) = @_;
-	my $base_class = "$root\::$basename";
-	eval "use $base_class";
-	die "Unable to use $base_class: $@" if $@;
-
 	my $package = "$class\::$basename";
 	no strict 'refs';
-	push @{ *{ "$package\::ISA" } }, $base_class
+	push @{ *{ "$package\::ISA" } }, conv_eval_use("$root\::$basename")
 		unless @{ *{ "$package\::ISA" } };
 	push @{ *{ "$package\::ISA" } }, "Class::Data::Inheritable"
 		unless $package->can('mk_classdata');
@@ -32,8 +29,7 @@ sub inherit_from_class {
 
 sub inherit_classes {
 	my ($class, $conn_class) = @_;
-	eval "use $conn_class";
-	die "Unable to use $conn_class: $@" if $@;
+	conv_eval_use($conn_class);
 
 	my ($root_class, @others) = $class->classes_for_inheritance;
 	my @packages = map { 

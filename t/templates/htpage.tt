@@ -1,9 +1,13 @@
 <html>
 <body>
-<form action="u">
+<form action="u" method="post" enctype="multipart/form-data">
 hello [% hello %]
 file: [% file %]
+upload: [% up %]
 [% hid %]
+</form>
+<form name="aa" method="post">
+[% inv_up %]
 </form>
 </body>
 </html>

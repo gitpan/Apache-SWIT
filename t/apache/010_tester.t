@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 24;
+use Test::More tests => 30;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -39,6 +39,8 @@ is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
 # does nothing
 $t->ok_follow_link(text => 'This');
+$t->ok_get('/test/www/hello.html');
+$t->content_like(qr/HELLO, HTML/);
 
 @res = $t->res_r;
 is_deeply(\@res, [ { res => 'hhhh' } ])
@@ -91,3 +93,9 @@ ENDS
 
 # works
 $t->ok_follow_link(text => 'This');
+$t->ok_get('/test/www/hello.html');
+$t->content_like(qr/HELLO, HTML/);
+$t->ok_get('/test/www/nothing.html', 404);
+
+# relative to root location
+$t->ok_get('www/hello.html', 200);
