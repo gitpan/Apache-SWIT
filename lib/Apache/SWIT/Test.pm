@@ -3,7 +3,6 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Test;
 use base 'Class::Accessor', 'Class::Data::Inheritable';
-use Apache::SWIT::Test::Mechanize;
 use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
@@ -11,6 +10,8 @@ use HTML::Tested::Seal;
 use Carp;
 use Data::Dumper;
 use File::Slurp;
+use Apache::TestRequest;
+use WWW::Mechanize;
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
@@ -19,7 +20,7 @@ sub new {
 	my ($class, $args) = @_;
 	$args ||= {};
 	if ($ENV{SWIT_HAS_APACHE}) {
-		$args->{mech} = Apache::SWIT::Test::Mechanize->new;
+		$args->{mech} = WWW::Mechanize->new;
 	}
 	if ($args->{session_class}) {
 		$args->{session} = $args->{session_class}->new;
@@ -61,12 +62,18 @@ sub _direct_update {
 	return $self->_do_swit_update($handler_class, $r);
 }
 
+sub mech_get_base {
+	my ($self, $loc) = @_;
+	my $url = "http://" . Apache::TestRequest::hostport() . $loc;
+	return $self->mech->get($url);
+}
+
 sub _mech_render {
 	my ($self, $handler_class, %args) = @_;
 	my $goto = $args{base_url};
 	$goto = $self->root_location . "/" . $args{url_to_make} 
 			if ($args{make_url});
-	$self->mech->get_base($goto) if $goto;
+	$self->mech_get_base($goto) if $goto;
 	return $self->mech->content;
 }
 
@@ -186,7 +193,7 @@ sub ok_get {
 SKIP: {
 	skip "Not in apache test", 1 unless $self->mech;
 	$uri = $self->root_location . "/$uri" unless ($uri =~ /^\//);
-	$self->mech->get_base($uri);
+	$self->mech_get_base($uri);
 	is($self->mech->status, $status) or carp("# Unable to get: $uri");
 };
 }

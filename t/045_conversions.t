@@ -4,6 +4,7 @@ use warnings FATAL => 'all';
 use Test::More tests => 19;
 use File::Slurp;
 use File::Temp qw(tempdir);
+use Test::TempDatabase;
 
 BEGIN { use_ok('Apache::SWIT::Maker::Conversions');
 	use_ok('Apache::SWIT::Maker::Manifest');
@@ -11,6 +12,8 @@ BEGIN { use_ok('Apache::SWIT::Maker::Conversions');
 
 use Carp;
 BEGIN { $SIG{__WARN__} = sub { diag(Carp::longmess); } };
+
+Test::TempDatabase->become_postgres_user;
 
 is(conv_table_to_class('order'), 'Order');
 is(conv_table_to_class('customer_order'), 'CustomerOrder');

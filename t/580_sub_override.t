@@ -3,10 +3,13 @@ use warnings FATAL => 'all';
 
 use Test::More tests => 17;
 use File::Slurp;
+use Test::TempDatabase;
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester');
 	use_ok('Apache::SWIT::Subsystem::Maker');
 }
+
+Test::TempDatabase->become_postgres_user;
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 my $td = $mt->root_dir;

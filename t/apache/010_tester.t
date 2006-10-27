@@ -48,7 +48,7 @@ is_deeply(\@res, [ { res => 'hhhh' } ])
 
 $ENV{SWIT_HAS_APACHE} = 1;
 $t = Apache::SWIT::Test->new;
-isa_ok($t->mech, 'Apache::SWIT::Test::Mechanize');
+isa_ok($t->mech, 'WWW::Mechanize');
 @res = $t->the_page_r(base_url => '/test/swit/r');
 is_deeply(\@res, [ <<ENDS ]);
 <html>

@@ -47,7 +47,6 @@ lib/Apache/SWIT/HTPage.pm
 lib/Apache/SWIT/DB/Connection.pm
 lib/Apache/SWIT/Test.pm
 lib/Apache/SWIT/Session.pm
-lib/Apache/SWIT/Test/Mechanize.pm
 lib/Apache/SWIT/Test/ModuleTester.pm
 lib/Apache/SWIT/Test/Apache.pm
 t/100_session.t
