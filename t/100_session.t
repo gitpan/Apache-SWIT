@@ -3,11 +3,7 @@ use warnings FATAL => 'all';
 
 use Test::More tests => 24;
 
-use Carp;
-
-BEGIN { use_ok('Apache::SWIT::Session');
-	$SIG{__DIE__} = sub { diag(Carp::longmess()); };
-}
+BEGIN { use_ok('Apache::SWIT::Session'); }
 
 use File::Temp qw(tempdir);
 use File::Path qw(rmtree);

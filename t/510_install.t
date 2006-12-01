@@ -8,10 +8,6 @@ BEGIN { use_ok('Apache::SWIT::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
 }
 
-use Carp;
-BEGIN { $SIG{__DIE__} = sub { diag(Carp::longmess); } };
-
-
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 my $td = $mt->root_dir;
 chdir $td;

@@ -10,9 +10,6 @@ BEGIN { use_ok('Apache::SWIT::Maker::Conversions');
 	use_ok('Apache::SWIT::Maker::Manifest');
 }
 
-use Carp;
-BEGIN { $SIG{__WARN__} = sub { diag(Carp::longmess); } };
-
 Test::TempDatabase->become_postgres_user;
 
 is(conv_table_to_class('order'), 'Order');

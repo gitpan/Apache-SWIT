@@ -3,12 +3,10 @@ use warnings FATAL => 'all';
 
 use Test::More tests => 9;
 use Data::Dumper;
-use Carp;
 
 BEGIN { use_ok('T::Session');
 	use_ok('T::SessPage');
 	use_ok('Apache::SWIT::Test');
-	$SIG{__DIE__} = sub { print STDERR "# " . Carp::longmess(@_); };
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;

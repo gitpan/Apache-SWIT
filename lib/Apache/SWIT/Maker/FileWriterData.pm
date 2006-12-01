@@ -41,7 +41,7 @@ use warnings FATAL => 'all';
 package [% class %];
 use base '[% root %]::DB::Base';
 
-__PACKAGE__->set_up_table('[% table %]', ColumnGroup => 'Essential');
+__PACKAGE__->set_up_table('[% table %]', { ColumnGroup => 'Essential' });
 
 1;
 EM

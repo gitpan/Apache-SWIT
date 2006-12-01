@@ -9,9 +9,6 @@ use YAML;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
 
-use Carp;
-#BEGIN { $SIG{__DIE__} = sub { diag(Carp::longmess(@_)); }; }
-
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
 	use_ok('Apache::SWIT::Test::Apache');

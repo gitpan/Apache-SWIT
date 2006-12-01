@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Apache-SWIT
-version:      0.16
+version:      0.17
 version_from: lib/Apache/SWIT.pm
 installdirs:  site
 requires:
@@ -10,11 +10,11 @@ requires:
     Apache::Test:                  
     Class::Accessor:               
     Class::DBI:                    
-    Class::DBI::Pg:                
+    Class::DBI::Pg:                0.09
     DBIx::VersionedSchema:         
     ExtUtils::ModuleMaker:         
     File::Slurp:                   
-    HTML::Tested:                  0.17
+    HTML::Tested:                  0.19
     HTML::Tested::ClassDBI:        0.06
     IPC::Run:                      
     Template:                      
@@ -24,4 +24,4 @@ requires:
     YAML:                          
 
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: ExtUtils::MakeMaker version 6.30_01

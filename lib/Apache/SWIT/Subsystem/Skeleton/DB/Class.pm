@@ -14,7 +14,7 @@ use base '[% root_class_v %]::DB::Base';
 
 sub on_inheritance_end {
 	my $class = shift;
-	$class->set_up_table('[% table_v %]', ColumnGroup => 'Essential');
+	$class->set_up_table('[% table_v %]', { ColumnGroup => 'Essential' });
 }
 
 1;
