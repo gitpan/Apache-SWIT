@@ -5,6 +5,7 @@ use Test::More tests => 58;
 use Data::Dumper;
 use File::Slurp;
 use File::Temp qw(tempdir);
+use Carp;
 
 BEGIN {
 	use_ok('Apache::SWIT::Maker::Skeleton');
@@ -171,29 +172,44 @@ is_deeply($e, {
 }, class => 'Aaa::Bbb::UI::P' }) or diag(Dumper($e));
 $list->config_entry($e);
 
+sub is_with_diff {
+	my ($a, $b) = @_;
+	is($a, $b) or do {
+		write_file("$td/a.file", $a);
+		write_file("$td/b.file", $b);
+		diag(`diff -u $td/a.file $td/b.file`);
+		diag(Carp::confess("DDDDDD"));
+	};
+}
+
 my $res = $list->get_output;
-is($res, <<'ENDS');
+is_with_diff($res, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
+
+use HTML::Tested qw(HTV HT);
 
 package Aaa::Bbb::UI::P::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use Aaa::Bbb::DB::TheTab;
-__PACKAGE__->make_tested_link('col_a'
+__PACKAGE__->ht_add_widget(::HTV."::Link", 'col_a'
 		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ col_a => 'Primary' ]
 		, column_title => 'ColA');
-__PACKAGE__->make_tested_marked_value('col_b'
-		, cdbi_bind => '', column_title => 'ColB');
-__PACKAGE__->make_tested_marked_value('col_c'
-		, cdbi_bind => '', column_title => 'ColC');
+__PACKAGE__->ht_add_widget(::HTV."::Marked"
+			, 'col_b', cdbi_bind => ''
+			, column_title => 'ColB');
+__PACKAGE__->ht_add_widget(::HTV."::Marked"
+			, 'col_c', cdbi_bind => ''
+			, column_title => 'ColC');
 
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
 
 package Aaa::Bbb::UI::P::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_form('form', default_value => 'u');
-__PACKAGE__->make_tested_list('the_tab_list', __PACKAGE__ . '::Item');
+__PACKAGE__->ht_add_widget(::HTV."::Form", 'form', default_value => 'u');
+__PACKAGE__->ht_add_widget(::HT."::List", 'the_tab_list'
+	, __PACKAGE__ . '::Item', render_table => 1);
 
 package Aaa::Bbb::UI::P;
 use base qw(Apache::SWIT::HTPage);
@@ -239,19 +255,24 @@ Apache::SWIT::Maker->_make_page('Info', $args
 ok(-f 'lib/Aaa/Bbb/UI/Info.pm');
 ok(-f 'templates/info.tt');
 
-is(read_file('lib/Aaa/Bbb/UI/Info.pm'), <<'ENDS');
+$res = read_file('lib/Aaa/Bbb/UI/Info.pm');
+is_with_diff($res, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
 package Aaa::Bbb::UI::Info::Root;
 use base 'HTML::Tested::ClassDBI';
+use HTML::Tested qw(HTV);
 use Aaa::Bbb::DB::TheTab;
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-	col_a => marked_value => { cdbi_bind => '' },
-	col_b => marked_value => { cdbi_bind => '' },
-	col_c => marked_value => { cdbi_bind => '' },
-]);
-__PACKAGE__->make_tested_link('edit_link'
+__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
+
+__PACKAGE__->ht_add_widget(HTV."::Marked"
+	, col_a => cdbi_bind => '');
+__PACKAGE__->ht_add_widget(HTV."::Marked"
+	, col_b => cdbi_bind => '');
+__PACKAGE__->ht_add_widget(HTV."::Marked"
+	, col_c => cdbi_bind => '');
+__PACKAGE__->ht_add_widget(HTV."::Link", 'edit_link'
 		, href_format => '../form/r?ht_id=%s'
 		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
@@ -291,23 +312,31 @@ ENDS
 Apache::SWIT::Maker->_make_page('Form', $args
 		, qw(scaffold_form scaffold_form_template));
 ok(-f 'lib/Aaa/Bbb/UI/Form.pm');
-is(read_file('lib/Aaa/Bbb/UI/Form.pm'), <<'ENDS');
+
+$res = read_file('lib/Aaa/Bbb/UI/Form.pm');
+is_with_diff($res, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
 package Aaa::Bbb::UI::Form::Root;
 use base 'HTML::Tested::ClassDBI';
 use Aaa::Bbb::DB::TheTab;
-__PACKAGE__->make_tested_hidden('ht_id', cdbi_bind => 'Primary');
-__PACKAGE__->make_tested_submit('submit_button', default_value => 'Submit');
-__PACKAGE__->make_tested_submit('delete_button', default_value => 'Delete');
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-	col_a => edit_box => { cdbi_bind => '' },
-	col_b => edit_box => { cdbi_bind => '' },
-	col_c => edit_box => { cdbi_bind => '' },
-]);
+use HTML::Tested qw(HTV);
+
+__PACKAGE__->ht_add_widget(HTV."::Hidden", 'ht_id', cdbi_bind => 'Primary');
+__PACKAGE__->ht_add_widget(HTV."::Submit", 'submit_button'
+			, default_value => 'Submit');
+__PACKAGE__->ht_add_widget(HTV."::Submit", 'delete_button'
+			, default_value => 'Delete');
+__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
+
+__PACKAGE__->ht_add_widget(HTV."::EditBox"
+			, col_a => cdbi_bind => '');
+__PACKAGE__->ht_add_widget(HTV."::EditBox"
+			, col_b => cdbi_bind => '');
+__PACKAGE__->ht_add_widget(HTV."::EditBox"
+			, col_c => cdbi_bind => '');
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
-__PACKAGE__->load_db_constraints;
 
 package Aaa::Bbb::UI::Form;
 use base qw(Apache::SWIT::HTPage);

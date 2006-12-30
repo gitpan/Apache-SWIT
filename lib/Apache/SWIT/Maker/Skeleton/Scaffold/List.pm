@@ -18,22 +18,26 @@ sub template { return <<'ENDS'; }
 use strict;
 use warnings FATAL => 'all';
 
+use HTML::Tested qw(HTV HT);
+
 package [% class_v %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use [% root_class_v %]::DB::[% table_class_v %];
-__PACKAGE__->make_tested_link('[% col1_v %]'
+__PACKAGE__->ht_add_widget(::HTV."::Link", '[% col1_v %]'
 		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ [% col1_v %] => 'Primary' ]
 		, column_title => '[% link_title_v %]');
-[% FOREACH list_fields_v %]__PACKAGE__->make_tested_marked_value('[% field %]'
-		, cdbi_bind => '', column_title => '[% title %]');
+[% FOREACH list_fields_v %]__PACKAGE__->ht_add_widget(::HTV."::Marked"
+			, '[% field %]', cdbi_bind => ''
+			, column_title => '[% title %]');
 [% END %]
 __PACKAGE__->bind_to_class_dbi('[% root_class_v %]::DB::[% table_class_v %]');
 
 package [% class_v %]::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_form('form', default_value => 'u');
-__PACKAGE__->make_tested_list('[% list_name_v %]', __PACKAGE__ . '::Item');
+__PACKAGE__->ht_add_widget(::HTV."::Form", 'form', default_value => 'u');
+__PACKAGE__->ht_add_widget(::HT."::List", '[% list_name_v %]'
+	, __PACKAGE__ . '::Item', render_table => 1);
 
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);

@@ -14,8 +14,8 @@ $mt->make_swit_project;
 ok(-f 'LICENSE');
 ok(-f 'lib/TTT/DB/Schema.pm');
 
-$mt->replace_in_file('lib/TTT/UI/Index.pm', ']'
-		, ', { is_sealed => 1 } ]');
+$mt->replace_in_file('lib/TTT/UI/Index.pm', "first\'"
+		, "first\', is_sealed => 1");
 
 is($ENV{APACHE_SWIT_HT_SEAL}, undef);
 my $make = "perl Makefile.PL && make";

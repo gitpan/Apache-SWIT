@@ -11,11 +11,13 @@ use warnings FATAL => 'all';
 
 package [% class_v %]::Root;
 use base 'HTML::Tested::ClassDBI';
+use HTML::Tested qw(HTV);
 use [% root_class_v %]::DB::[% table_class_v %];
-__PACKAGE__->make_tested_form(form => default_value => u => children => [[% FOREACH fields_v %]
-	[% field %] => marked_value => { cdbi_bind => '' },[% END %]
-]);
-__PACKAGE__->make_tested_link('edit_link'
+__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
+[% FOREACH fields_v %]
+__PACKAGE__->ht_add_widget(HTV."::Marked"
+	, [% field %] => cdbi_bind => '');[% END %]
+__PACKAGE__->ht_add_widget(HTV."::Link", 'edit_link'
 		, href_format => '../form/r?ht_id=%s'
 		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
 __PACKAGE__->bind_to_class_dbi('[% root_class_v %]::DB::[% table_class_v %]');

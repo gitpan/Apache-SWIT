@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -43,6 +43,7 @@ my $make = "perl Makefile.PL && make";
 my $res = `$make test_direct APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 unlike($res, qr/Failed/); # or readline(\*STDIN);
 like($res, qr/success/);
+unlike($res, qr/make_tested/);
 
 $res = `make test_apache APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 unlike($res, qr/Failed/);

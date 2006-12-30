@@ -10,8 +10,9 @@ use warnings FATAL => 'all';
 
 package [% class_v %]::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_form(form => default_value => u => children => [
-		first => 'marked_value' ]);
+use HTML::Tested qw(HTV);
+__PACKAGE__->ht_add_widget(HTV."::Marked", 'first');
+__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
 
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);

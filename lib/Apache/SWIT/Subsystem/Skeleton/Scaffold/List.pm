@@ -17,24 +17,27 @@ use base 'HTML::Tested';
 
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
+use HTML::Tested qw(HTV HT);
 
 sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
 sub on_inheritance_end {
 	my $class = shift;
 	my $rc = $class->ht_root_class;
-	$rc->make_tested_form('form', default_value => 'u');
-	$rc->make_tested_list('[% list_name_v %]', $rc . '::Item');
-	$rc .= '::Item';
-	$rc->make_tested_link('[% col1_v %]'
+	my $rci = $rc . '::Item';
+	$rci->ht_add_widget(HTV."::Link", '[% col1_v %]'
 		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ [% col1_v %] => 'Primary' ]
 		, column_title => '[% link_title_v %]');
-[% FOREACH list_fields_v %]$rc->make_tested_marked_value('[% field %]'
+[% FOREACH list_fields_v %]$rci->ht_add_widget(HTV."::Marked", '[% field %]'
 		, cdbi_bind => '', column_title => '[% title %]');
 [% END %]
-	$rc->bind_to_class_dbi($class->main_subsystem_class
+	$rci->bind_to_class_dbi($class->main_subsystem_class
 			->[% db_class_v %]);
+
+	$rc->ht_add_widget(HTV."::Form", 'form', default_value => 'u');
+	$rc->ht_add_widget(HT."::List", '[% list_name_v %]', $rc . '::Item'
+		, render_table => 1);
 }
 
 sub ht_swit_render {

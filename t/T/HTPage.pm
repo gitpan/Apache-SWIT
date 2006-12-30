@@ -3,12 +3,14 @@ use warnings FATAL => 'all';
 
 package T::HTPage::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_value('hello');
-__PACKAGE__->make_tested_value('v1');
-__PACKAGE__->make_tested_upload('up');
-__PACKAGE__->make_tested_upload('inv_up');
-__PACKAGE__->make_tested_edit_box('file');
-__PACKAGE__->make_tested_hidden('hid', is_sealed => 1);
+use HTML::Tested qw(HTV);
+
+__PACKAGE__->ht_add_widget(HTV, 'hello');
+__PACKAGE__->ht_add_widget(HTV, 'v1');
+__PACKAGE__->ht_add_widget(HTV."::Upload", 'up');
+__PACKAGE__->ht_add_widget(HTV."::Upload", 'inv_up');
+__PACKAGE__->ht_add_widget(HTV."::EditBox", 'file');
+__PACKAGE__->ht_add_widget(HTV."::Hidden", 'hid', is_sealed => 1);
 
 package T::HTPage;
 use base 'Apache::SWIT::HTPage';

@@ -3,7 +3,8 @@ use warnings FATAL => 'all';
 
 package T::SessPage::Root;
 use base 'HTML::Tested';
-__PACKAGE__->make_tested_edit_box('persbox');
+use HTML::Tested qw(HTV);
+__PACKAGE__->ht_add_widget(HTV."::EditBox", 'persbox');
 
 package T::SessPage;
 use base 'Apache::SWIT::HTPage';
