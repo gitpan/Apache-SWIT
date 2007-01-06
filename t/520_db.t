@@ -16,7 +16,7 @@ ok(-f 'lib/TTT/DB/Schema.pm');
 ok(-f 't/T/TempDB.pm');
 
 Apache::SWIT::Maker->new->write_pm_file("TTT::DB::C", <<ENDM);
-use base 'TTT::DB::Base';
+use base 'Apache::SWIT::DB::Base';
 __PACKAGE__->table('ttt_table');
 __PACKAGE__->sequence('ttt_table_id_seq');
 __PACKAGE__->columns(Essential => qw(id a));
@@ -26,12 +26,12 @@ ENDM
 
 $mt->replace_in_file('t/dual/001_load.t', '=> 6', '=> 9');
 $mt->replace_in_file('t/dual/001_load.t', '\};', 
-	"\n\tuse_ok('TTT::DB::Connection'); };");
+	"\n\tuse_ok('Apache::SWIT::DB::Connection'); };");
 $mt->insert_into_schema_pm('\$dbh->do("create table ttt_table ('
 	. 'id serial primary key, a text)")');
 $mt->replace_in_file('t/dual/001_load.t', "\\};\\\n", <<ENDM);
 };
-TTT::DB::Connection->instance->db_handle->do(
+Apache::SWIT::DB::Connection->instance->db_handle->do(
 		"insert into ttt_table (a) values ('aaa')");
 ENDM
 
@@ -50,9 +50,9 @@ TTT::DB::C->create({ a => 'ccc' });
 ENDM
 
 $mt->replace_in_file('lib/TTT/UI/Index.pm', "return \\\$", <<ENDM);
-use TTT::DB::Connection;
-my \$arr = TTT::DB::Connection->instance->db_handle->selectcol_arrayref(
-		"select a from ttt_table");
+use Apache::SWIT::DB::Connection;
+my \$arr = Apache::SWIT::DB::Connection->instance->db_handle
+		->selectcol_arrayref("select a from ttt_table");
 \$root->first(\$arr->[0]);
 use TTT::DB::C;
 TTT::DB::C->create({ a => 'bbb' });

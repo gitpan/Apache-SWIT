@@ -5,9 +5,10 @@ use Test::More tests => 18;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
-BEGIN { use_ok('Apache::SWIT::HTPage'); 
+BEGIN { use_ok('Apache::SWIT::Test');
+	Apache::SWIT::Test->do_startup("AA_ROOT");
+	use_ok('Apache::SWIT::HTPage'); 
 	use_ok('T::HTPage');
-	use_ok('Apache::SWIT::Test');
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;

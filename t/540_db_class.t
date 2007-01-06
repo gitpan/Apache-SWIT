@@ -26,7 +26,7 @@ use strict;
 use warnings FATAL => 'all';
 use Test::More tests => 4;
 use T::TempDB;
-BEGIN { use_ok('TTT::DB::Connection');
+BEGIN { use_ok('Apache::SWIT::DB::Connection');
 	use_ok('TTT::DB::TheTable');
 }
 

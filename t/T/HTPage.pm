@@ -16,7 +16,6 @@ package T::HTPage;
 use base 'Apache::SWIT::HTPage';
 use File::Slurp;
 
-sub ht_root_class { return 'T::HTPage::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;

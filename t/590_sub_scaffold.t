@@ -18,7 +18,7 @@ ok(-f 'LICENSE');
 
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
 is(-f './lib/TTT/DB/Connection.pm', undef);
-isnt(-f './t/T/TTT/DB/Connection.pm', undef);
+is(-f './t/T/TTT/DB/Connection.pm', undef);
 
 $mt->insert_into_schema_pm('$dbh->do("create table the_table (
 	id serial primary key, col1 text, col2 integer)");

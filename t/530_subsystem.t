@@ -8,6 +8,7 @@ use Test::TempDatabase;
 use YAML;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
+use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
@@ -22,9 +23,9 @@ ok(-f 'LICENSE');
 
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
 is(-f './lib/TTT/DB/Connection.pm', undef);
-isnt(-f './t/T/TTT/DB/Connection.pm', undef);
+is(-f './t/T/TTT/DB/Connection.pm', undef);
 is(-f './t/001_load.t', undef);
-unlike(read_file('lib/TTT/DB/Base.pm'), qr/Connection/);
+is(-f 'lib/TTT/DB/Base.pm', undef);
 like(read_file('Makefile.PL'),
 	       	qr/Apache::SWIT::Subsystem::Makefile/);
 
@@ -50,10 +51,8 @@ sub on_inheritance_end {
 ENDM
 
 write_file("t/555_test.t", <<'ENDT');
-use Test::More tests => 10;
+use Test::More tests => 8;
 BEGIN { use_ok('T::TTT'); }
-is(T::TTT->connection_class, "T::TTT::DB::Connection");
-can_ok(T::TTT->connection_class, "instance");
 is(T::TTT::DB::Random->number, 494);
 is(T::TTT->db_random_class, 'T::TTT::DB::Random');
 is(T::TTT::DB::Random->main_subsystem_class, 'T::TTT');
@@ -98,7 +97,7 @@ like($res, qr/950_install/);
 
 append_file('conf/startup.pl', '`touch $ENV{TTT_ROOT}/touched`; 1;');
 $res = join('', `make test_apache 2>&1`);
-like($res, qr/success/) or diag(read_file('blib/conf/startup.pl'));
+like($res, qr/success/); # or readline(\*STDIN);
 
 like(read_file('blib/conf/startup.pl'), qr/touch/);
 ok(-f 'blib/touched');
@@ -143,8 +142,8 @@ isnt(-f 'lib/MU/TheSub.pm', undef) or do {
 	diag($td);
 #	readline(\*STDIN);
 };
+use_ok('HTML::Tested', qw(HT HTV));
 is(require 'lib/MU/TheSub.pm', 1);
-is(MU::TheSub->connection_class, 'MU::DB::Connection');
 is(MU::TheSub->templates_dir, 'templates/thesub');
 
 isnt(-f "t/dual/thesub/001_load.t", undef) or do {
@@ -184,9 +183,8 @@ like($res, qr/thesub\/001/);
 chdir "$td/TTT";
 $mt->insert_into_schema_pm('\$dbh->do("create table ttt_table (a text)")');
 $mt->replace_in_file('lib/TTT/UI/Index.pm', "return \\\$", <<ENDM);
-my \$arr = \$class->main_subsystem_class->connection_class
-			->instance->db_handle->selectcol_arrayref(
-		"select a from ttt_table");
+my \$arr = Apache::SWIT::DB::Connection->instance->db_handle
+			->selectcol_arrayref("select a from ttt_table");
 \$r->pnotes('SWITSession')->set_username(\$arr);
 return \$
 ENDM
@@ -205,10 +203,7 @@ TheSub');
 ENDM
 
 $res = join('', `make test 2>&1`);
-unlike($res, qr/Error/) or do {
-#	diag($td);
-#	readline(\*STDIN);
-};
+unlike($res, qr/Error/) or ASTU_Wait($td);
 
 $mt->replace_in_file('t/dual/001_load.t', '=> 5', '=> 6');
 append_file('t/dual/001_load.t', <<ENDT);

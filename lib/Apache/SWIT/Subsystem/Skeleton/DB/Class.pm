@@ -10,7 +10,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package [% class_v %];
-use base '[% root_class_v %]::DB::Base';
+use base 'Apache::SWIT::DB::Base';
 
 sub on_inheritance_end {
 	my $class = shift;

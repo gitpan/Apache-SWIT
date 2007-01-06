@@ -15,9 +15,23 @@ use WWW::Mechanize;
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
+__PACKAGE__->mk_classdata('root_env_var');
+
+sub do_startup {
+	my ($class, $root_env_var) = @_;
+	$class->root_env_var($root_env_var);
+	$ENV{$root_env_var} = $ENV{SWIT_BLIB_DIR};
+	my $sf = $ENV{SWIT_BLIB_DIR} . "/conf/startup.pl";
+	{
+		package main;
+		local $0 = $sf;
+		do $sf or Carp::confess "# Unable to do $sf: $@";
+	};
+}
 
 sub new {
 	my ($class, $args) = @_;
+	confess "Please call do_startup first!" unless $class->root_env_var;
 	$args ||= {};
 	if ($ENV{SWIT_HAS_APACHE}) {
 		$args->{mech} = WWW::Mechanize->new;
@@ -25,7 +39,6 @@ sub new {
 	if ($args->{session_class}) {
 		$args->{session} = $args->{session_class}->new;
 	}
-	HTML::Tested::Seal->instance($ENV{APACHE_SWIT_HT_SEAL} || 'unknown');
 	return $class->SUPER::new($args);
 }
 
@@ -206,5 +219,17 @@ SKIP: {
 };
 }
 
+sub with_or_without_mech_do {
+	my ($self, $m_tests_cnt, $m_test, $d_tests_cnt, $d_test) = @_;
+SKIP: {
+	if ($self->mech) {
+		$m_test->($self) if $m_test;
+		skip "Not in direct test", $d_tests_cnt if $d_tests_cnt;
+	} else {
+		$d_test->($self) if $d_test;
+		skip "Not in apache test", $m_tests_cnt;
+	}
+};
+}
 
 1;

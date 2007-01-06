@@ -9,6 +9,7 @@ use File::Slurp;
 
 BEGIN { 
 	use_ok('Apache::SWIT::Test');
+	Apache::SWIT::Test->do_startup("AA_ROOT");
 	use_ok('T::SWIT');
 	use_ok('T::Res');
 }

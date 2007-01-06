@@ -26,7 +26,8 @@ realclean ::
     NAME         => 'Apache::SWIT',
     VERSION_FROM => 'lib/Apache/SWIT.pm', # finds $VERSION
     AUTHOR       => 'Boris Sukholitko (boriss@gmail.com)',
-    ABSTRACT     => '',
+    ABSTRACT     => 'mod_perl server with integrated testing',
+    EXE_FILES    => [ 'scripts/swit_init' ],
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
 	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.21',
 	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.08',

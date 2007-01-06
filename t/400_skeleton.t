@@ -187,7 +187,6 @@ is_with_diff($res, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use HTML::Tested qw(HTV HT);
 
 package Aaa::Bbb::UI::P::Root::Item;
 use base 'HTML::Tested::ClassDBI';
@@ -214,7 +213,6 @@ __PACKAGE__->ht_add_widget(::HT."::List", 'the_tab_list'
 package Aaa::Bbb::UI::P;
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
@@ -262,17 +260,16 @@ use warnings FATAL => 'all';
 
 package Aaa::Bbb::UI::Info::Root;
 use base 'HTML::Tested::ClassDBI';
-use HTML::Tested qw(HTV);
 use Aaa::Bbb::DB::TheTab;
-__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
+__PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 
-__PACKAGE__->ht_add_widget(HTV."::Marked"
+__PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, col_a => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(HTV."::Marked"
+__PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, col_b => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(HTV."::Marked"
+__PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, col_c => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(HTV."::Link", 'edit_link'
+__PACKAGE__->ht_add_widget(::HTV."::Link", 'edit_link'
 		, href_format => '../form/r?ht_id=%s'
 		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
@@ -280,7 +277,6 @@ __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
 package Aaa::Bbb::UI::Info;
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
@@ -321,27 +317,25 @@ use warnings FATAL => 'all';
 package Aaa::Bbb::UI::Form::Root;
 use base 'HTML::Tested::ClassDBI';
 use Aaa::Bbb::DB::TheTab;
-use HTML::Tested qw(HTV);
 
-__PACKAGE__->ht_add_widget(HTV."::Hidden", 'ht_id', cdbi_bind => 'Primary');
-__PACKAGE__->ht_add_widget(HTV."::Submit", 'submit_button'
+__PACKAGE__->ht_add_widget(::HTV."::Hidden", 'ht_id', cdbi_bind => 'Primary');
+__PACKAGE__->ht_add_widget(::HTV."::Submit", 'submit_button'
 			, default_value => 'Submit');
-__PACKAGE__->ht_add_widget(HTV."::Submit", 'delete_button'
+__PACKAGE__->ht_add_widget(::HTV."::Submit", 'delete_button'
 			, default_value => 'Delete');
-__PACKAGE__->ht_add_widget(HTV."::Form", form => default_value => 'u');
+__PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 
-__PACKAGE__->ht_add_widget(HTV."::EditBox"
+__PACKAGE__->ht_add_widget(::HTV."::EditBox"
 			, col_a => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(HTV."::EditBox"
+__PACKAGE__->ht_add_widget(::HTV."::EditBox"
 			, col_b => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(HTV."::EditBox"
+__PACKAGE__->ht_add_widget(::HTV."::EditBox"
 			, col_c => cdbi_bind => '');
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
 
 package Aaa::Bbb::UI::Form;
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;

@@ -18,7 +18,6 @@ sub template { return <<'ENDS'; }
 use strict;
 use warnings FATAL => 'all';
 
-use HTML::Tested qw(HTV HT);
 
 package [% class_v %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
@@ -42,7 +41,6 @@ __PACKAGE__->ht_add_widget(::HT."::List", '[% list_name_v %]'
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;

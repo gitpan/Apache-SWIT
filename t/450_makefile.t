@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 44;
+use Test::More tests => 45;
 use Apache::SWIT::Test::ModuleTester;
 use File::Slurp;
 use ExtUtils::Manifest qw(maniadd);
@@ -18,6 +18,7 @@ $mt->run_modulemaker_and_chdir;
 ok(-f 'Makefile.PL');
 is(Apache::SWIT::Maker::Config->instance->root_class, 'TTT');
 is(Apache::SWIT::Maker::Config->instance->app_name, 'ttt');
+is(Apache::SWIT::Maker::Config->instance->root_env_var, 'TTT_ROOT');
 is(Apache::SWIT::Maker::Config->instance->root_location, '/ttt');
 is(Apache::SWIT::Maker::Config->instance->session_class, 'TTT::Session');
 

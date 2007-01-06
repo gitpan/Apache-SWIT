@@ -22,9 +22,9 @@ use Apache::SWIT::Maker::Makefile;
 use File::Slurp;
 use Apache::SWIT::Maker::Manifest;
 
-__PACKAGE__->mk_accessors(qw(root_var_name lib_dir file_writer));
+__PACKAGE__->mk_accessors(qw(lib_dir file_writer));
 
-my @_initial_skels = qw(apache_test apache_test_run dual_001_load);
+my @_initial_skels = qw(apache_test apache_test_run dual_001_load startup);
 
 sub _load_skeleton {
 	my ($class, $skel_class, $func) = @_;
@@ -55,23 +55,12 @@ sub new {
 	my $self = shift->SUPER::new(@_);
 	$self->lib_dir("lib") unless $self->lib_dir;
 	$self->{file_writer} ||= Apache::SWIT::Maker::FileWriterData->new;
-	unless($self->root_var_name) {
-		my $rvn = uc(Apache::SWIT::Maker::Config->instance
-				->root_class) . "_ROOT";
-		$rvn =~ s/::/_/g;
-		$self->root_var_name($rvn);
-	}
 	return $self;
 }
 
 sub schema_class {
 	return Apache::SWIT::Maker::Config->instance->root_class
 		. '::DB::Schema';
-}
-
-sub connection_class {
-	return Apache::SWIT::Maker::Config->instance->root_class
-		. '::DB::Connection';
 }
 
 sub write_swit_yaml {
@@ -129,19 +118,12 @@ ENDM
 }
 
 sub db_env_var {
-	my $db_var = shift->root_var_name;
+	my $db_var = Apache::SWIT::Maker::Config->instance->root_env_var;
 	$db_var =~ s/ROOT$/DB/;
 	return $db_var;
 }
 
 sub write_db_connection_pm {
-	my $self = shift;
-	my $db_var = $self->db_env_var;
-	$db_var =~ s/_DB$//;
-	$self->write_pm_file($self->connection_class, <<ENDM);
-use base 'Apache::SWIT::DB::Connection';
-__PACKAGE__->AppName('$db_var');
-ENDM
 }
 
 sub write_db_schema_file {
@@ -171,18 +153,17 @@ sub write_test_db_file {
 	my $sc = $self->schema_class;
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	my $db_var = $self->db_env_var;
-	my $conn = $self->connection_class;
 	$self->with_lib_dir('t', sub {
 		$self->write_pm_file('T::TempDB', <<ENDM);
 use Test::TempDatabase;
 use $sc;
-use $conn;
+use Apache::SWIT::DB::Connection;
 
-\$ENV{$db_var\_NAME} = '$an\_test_db';
+\$ENV{APACHE_SWIT_DB_NAME} = '$an\_test_db';
 our \$test_db = Test::TempDatabase->create(
-			dbname => '$an\_test_db',
-                        schema => '$sc', dbi_args => $conn\->DBIArgs);
-$conn\->instance(\$test_db->handle);
+			dbname => '$an\_test_db', schema => '$sc'
+			, dbi_args => Apache::SWIT::DB::Connection->DBIArgs);
+Apache::SWIT::DB::Connection->instance(\$test_db->handle);
 END { \$test_db->destroy; }
 ENDM
 	});
@@ -193,7 +174,7 @@ sub write_t_extra_conf_in {
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	my $db_var = $self->db_env_var;
 	swmani_write_file('t/conf/extra.conf.in', <<ENDM);
-PerlSetEnv $db_var\_NAME $an\_test_db
+PerlSetEnv APACHE_SWIT_DB_NAME $an\_test_db
 Include ../blib/conf/httpd.conf
 ENDM
 }
@@ -205,13 +186,7 @@ sub more_stuff_in_httpd_conf_in {
 RewriteEngine on
 RewriteRule ^/\$ $rl/index/r [R]
 PerlModule \@SessionClass\@;
-PerlRequire \@ServerRoot\@/conf/startup.pl
 ENDS
-}
-
-sub write_startup_pl {
-	my $self = shift;
-	$self->file_writer->write_conf_startup_pl;
 }
 
 sub write_httpd_conf_in {
@@ -226,22 +201,17 @@ PerlSetEnv %s \@ServerRoot\@
 <Perl>
 	use lib '\@ServerRoot\@/lib';
 </Perl>
+PerlRequire \@ServerRoot\@/conf/startup.pl
 
 $more
 <Location $root_location>
-	PerlSetVar SWITRoot \@ServerRoot\@/
 	PerlAccessHandler \@SessionClass\@\->access_handler
 	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
 </Location>
 Alias $root_location/www \@ServerRoot\@/public_html 
 ENDM
-		, $self->root_var_name));
+		, Apache::SWIT::Maker::Config->instance->root_env_var));
 
-}
-
-sub t_dbi_base_class {
-	return Apache::SWIT::Maker::Config->instance->root_class
-		. "::DB::Base";
 }
 
 sub use_ok_in_010_db_t {
@@ -270,30 +240,24 @@ sub write_010_db_t {
 	my $self = shift;
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	my $more_uses = $self->use_ok_in_010_db_t;
-	my $conn = $self->connection_class;
-	my $t_dbi_base = $self->t_dbi_base_class;
-	$self->add_test('t/010_db.t', 4, <<ENDM);
+	$self->add_test('t/010_db.t', 2, <<ENDM);
 use T::TempDB;
 
-BEGIN { use_ok('$rc\::DB::Base'); 
-	use_ok('$conn');
-	use_ok('$more_uses');
+BEGIN { use_ok('$more_uses');
 }
 
 package T::DBI;
-use base '$t_dbi_base';
+use base 'Apache::SWIT::DB::Base';
 __PACKAGE__->table('test_table');
 __PACKAGE__->columns(Essential => qw/a b/);
 
 package main;
-$conn->instance->db_handle->do(
+Apache::SWIT::DB::Connection->instance->db_handle->do(
 		"create table test_table (a integer, b text)");
 is_deeply([ T::DBI->retrieve_all ], []);
 
 ENDM
 }
-
-sub db_base_pm_connection { return shift()->connection_class; }
 
 sub write_swit_app_pl {
 	my $self = shift;
@@ -317,16 +281,11 @@ sub write_initial_files {
 	$self->write_test_db_file;
 	$self->write_db_connection_pm;
 	$self->write_t_extra_conf_in;
-	$self->write_startup_pl;
 	$self->write_httpd_conf_in;
 	swmani_write_file("public_html/main.css", "# Sample CSS file\n");
 	$self->file_writer->write_t_direct_test_pl;
 	$self->file_writer->write_conf_makefile_rules_yaml;
 	$self->write_makefile_pl;
-	$self->file_writer->write_db_base_pm({
-			connection => $self->db_base_pm_connection
-	}, { class => Apache::SWIT::Maker::Config->instance->root_class
-				. "::DB::Base" });
 	$self->write_010_db_t;
 	$self->write_swit_app_pl;
 	$self->add_ht_page('Index');
@@ -411,6 +370,7 @@ sub regenerate_httpd_conf {
 	$self->file_writer->write_t_t_test_pm({
 		session_class => $tree->{session_class}
 		, root_location => $tree->{root_location}
+		, root_env_var => $tree->root_env_var,
 		, aliases => $aliases, httpd_session_class =>
 			$self->session_class_for_httpd_conf($tree) });
 	return $tree;

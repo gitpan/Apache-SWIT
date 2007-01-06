@@ -60,15 +60,20 @@ sub write_installation_content_pm {
 
 sub write_t_module {
 	my $self = shift;
-	my $conn_class = $self->connection_class;
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	my $rvn = Apache::SWIT::Maker::Config->instance->root_env_var;
 	$self->write_pm_file("T::$rc", <<ENDM);
 use base '$rc';
-__PACKAGE__->inherit_classes("$conn_class");
+use Apache::SWIT::Test;
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
+
+\$ENV{SWIT_BLIB_DIR} = abs_path(dirname(\$0) . "/../blib");
+Apache::SWIT::Test->do_startup('$rvn') unless \$ENV{$rvn};
+__PACKAGE__->inherit_classes;
 ENDM
 }
 
-sub t_dbi_base_class { return "T::" . shift()->SUPER::t_dbi_base_class; }
 sub use_ok_in_010_db_t { return 'T::' . Apache::SWIT::Maker::Config->instance->root_class; }
 
 sub rewrite_root_module {
@@ -81,8 +86,7 @@ our \$VERSION = 0.01;
 
 sub classes_for_inheritance { 
 	# Add classes to inherit from relative to package
-	return (__PACKAGE__, 'DB::Base', 
-			shift()->SUPER::classes_for_inheritance);
+	return (__PACKAGE__, shift()->SUPER::classes_for_inheritance);
 }
 ENDM
 }
@@ -93,6 +97,7 @@ sub write_950_install_t {
 	$self->add_test('t/950_install.t', 1, <<ENDT);
 use Apache::SWIT::Maker;
 use Apache::SWIT::Test::ModuleTester;
+use Apache::SWIT::Test::Utils;
 
 my \$mt = Apache::SWIT::Test::ModuleTester->new({ root_class => '$rc' });
 \$mt->run_make_install;
@@ -103,7 +108,7 @@ chdir \$mt->root_dir;
 \$mt->install_subsystem('TheSub');
 
 my \$res = join('', `perl Makefile.PL && make test 2>&1`);
-unlike(\$res, qr/Error/);
+unlike(\$res, qr/Error/) or ASTU_Wait(\$mt->root_dir);
 
 chdir '/';
 ENDT
@@ -111,8 +116,7 @@ ENDT
 
 sub more_stuff_in_httpd_conf_in { 
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	return 'PerlModule T::' . "$rc\nPerlRequire "
-			. '@ServerRoot@/conf/startup.pl' . "\n"; 
+	return 'PerlModule T::' . "$rc\n"; 
 }
 
 sub write_maker_pm {
@@ -124,9 +128,6 @@ ENDM
 
 sub write_db_connection_pm {
 	my $self = shift;
-	my $db_base_opts = $self->file_writer->Files->{'db_base_pm'};
-	$db_base_opts->{contents} =~ s/use \[% connection[^\n]+\n//;
-
 	$self->rewrite_root_module;
 	$self->write_950_install_t;
 	$self->write_maker_pm;
@@ -136,8 +137,6 @@ sub write_db_connection_pm {
 		$self->remove_file('t/001_load.t');
 	});
 }
-
-sub connection_class { return "T::" . shift()->SUPER::connection_class }
 
 sub add_class {
 	my ($self, $new_class, $str) = @_;
@@ -160,10 +159,6 @@ sub write_swit_yaml {
 
 sub alias_class { return "T::" . $_[1]; }
 
-sub db_base_pm_connection {
-	return 'shift()->main_subsystem_class->connection_class';
-}
-
 sub session_class_for_httpd_conf {
 	return "T::" . $_[1]->{session_class};
 }
@@ -185,13 +180,12 @@ sub install_subsystem {
 	$tree->save;
 
 	my $sn = $self->this_subsystem_name;
-	my $conn_name = $self->SUPER::connection_class;
 	$self->write_pm_file($full_name, <<ENDM);
 use base '$sn';
 
 sub templates_dir { return 'templates/$lcm'; }
 
-__PACKAGE__->inherit_classes('$conn_name');
+__PACKAGE__->inherit_classes;
 ENDM
 	append_file('conf/httpd.conf.in', "PerlModule $full_name\n");
 

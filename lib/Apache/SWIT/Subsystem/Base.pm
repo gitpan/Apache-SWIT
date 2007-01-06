@@ -5,7 +5,6 @@ package Apache::SWIT::Subsystem::Base;
 use base 'Class::Data::Inheritable';
 use Apache::SWIT::Maker::Conversions;
 
-__PACKAGE__->mk_classdata('connection_class');
 __PACKAGE__->mk_classdata('templates_dir', 'templates/');
 
 sub inherit_from_class {
@@ -28,14 +27,11 @@ sub inherit_from_class {
 }
 
 sub inherit_classes {
-	my ($class, $conn_class) = @_;
-	conv_eval_use($conn_class);
-
+	my ($class) = @_;
 	my ($root_class, @others) = $class->classes_for_inheritance;
 	my @packages = map { 
 		$class->inherit_from_class($root_class, $_)
 	} @others;
-	$class->connection_class($conn_class);
 	$_->on_inheritance_end 
 		for grep { $_->can('on_inheritance_end') } @packages;
 }

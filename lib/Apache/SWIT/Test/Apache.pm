@@ -20,6 +20,7 @@ sub Switch_Dir_Vars {
 
 sub Run {
 	my ($from, $to, @vars) = @_;
+	my $non_config_func = (@vars && ref($vars[0])) ? shift(@vars) : undef;
 	push @vars, 'SWITSessionsDir';
 	my $top_dir = abs_path(dirname($0) . "/../");
 
@@ -36,12 +37,11 @@ sub Run {
 		`chown -R nobody $_sess_dir` unless $<;
 		$_pid = $$;
 		$ENV{SWIT_TEST_DIR} = $_sess_dir;
-
-		$ENV{APACHE_SWIT_HT_SEAL} =
-			read_file("$top_dir/blib/conf/seal.key");
+		$non_config_func->() if $non_config_func;
 	}
 
 	$ENV{SWIT_HAS_APACHE} = 1;
+	$ENV{SWIT_BLIB_DIR} = "$top_dir/blib";
 	__PACKAGE__->new->run(@ARGV);
 }
 

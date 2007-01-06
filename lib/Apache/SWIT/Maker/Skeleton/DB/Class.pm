@@ -19,7 +19,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package [% class_v %];
-use base '[% root_class_v %]::DB::Base';
+use base 'Apache::SWIT::DB::Base';
 
 __PACKAGE__->set_up_table('[% table_v %]', { ColumnGroup => 'Essential' });
 

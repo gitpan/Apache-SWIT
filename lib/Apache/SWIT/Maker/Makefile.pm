@@ -75,6 +75,8 @@ sub _mm_test {
 
 sub _mm_postamble {
 	return __PACKAGE__->get_makefile_rules . q{
+test_dual :: test_direct test_apache 
+
 test :: test_direct test_apache 
 
 APACHE_TEST_FILES = `find t/dual -name "*.t" | sort`

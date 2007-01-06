@@ -30,7 +30,10 @@ use strict;
 use warnings FATAL => 'all';
 use Test::Harness;
 use T::TempDB;
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
 
+$ENV{SWIT_BLIB_DIR} = abs_path(dirname($0) . "/../blib");
 runtests(@ARGV);
 EM
 
@@ -39,7 +42,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package [% class %];
-use base '[% root %]::DB::Base';
+use base 'Apache::SWIT::DB::Base';
 
 __PACKAGE__->set_up_table('[% table %]', { ColumnGroup => 'Essential' });
 
@@ -52,6 +55,9 @@ use warnings FATAL => 'all';
 
 package T::Test;
 use base 'Apache::SWIT::Test';
+
+BEGIN { __PACKAGE__->do_startup('[% root_env_var %]'); };
+
 use [% session_class %];
 
 __PACKAGE__->root_location('[% root_location %]');
@@ -81,29 +87,6 @@ BEGIN { [% FOREACH use_oks %]
 
 [% content %]
 EM
-
-__PACKAGE__->add_file({ name => 'db_base_pm', manifest => 1 }, <<'EM');
-use base 'Class::DBI::Pg';
-use [% connection %];
-
-$Class::DBI::Weaken_Is_Available = 0;
-sub db_Main {
-	return [% connection %]->instance->db_handle;
-}
-EM
-
-__PACKAGE__->add_file({ name => 'conf/startup.pl', manifest => 1 }, <<'ES');
-use strict;
-use warnings FATAL => 'all';
-
-use HTML::Tested::Seal;
-use File::Slurp;
-use File::Basename qw(dirname);
-
-HTML::Tested::Seal->instance(read_file(dirname($0) . '/seal.key'));
-
-1;
-ES
 
 __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
 		, <<'EM');

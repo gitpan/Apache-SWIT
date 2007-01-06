@@ -9,7 +9,6 @@ __PACKAGE__->ht_add_widget(HTV."::EditBox", 'persbox');
 package T::SessPage;
 use base 'Apache::SWIT::HTPage';
 
-sub ht_root_class { return 'T::SessPage::Root'; }
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;

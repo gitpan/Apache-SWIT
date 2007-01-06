@@ -14,7 +14,6 @@ use base 'HTML::Tested::ClassDBI';
 
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
-use HTML::Tested qw(HTV);
 
 sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
@@ -22,10 +21,10 @@ sub on_inheritance_end {
 	my $class = shift;
 	my $rc = $class->ht_root_class;
 	[% FOREACH fields_v %]
-	$rc->ht_add_widget(HTV."::Marked"
+	$rc->ht_add_widget(::HTV."::Marked"
 			, [% field %] => cdbi_bind => '');[% END %]
-	$rc->ht_add_widget(HTV."::Form", form => default_value => 'u');
-	$rc->ht_add_widget(HTV."::Link", 'edit_link'
+	$rc->ht_add_widget(::HTV."::Form", form => default_value => 'u');
+	$rc->ht_add_widget(::HTV."::Link", 'edit_link'
 		, href_format => '../form/r?ht_id=%s'
 		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
 	$rc->bind_to_class_dbi($class->main_subsystem_class

@@ -4,9 +4,10 @@ use warnings FATAL => 'all';
 use Test::More tests => 9;
 use Data::Dumper;
 
-BEGIN { use_ok('T::Session');
+BEGIN { use_ok('Apache::SWIT::Test');
+	Apache::SWIT::Test->do_startup("AA_ROOT");
+	use_ok('T::Session');
 	use_ok('T::SessPage');
-	use_ok('Apache::SWIT::Test');
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;

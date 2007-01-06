@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 59;
+use Test::More tests => 61;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -131,11 +131,16 @@ ok(! -f "lib/TTT/UI/First/Page.pm");
 Apache::SWIT::Maker->new->add_ht_page('First::Page');
 like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
 like(read_file('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
+
+eval { require("lib/TTT/UI/First/Page.pm") };
+like($@, qr/HTV/);
+
+use_ok('HTML::Tested', qw(HT HTV));
 ok(require("lib/TTT/UI/First/Page.pm"));
 
 my $at = read_file('t/apache_test.pl');
 open($fh, ">t/apache_test.pl");
-print $fh "use TTT::UI::First::Page;\n$at";
+print $fh "use HTML::Tested qw(HT HTV);\nuse TTT::UI::First::Page;\n$at";
 close $fh;
 
 is_deeply([ `psql -l | grep ttt_test_db` ], []);

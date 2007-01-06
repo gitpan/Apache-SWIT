@@ -18,7 +18,7 @@ $mt->run_modulemaker_and_chdir;
 ok(-f 'LICENSE');
 
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
-isnt(-f './t/T/TTT/DB/Connection.pm', undef);
+is(-f './t/T/TTT/DB/Connection.pm', undef);
 
 my $res = `./scripts/swit_app.pl add_ht_page P1`;
 ok(-f 'lib/TTT/UI/P1.pm');

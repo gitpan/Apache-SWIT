@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -17,7 +17,6 @@ ok(-f 'lib/TTT/DB/Schema.pm');
 $mt->replace_in_file('lib/TTT/UI/Index.pm', "first\'"
 		, "first\', is_sealed => 1");
 
-is($ENV{APACHE_SWIT_HT_SEAL}, undef);
 my $make = "perl Makefile.PL && make";
 my $res = `$make test_direct 2>&1`;
 like($res, qr/Failed/); # or readline(\*STDIN);

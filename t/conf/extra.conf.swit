@@ -4,6 +4,7 @@
 
 PerlModule T::Session
 <Location /test>
+	PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 	PerlAccessHandler T::Session->access_handler
 	PerlSetVar SWITSessionsDir UNKNOWN YET
 	<Perl>

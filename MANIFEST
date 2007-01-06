@@ -1,6 +1,7 @@
 MANIFEST
 LICENSE
 README
+scripts/swit_init
 lib/Apache/SWIT.pm
 lib/Apache/SWIT/Maker.pm
 lib/Apache/SWIT/Maker/Config.pm
@@ -14,6 +15,7 @@ lib/Apache/SWIT/Maker/Skeleton/Scaffold/InfoTemplate.pm
 lib/Apache/SWIT/Maker/Skeleton/Scaffold/Form.pm
 lib/Apache/SWIT/Maker/Skeleton/Scaffold/FormTemplate.pm
 lib/Apache/SWIT/Maker/Skeleton/Dual001Load.pm
+lib/Apache/SWIT/Maker/Skeleton/Startup.pm
 lib/Apache/SWIT/Maker/Skeleton/DB/Class.pm
 lib/Apache/SWIT/Maker/Skeleton/Template.pm
 lib/Apache/SWIT/Maker/Skeleton/HT/Template.pm
@@ -45,10 +47,12 @@ lib/Apache/SWIT/Subsystem/Generator.pm
 lib/Apache/SWIT/Subsystem/Base.pm
 lib/Apache/SWIT/HTPage.pm
 lib/Apache/SWIT/DB/Connection.pm
+lib/Apache/SWIT/DB/Base.pm
 lib/Apache/SWIT/Test.pm
 lib/Apache/SWIT/Session.pm
 lib/Apache/SWIT/Test/ModuleTester.pm
 lib/Apache/SWIT/Test/Apache.pm
+lib/Apache/SWIT/Test/Utils.pm
 t/100_session.t
 t/050_file_writer.t
 t/045_conversions.t
@@ -56,6 +60,7 @@ t/200_db_connection.t
 t/400_skeleton.t
 t/450_makefile.t
 t/500_swit_init.t
+t/505_dual.t
 t/510_install.t
 t/520_db.t
 t/525_sub_install.t
@@ -73,8 +78,10 @@ t/apache/001_basic.t
 t/apache/010_tester.t
 t/apache/020_ht_page.t
 t/apache/030_sess_page.t
+t/apache/040_transactions.t
 t/T/Basic.pm
 t/T/SWIT.pm
+t/T/TransFailure.pm
 t/T/Res.pm
 t/T/HTPage.pm
 t/T/Session.pm
