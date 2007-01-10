@@ -9,7 +9,7 @@ sub template { return <<'ENDS' };
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 BEGIN {
 	use_ok('T::Test');
@@ -21,6 +21,7 @@ $t->ok_ht_index_r(make_url => 1, ht => { first => '' });
 $t->ok_ht_index_r(base_url => '/', ht => { first => '' });
 $t->ok_get('www/main.css');
 $t->content_like(qr/CSS/);
+$t->ok_get('/html-tested-javascript/serializer.js');
 ENDS
 
 1;

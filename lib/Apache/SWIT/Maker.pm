@@ -209,6 +209,7 @@ $more
 	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
 </Location>
 Alias $root_location/www \@ServerRoot\@/public_html 
+Alias /html-tested-javascript /usr/local/share/libhtml-tested-javascript-perl
 ENDM
 		, Apache::SWIT::Maker::Config->instance->root_env_var));
 

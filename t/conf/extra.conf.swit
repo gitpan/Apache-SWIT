@@ -2,15 +2,12 @@
 	push @INC, "@ServerRoot@/../blib/lib";
 </Perl>
 
+PerlRequire @ServerRoot@/conf/startup.pl
+PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 PerlModule T::Session
 <Location /test>
-	PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 	PerlAccessHandler T::Session->access_handler
 	PerlSetVar SWITSessionsDir UNKNOWN YET
-	<Perl>
-		use HTML::Tested::Seal;
-		HTML::Tested::Seal->instance('boo boo boo');
-	</Perl>
 </Location>
 
 <Location /test/basic_handler>
@@ -67,6 +64,18 @@ PerlModule T::SessPage
 <Location /test/sess_page/u>
   SetHandler perl-script
   PerlHandler T::SessPage->swit_update_handler
+</Location>
+
+PerlModule T::DBPage
+<Location /test/db_page/r>
+  SetHandler perl-script
+  PerlSetVar SWITTemplate @ServerRoot@/templates/db_page.tt
+  PerlHandler T::DBPage->swit_render_handler
+</Location>
+
+<Location /test/db_page/u>
+  SetHandler perl-script
+  PerlHandler T::DBPage->swit_update_handler
 </Location>
 
 Alias /test/www @ServerRoot@/public_html 

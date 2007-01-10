@@ -32,7 +32,7 @@ ok(-f "lib/TTT/Session.pm");
 ok(-f 't/dual/newdir/987_test.t');
 
 $mt->replace_in_file('t/apache_test_run.pl', '\);', ', "gogog");');
-$mt->replace_in_file('t/dual/001_load.t', '=> 6', '=> 8');
+$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 9');
 append_file('t/dual/001_load.t', <<'ENDM');
 if ($t->mech) {
 	ok(-d $ENV{SWIT_TEST_DIR});

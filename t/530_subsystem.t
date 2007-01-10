@@ -167,7 +167,7 @@ $mt->replace_in_file('conf/httpd.conf.in', 'PerlModule MU::TheSub',
 	"<Perl>\nuse lib '$td/TTT/blib/lib'\n</Perl>\nPerlModule MU::TheSub");
 `perl Makefile.PL && make 2>&1`;
 like(read_file('t/T/Test.pm'), qr/\bthesub\/index/);
-$mt->replace_in_file('t/dual/001_load.t', '=> 6', '=> 7');
+$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 8');
 append_file('t/dual/001_load.t', <<ENDT);
 use lib '$td/TTT/blib/lib';
 use MU::TheSub;

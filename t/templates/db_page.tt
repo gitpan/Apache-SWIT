@@ -1,0 +1,16 @@
+<html>
+<body>
+<head>
+<script>
+function form_submit() {
+	document.getElementById("val").value = "баба";
+	document.getElementById("f").submit();
+}
+</script>
+</head>
+<form id="f" action="u">
+[% id %] <br />
+[% val %]
+</form>
+</body>
+</html>

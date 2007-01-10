@@ -58,7 +58,7 @@ is($dut->get_output, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 BEGIN {
 	use_ok('T::Test');
@@ -68,7 +68,11 @@ BEGIN {
 };
 
 my $t = T::Test->new;
-$t->ok_ht_thetab_form_r(make_url => 1, ht => {
+$t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
+
+$t->ok_follow_link(text => 'Add entries');
+
+$t->ok_ht_thetab_form_r(ht => {
 	col_a => '',
 	col_b => '',
 	col_c => ''
@@ -78,7 +82,9 @@ $t->ht_thetab_form_u(ht => {
 	col_b => '99',
 	col_c => '99'
 });
-$t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [ {
+$t->ok_follow_link(text => 'List all entries');
+
+$t->ok_ht_thetab_list_r(ht => { the_tab_list => [ {
 	col_b => '99',
 	col_c => '99', HT_SEALED_col_a => [ '99', 1 ],
 } ] });
@@ -241,6 +247,8 @@ is(read_file('templates/p.tt'), <<'ENDS');
 [% form %]
 [% the_tab_list_table %]
 </form>
+<br />
+<a href="../form/r">Add entries</a>
 </body>
 </html>
 ENDS

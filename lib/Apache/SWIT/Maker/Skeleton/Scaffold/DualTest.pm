@@ -46,7 +46,7 @@ sub template_prefix { return <<'ENDS'; }
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 BEGIN {
 	use_ok('T::Test');
@@ -59,13 +59,19 @@ ENDS
 sub template { return shift()->template_prefix . <<'ENDS'; }
 
 my $t = T::Test->new;
-$t->ok_ht_[% form_test_v %]_r(make_url => 1, ht => {
+$t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [% list_name_v %] => [] });
+
+$t->ok_follow_link(text => 'Add entries');
+
+$t->ok_ht_[% form_test_v %]_r(ht => {
 	[% empty_cols_v %]
 });
 $t->ht_[% form_test_v %]_u(ht => {
 	[% cols_99_v %]
 });
-$t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [% list_name_v %] => [ {
+$t->ok_follow_link(text => 'List all entries');
+
+$t->ok_ht_[% list_test_v %]_r(ht => { [% list_name_v %] => [ {
 	[% cols_99_list_v %] HT_SEALED_[% col1_v %] => [ '99', 1 ],
 } ] });
 $t->ok_follow_link(text => '99');

@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Apache-SWIT
-version:      0.19
+version:      0.2
 version_from: lib/Apache/SWIT.pm
 installdirs:  site
 requires:
@@ -16,6 +16,7 @@ requires:
     File::Slurp:                   
     HTML::Tested:                  0.21
     HTML::Tested::ClassDBI:        0.08
+    HTML::Tested::JavaScript:      
     IPC::Run:                      
     Template:                      
     Test::Simple:                  0.44

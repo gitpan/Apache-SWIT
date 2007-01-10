@@ -6,12 +6,23 @@ use base 'Class::Accessor', 'Class::Data::Inheritable';
 use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
-use HTML::Tested::Seal;
 use Carp;
 use Data::Dumper;
 use File::Slurp;
 use Apache::TestRequest;
 use WWW::Mechanize;
+use X11::GUITest;
+
+BEGIN {
+	no strict 'refs';
+	no warnings 'redefine';
+	my $init_sub = HTML::Parser->can("init");
+	*{ "HTML::Parser::init" } = sub {
+		my $res = shift()->$init_sub(@_);
+		$res->utf8_mode(1);
+		return $res;
+	};
+}
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
@@ -40,6 +51,18 @@ sub new {
 		$args->{session} = $args->{session_class}->new;
 	}
 	return $class->SUPER::new($args);
+}
+
+sub new_guitest {
+	my $self = shift()->new(@_);
+	if ($self->mech) {
+		eval "use Mozilla::Mechanize::GUITester";
+		die "Unable to use Mozilla::Mechanize::GUITester: $@" if $@;
+		my $m = Mozilla::Mechanize::GUITester->new(quiet => 1, visible => 0);
+		$self->mech($m);
+		$m->x_resize_window(800, 600);
+	}
+	return $self;
 }
 
 sub _direct_render {
@@ -192,31 +215,29 @@ sub make_aliases {
 
 sub ok_follow_link {
 	my ($self, %arg) = @_;
-SKIP: {
-	skip "Not in apache test", 1 unless $self->mech;
-	isnt($self->mech->follow_link(%arg), undef)
-		or carp('# Unable to follow: ' . Dumper(\%arg)
+	$self->with_or_without_mech_do(1, sub {
+		isnt($self->mech->follow_link(%arg), undef)
+			or carp('# Unable to follow: ' . Dumper(\%arg)
 				. "in\n" . $self->mech->content);
-};
+	});
 }
 
 sub ok_get {
 	my ($self, $uri, $status) = @_;
 	$status ||= 200;
-SKIP: {
-	skip "Not in apache test", 1 unless $self->mech;
-	$uri = $self->root_location . "/$uri" unless ($uri =~ /^\//);
-	$self->mech_get_base($uri);
-	is($self->mech->status, $status) or carp("# Unable to get: $uri");
-};
+	$self->with_or_without_mech_do(1, sub {
+		$uri = $self->root_location . "/$uri" unless ($uri =~ /^\//);
+		$self->mech_get_base($uri);
+		is($self->mech->status, $status)
+			or carp("# Unable to get: $uri");
+	});
 }
 
 sub content_like {
 	my ($self, $qr) = @_;
-SKIP: {
-	skip "Not in apache test", 1 unless $self->mech;
-	like($self->mech->content, $qr) or carp("#");
-};
+	$self->with_or_without_mech_do(1, sub {
+		like($self->mech->content, $qr) or diag(Carp::longmess());
+	});
 }
 
 sub with_or_without_mech_do {

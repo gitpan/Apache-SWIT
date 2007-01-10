@@ -22,6 +22,7 @@ realclean ::
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	$(RM_F) t/conf/extra.conf.in
+	$(RM_F) t/conf/startup.pl t/conf/seal.key blib/conf
 }}, } })->write_makefile(
     NAME         => 'Apache::SWIT',
     VERSION_FROM => 'lib/Apache/SWIT.pm', # finds $VERSION
@@ -35,7 +36,7 @@ realclean ::
 	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
 	'Test::TempDatabase' => '',
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
-	'IPC::Run' => '',
+	'IPC::Run' => '', 'HTML::Tested::JavaScript' => ''
     },
 );
 

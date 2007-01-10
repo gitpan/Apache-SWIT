@@ -15,7 +15,11 @@ sub swit_render {
 sub swit_update {
 	my ($class, $r) = @_;
 	my $f = $r->param('file') or die "No file given";
-	write_file($f, $r->param('but') || '');
+	if ($f =~ /RESPOND/) {
+		return [ 200, 'This is RESPONSE' ];
+	} else {
+		write_file($f, $r->param('but') || '');
+	}
 	return '/test/res/r?res=hhhh';
 }
 

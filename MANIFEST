@@ -79,9 +79,14 @@ t/apache/010_tester.t
 t/apache/020_ht_page.t
 t/apache/030_sess_page.t
 t/apache/040_transactions.t
+t/apache/050_validate.t
+t/apache/060_guitest.t
+t/apache/070_unicode.t
 t/T/Basic.pm
 t/T/SWIT.pm
 t/T/TransFailure.pm
+t/T/ValidateFailure.pm
+t/T/DBPage.pm
 t/T/Res.pm
 t/T/HTPage.pm
 t/T/Session.pm
@@ -90,6 +95,7 @@ t/templates/test.tt
 t/templates/res.tt
 t/templates/htpage.tt
 t/templates/sess_page.tt
+t/templates/db_page.tt
 t/public_html/hello.html
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -1,10 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 18;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
+use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('Apache::SWIT::Test'); }
 
@@ -38,3 +39,6 @@ $t->mech->submit_form(fields => { file => "$td/fff" });
 # Redirected to res handler
 is($t->mech->content, "hhhh\n");
 ok(-f "$td/fff");
+
+like(ASTU_Read_Error_Log(), qr/normal operations/);
+like(ASTU_Read_Access_Log(), qr/GET/);

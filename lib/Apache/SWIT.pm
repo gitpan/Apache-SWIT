@@ -49,16 +49,29 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.19;
+our $VERSION = 0.20;
+
+sub swit_send_http_header {
+	my ($class, $r) = @_;
+	$r->pnotes('SWITSession')->end;
+	$r->send_http_header("text/html; charset=utf-8");
+}
+
+sub swit_update_finish {
+	my ($class, $r, $to) = @_;
+	my $s = ref($to) ? $to->[0] : 302;
+	$r->status($s);
+	$r->header_out(Location => $to) unless ref($to);
+	$class->swit_send_http_header($r);
+	$r->print($to->[1]) if ref($to);
+	return $s;
+}
 
 sub swit_update_handler($$) {
 	my($class, $r) = @_;
-	my $to = $class->swit_update(Apache::Request->new($r));
-	$r->status(302);
-	$r->header_out(Location => $to);
-	$r->pnotes('SWITSession')->end;
-	$r->send_http_header("text/html");
-	return 302;
+	my $ar = Apache::Request->new($r);
+	my $to = $class->swit_update($ar);
+	return $class->swit_update_finish($ar, $to);
 }
 
 sub swit_render_handler($$) {
@@ -67,9 +80,7 @@ sub swit_render_handler($$) {
 	my $vars = $class->swit_render(Apache::Request->new($r));
 	my $t = Template->new({ ABSOLUTE => 1 }) or die "No template";
 	my $file = $r->pnotes('SWITTemplate') or die "No template file";
-
-	$r->pnotes('SWITSession')->end;
-	$r->send_http_header("text/html");
+	$class->swit_send_http_header($r);
 	my $out;
 	$t->process($file, $vars, \$out)
 		or die "No result for $file: " . $t->error;

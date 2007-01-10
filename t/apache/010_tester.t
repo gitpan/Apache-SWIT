@@ -1,11 +1,12 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 30;
+use Test::More tests => 33;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Slurp;
+use Apache::SWIT::Test::Utils;
 
 BEGIN { 
 	use_ok('Apache::SWIT::Test');
@@ -75,6 +76,12 @@ $t->the_page_r(base_url => '/test/swit/r');
 is(read_file("$td/uuu"), 'Push');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ "hhhh\n" ]);
+
+$t->the_page_r(base_url => '/test/swit/r');
+$t->the_page_u(fields => { file => "$td/RESPOND" });
+$t->content_like(qr/RESPONSE/);
+is(-f "$td/RESPOND", undef);
+like(ASTU_Read_Access_Log(), qr/RESPOND.*200/);
 
 Apache::SWIT::Test->make_aliases("another/page" => 'T::SWIT');
 $t->root_location('/test');
