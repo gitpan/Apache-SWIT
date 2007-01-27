@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 18;
+use Test::More tests => 19;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
@@ -51,7 +51,8 @@ is(read_file("$td/up.txt"), "Hello\nworld\n");
 @x = $t->ht_another_page_u(ht => { file => "$td/uuu", up => "$td/up.txt" });
 $ur = read_file("$td/uuu");
 is(unlink("$td/uuu"), 1);
-is_deeply(\@x, [ 'hhhh' ]);
+is(@x, 1);
+like($x[0], qr/hhhh/);
 is($ur, "up.txt\nHello\nworld\n");
 
 $t->ok_ht_and_another_r(base_url => '/test/ht_page/r', ht => { 

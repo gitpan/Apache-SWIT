@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 47;
+use Test::More tests => 48;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -9,6 +9,8 @@ use YAML;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
 use Apache::SWIT::Test::Utils;
+use HTML::Tested::Value::Form;
+use HTML::Tested::Value::Marked;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
@@ -94,6 +96,7 @@ unlike($res, qr/Error/) or do {
 like($res, qr/success/);
 like($res, qr/localhost/);
 like($res, qr/950_install/);
+unlike($res, qr/Please use/);
 
 append_file('conf/startup.pl', '`touch $ENV{TTT_ROOT}/touched`; 1;');
 $res = join('', `make test_apache 2>&1`);

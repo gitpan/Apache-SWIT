@@ -25,8 +25,7 @@ sub ht_swit_render {
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
 	$root->cdbi_create_or_update;
-	return 'r?id=' . HTML::Tested::Seal->instance->encrypt(
-				$root->class_dbi_object->id);
+	return $root->ht_make_query_string("r", "id");
 }
 
 1;

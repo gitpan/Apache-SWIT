@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 61;
+use Test::More tests => 62;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -51,6 +51,7 @@ like($tres, qr/t\/dual\/001_load/);
 like($tres, qr/started\n.*dual/);
 like($tres, qr/Files=2/);
 unlike($tres, qr/Error/);
+unlike($tres, qr/Please use/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
 ok(-f 'blib/conf/httpd.conf');
@@ -140,6 +141,8 @@ ok(require("lib/TTT/UI/First/Page.pm"));
 
 my $at = read_file('t/apache_test.pl');
 open($fh, ">t/apache_test.pl");
+print $fh "use HTML::Tested::Value::Marked;\n";
+print $fh "use HTML::Tested::Value::Form;\n";
 print $fh "use HTML::Tested qw(HT HTV);\nuse TTT::UI::First::Page;\n$at";
 close $fh;
 

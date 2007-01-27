@@ -20,8 +20,8 @@ sub page_classes_v {
 	my $tree = Apache::SWIT::Maker::Config->instance;
 	my $rc = $tree->root_class;
 	return [ map { s/^$rc\:://; { pc => $_ } } (
-			(map { $_->{class} } values %{ $tree->{pages} })
-			, @{ $tree->{classes_for_inheritance} }) ];
+			@{ $tree->{classes_for_inheritance} }
+			, (map { $_->{class} } values %{ $tree->{pages} })) ];
 }
 
 sub is_in_manifest { return undef; }

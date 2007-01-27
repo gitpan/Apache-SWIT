@@ -27,7 +27,8 @@ sub on_inheritance_end {
 	$rci->ht_add_widget(::HTV."::Link", '[% col1_v %]'
 		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ [% col1_v %] => 'Primary' ]
-		, column_title => '[% link_title_v %]');
+		, column_title => '[% link_title_v %]'
+		, 0 => { isnt_sealed => 1 });
 [% FOREACH list_fields_v %]$rci->ht_add_widget(::HTV."::Marked", '[% field %]'
 		, cdbi_bind => '', column_title => '[% title %]');
 [% END %]

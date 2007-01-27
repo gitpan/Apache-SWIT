@@ -49,7 +49,7 @@ package Apache::SWIT;
 use Template;
 use Apache::Request;
 
-our $VERSION = 0.20;
+our $VERSION = 0.21;
 
 sub swit_send_http_header {
 	my ($class, $r) = @_;

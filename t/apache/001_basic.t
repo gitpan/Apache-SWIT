@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 18;
+use Test::More tests => 21;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
@@ -15,10 +15,14 @@ like($@, qr/do_startup/);
 Apache::SWIT::Test->do_startup("AA_ROOT");
 is(HTV(), 'HTML::Tested::Value');
 is(HT(), 'HTML::Tested');
+is(HTJ(), 'HTML::Tested::JavaScript');
 is(Apache::SWIT::Test->root_env_var, 'AA_ROOT');
 is($ENV{SWIT_HAS_APACHE}, 1);
 ok($ENV{AA_ROOT});
 ok(-f $ENV{AA_ROOT} . "/conf/seal.key");
+
+# our blib should be first
+like($INC[0], qr/blib/);
 
 my $s_up = $ENV{AA_ROOT} . "/conf/startup.pl";
 ok(-f $s_up);
@@ -28,7 +32,8 @@ my $t = Apache::SWIT::Test->new;
 like($0, qr/001_basic/);
 ok($t->mech);
 $t->mech_get_base("/test/basic_handler");
-is($t->mech->content, "hhhh");
+like($t->mech->content, qr/hhhh/);
+like($t->mech->content, qr/blib/);
 
 $t->mech_get_base("/test/swit/r");
 like($t->mech->content, qr/hello world/);

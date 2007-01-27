@@ -14,7 +14,12 @@ use HTML::Tested::Seal;
 use File::Slurp;
 use File::Basename qw(dirname);
 use HTML::Tested qw(HT HTV);
+use HTML::Tested::JavaScript qw(HTJ);
 use Apache::SWIT::DB::Connection;
+use HTML::Tested::List;
+
+eval "use " . HTV() . "::$_" for qw(Marked Form Hidden Submit EditBox Link
+					Upload);
 
 HTML::Tested::Seal->instance(read_file(dirname($0) . '/seal.key'));
 

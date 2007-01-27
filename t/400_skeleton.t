@@ -200,7 +200,8 @@ use Aaa::Bbb::DB::TheTab;
 __PACKAGE__->ht_add_widget(::HTV."::Link", 'col_a'
 		, href_format => '../info/r?edit_link=%s'
 		, cdbi_bind => [ col_a => 'Primary' ]
-		, column_title => 'ColA');
+		, column_title => 'ColA'
+		, 0 => { isnt_sealed => 1 });
 __PACKAGE__->ht_add_widget(::HTV."::Marked"
 			, 'col_b', cdbi_bind => ''
 			, column_title => 'ColB');
@@ -399,11 +400,11 @@ package Aaa::Bbb::PageClasses;
 use base 'Apache::SWIT::Subsystem::Base';
 
 sub classes_for_inheritance { return qw(
+	CCC
 	UI::Info
 	UI::P
 	UI::Form
 	Go
-	CCC
 ); }
 
 1;

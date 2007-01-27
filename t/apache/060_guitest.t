@@ -16,6 +16,7 @@ is($ENV{SWIT_HAS_APACHE}, 1);
 
 my $t = Apache::SWIT::Test->new_guitest;
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
+	val => ''
 });
 
 $t->mech->run_js("return form_submit()");

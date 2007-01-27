@@ -12,7 +12,7 @@ our $ASTU_Should_Wait = $ENV{ASTU_WAIT};
 $ENV{ASTU_WAIT} = 0;
 
 sub ASTU_Wait {
-	my $dir = shift;
+	my $dir = shift || "";
 	unless ($ASTU_Should_Wait) {
 		print STDERR "# ASTU_WAIT: no \$ENV{ASTU_WAIT} is given\n";
 		return;

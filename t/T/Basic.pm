@@ -6,7 +6,7 @@ package T::Basic;
 sub handler ($$) {
 	my($class, $r) = @_;
 	$r->send_http_header("text/plain");
-	print "hhhh";
+	print "hhhh\n$INC[0]";
 	return 200;
 }
 
