@@ -47,7 +47,7 @@ is($dut->root_class_v, 'Aaa::Bbb');
 my $gtv = $dut->get_template_vars;
 is_deeply($gtv, { map { ($_ => $dut->$_) } qw(
 	form_test_v info_test_v
-	empty_cols_v
+	empty_cols_v db_class_v
 	cols_99_v cols_333_v
 	cols_99_list_v cols_333_list_v
 	col1_v root_class_v table_class_v
@@ -127,6 +127,8 @@ $t->ht_thetab_form_u(button => [ delete_button => 'Delete' ], ht => {
 });
 
 $t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
+
+$t->reset_db_table_from_class("Aaa::Bbb::DB::TheTab");
 ENDS
 
 $dut->columns([ 'one' ]);

@@ -2,8 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Subsystem::Skeleton::Scaffold::Info;
-use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::Info
-		Apache::SWIT::Subsystem::Skeleton::Scaffold::Base);
+use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::Info);
 
 sub template { return <<'ENDS'; }
 use strict;
@@ -27,8 +26,7 @@ sub on_inheritance_end {
 	$rc->ht_add_widget(::HTV."::Link", 'edit_link'
 		, href_format => '../form/r?ht_id=%s'
 		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
-	$rc->bind_to_class_dbi($class->main_subsystem_class
-			->[% db_class_v %]);
+	$rc->bind_to_class_dbi("[% db_class_v %]");
 }
 
 sub ht_swit_render {

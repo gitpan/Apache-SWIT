@@ -13,7 +13,7 @@ use base 'Class::Accessor';
 use File::Path;
 use File::Basename qw(dirname basename);
 use File::Copy;
-use Cwd qw(abs_path);
+use Cwd qw(abs_path getcwd);
 use Apache::SWIT::Maker::GeneratorsQueue;
 use Apache::SWIT::Maker::FileWriterData;
 use Apache::SWIT::Maker::Conversions;
@@ -21,6 +21,8 @@ use Apache::SWIT::Maker::Config;
 use Apache::SWIT::Maker::Makefile;
 use File::Slurp;
 use Apache::SWIT::Maker::Manifest;
+use ExtUtils::Manifest qw(maniread manicopy);
+use File::Temp qw(tempdir);
 
 __PACKAGE__->mk_accessors(qw(lib_dir file_writer));
 
@@ -406,13 +408,11 @@ sub add_db_class {
 	$self->skel_db_class->new({ table => $table })->write_output;
 }
 
-sub use_to_extract { return conv_eval_use($_[1]); }
-
 sub _extract_columns {
 	my ($self, $c) = @_;
 	push @INC, "t", "lib";
 	conv_eval_use('T::TempDB');
-	$c = $self->use_to_extract($c);
+	conv_eval_use($c);
 	my %pc = map { ($_, 1) } $c->primary_columns;
 	return grep { !$pc{$_} } $c->columns;
 }
@@ -450,6 +450,101 @@ sub override {
 	$p->do_not_use(undef);
 	$self->add_class($p->class, "use base '$cc';");
 	$c->save;
+}
+
+sub mv {
+	my ($self, $from, $to) = @_;
+	swmani_replace_file($from, $to);
+	swmani_replace_in_files($from, $to);
+	my ($cf, $ct) = (conv_file_to_class($from), conv_file_to_class($to));
+	swmani_replace_in_files(-f $to ? sub {
+		s/$cf\::Root/$ct\::Root/g;
+		s/$cf([^:\w])/$ct$1/g;
+	} : ($cf, $ct));
+
+	my ($ef, $et) = map { conv_class_to_entry_point($_) } ($cf, $ct);
+	my $cstr = read_file('conf/swit.yaml');
+	($cstr =~ s#$ef(.*):#$et$1:#g) and write_file('conf/swit.yaml', $cstr);
+
+	# change test functions
+	my ($tf_f, $tf_t) = ($ef, $et);
+	s#\/#_#g for ($tf_f, $tf_t);
+	swmani_replace_in_files("ht_$tf_f", "ht_$tf_t");
+
+	my $tt_ef = "templates/$ef";
+	if (-f $to) {
+		$tt_ef .= ".tt";
+		$et .= ".tt";
+	}
+	$self->mv($tt_ef, "templates/$et") if ($cstr =~ m#$tt_ef#);
+}
+
+sub available_commands { return (
+add_class => [ '<class> - adds new class.', 1 ]
+, add_db_class => [ '<class> - adds new database class.', 1 ]
+, add_ht_page => [ '<class> - adds new HTML::Tested based page.', 1 ]
+, add_page => [ '<class> - adds new page.', 1 ]
+, add_test => [ '<file> - adds new test file.' ]
+, install => [ '<dir> - installs into dir.' ]
+, mv => [ '<from> <to> - moves file or directory updating all things which
+		reference it.', 1 ]
+, override => [ '<class> - overrides page class by inheriting from it.' ]
+, regenerate_httpd_conf => [ '- regenerates httpd.conf.' ]
+, regenerate_seal_key => [ '- regenerates new seal key.' ]
+, run_server => [ '- runs Apache on APACHE_TEST_PORT.' ]
+, scaffold => [ '<table_name> - generates classes and templates supporting
+		<table_name> CRUD operation.', 1 ]
+); }
+
+sub swit_app_cmd_params {
+	my ($self, $cmd) = @_;
+	my %cmds = $self->available_commands;
+	return $cmds{$cmd} if ($cmd && $cmds{$cmd});
+	my $res = "Usage: $0 <cmd> <args> where available commands are:\n";
+	for my $n (sort keys %cmds) {
+		my $v = $cmds{$n};
+		$res .= "$n $v->[0]\n";
+	}
+	print $res;
+	return undef;
+}
+
+sub silent_system {
+	my ($self, $cmd) = @_;
+	system("$cmd 2>&1 1>/dev/null") and die "Unable to do $cmd";
+}
+
+sub do_swit_app_cmd {
+	my ($self, $cmd, @args) = @_;
+	my $p = $self->swit_app_cmd_params($cmd) or return;
+	my ($mf_before);
+	local $ExtUtils::Manifest::Quiet = 1;
+	my $bf_name = join("_", $cmd, @args);
+	$bf_name =~ s/\W/_/g;
+	my $cwd = getcwd();
+	my $backup_dir = "$cwd/../$bf_name";
+	if ($p->[1]) {
+		$mf_before = maniread();
+		manicopy($mf_before, $backup_dir);
+		$self->silent_system("make realclean") if -f 'Makefile';
+	}
+	eval { $self->$cmd(@args); };
+	my $err = $@;
+	if ($err && $p->[1]) {
+		chdir $backup_dir;
+		manicopy($mf_before, $cwd);
+		chdir $cwd;
+	} elsif ($p->[1]) {
+		mkpath("backups");
+		my $mf = maniread();
+		$mf->{$_} = 1 for keys %$mf_before;
+		# diff returns 1 for some reason
+		system("diff -uN $backup_dir/$_ $_ >> backups/$bf_name.patch")
+				for (sort keys %$mf);
+		$self->silent_system("perl Makefile.PL");
+	}
+	rmtree($backup_dir);
+	die "Rolled back. Original exception is $err" if $err;
 }
 
 1;

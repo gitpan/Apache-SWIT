@@ -64,11 +64,7 @@ sub create_new_page {
 	my ($self, $page_class) = @_;
 	my $rc = $self->root_class;
 	my $full_class = conv_make_full_class($rc, "UI", $page_class);
-
-	my $entry_point = $page_class;
-	$entry_point =~ s/^$rc\:://;
-	$entry_point = lc($entry_point);
-	$entry_point =~ s/::/\//g;
+	my $entry_point = conv_class_to_entry_point($page_class, $rc);
 
 	my $tt_file = "templates/$entry_point.tt";
 	my $entry = {

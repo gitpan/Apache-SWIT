@@ -34,7 +34,7 @@ realclean ::
 	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.09',
 	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
-	'Test::TempDatabase' => '', 'Class::DBI::Pg::More' => '0.02',
+	'Test::TempDatabase' => '0.1', 'Class::DBI::Pg::More' => '0.02',
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.03'
     },

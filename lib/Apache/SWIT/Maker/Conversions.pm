@@ -8,7 +8,8 @@ use Carp;
 
 our @EXPORT = qw(conv_table_to_class conv_make_full_class
 		conv_next_dual_test conv_class_to_app_name
-		conv_forced_write_file conv_eval_use);
+		conv_forced_write_file conv_eval_use conv_file_to_class
+		conv_class_to_entry_point);
 
 sub _capitalize {
 	my ($l, $rest) = ($_[0] =~ /(\w)(\w*)/);
@@ -16,7 +17,7 @@ sub _capitalize {
 }
 
 sub conv_table_to_class {
-	my $t = shift;
+	my $t = shift or confess "No table was given";
 	return join('', map { _capitalize($_) } split('_', $t));
 }
 
@@ -62,6 +63,22 @@ sub conv_eval_use {
 	eval "use $c";
 	confess "Cannot use $c: $@" if $@;
 	return $c;
+}
+
+sub conv_file_to_class {
+	my $file = shift;
+	$file =~ s#^lib/##;
+	$file =~ s#/#::#g;
+	$file =~ s#\..+##;
+	return $file;
+}
+
+sub conv_class_to_entry_point {
+	my ($c, $rc) = @_;
+	$rc ||= ".+::UI";
+	$c =~ s/^$rc\:://;
+	$c =~ s#::#/#g;
+	return lc($c);
 }
 
 1;

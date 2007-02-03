@@ -253,4 +253,10 @@ SKIP: {
 };
 }
 
+sub reset_db_table_from_class {
+	my ($self, $dbc) = @_;
+	$dbc->retrieve_all->delete_all;
+	$dbc->db_Main->do("alter sequence ". $dbc->sequence ." restart with 1");
+}
+
 1;

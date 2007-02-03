@@ -2,8 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Subsystem::Skeleton::Scaffold::Form;
-use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::Form
-		Apache::SWIT::Subsystem::Skeleton::Scaffold::Base);
+use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::Form);
 
 sub template { return <<'ENDS'; }
 use strict;
@@ -29,8 +28,7 @@ sub on_inheritance_end {
 	$rc->ht_add_widget(::HTV."::EditBox"
 			, [% field %] => cdbi_bind => '');[% END %]
 	$rc->ht_add_widget(::HTV."::Form", form => default_value => 'u');
-	$rc->bind_to_class_dbi($class->main_subsystem_class
-			->[% db_class_v %]);
+	$rc->bind_to_class_dbi("[% db_class_v %]");
 }
 
 sub ht_swit_render {

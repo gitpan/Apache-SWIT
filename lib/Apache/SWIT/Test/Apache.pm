@@ -8,6 +8,7 @@ use Cwd qw(abs_path);
 use File::Path qw(rmtree);
 use File::Temp qw(tempdir);
 use File::Slurp;
+use Test::TempDatabase;
 
 my ($_sess_dir, $_pid);
 
@@ -26,15 +27,19 @@ sub Run {
 
 	my $not_config = (@ARGV && $ARGV[0] ne '-config');
 	push @ARGV, '-top_dir', $top_dir;
+	my $cf_dir = "$top_dir/t/conf";
 
+	unless ($<) {
+		`chmod a+w $cf_dir`;
+		`chmod a+w $top_dir/blib`;
+		Test::TempDatabase->become_postgres_user;
+	}
 	if ($not_config) {
 		$_sess_dir = tempdir('/tmp/apache_swit_dirs_XXXXXX'); 
 		mkdir "$_sess_dir/$_" for @vars;
 
-		my $cf_dir = "$top_dir/t/conf";
 		Switch_Dir_Vars("$cf_dir/$from", "$cf_dir/$to", $_sess_dir
 				, @vars);
-		`chown -R nobody $_sess_dir` unless $<;
 		$_pid = $$;
 		$ENV{SWIT_TEST_DIR} = $_sess_dir;
 		$non_config_func->() if $non_config_func;

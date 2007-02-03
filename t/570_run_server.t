@@ -22,7 +22,7 @@ ok(-f 'LICENSE');
 
 my @cmd = ("./scripts/swit_app.pl", "run_server"); 
 my ($in, $out, $err) = @_;
-my $t = timeout(10);
+my $t = timeout(30);
 
 my $h = start(\@cmd, \$in, \$out, \$err, $t);
 pump $h until $err =~ /Press Enter to finish \.\.\./;

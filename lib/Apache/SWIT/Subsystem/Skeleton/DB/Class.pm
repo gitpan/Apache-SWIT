@@ -12,10 +12,9 @@ use warnings FATAL => 'all';
 package [% class_v %];
 use base 'Apache::SWIT::DB::Base';
 
-sub on_inheritance_end {
-	my $class = shift;
-	$class->set_up_table('[% table_v %]', { ColumnGroup => 'Essential' });
-}
+__PACKAGE__->set_up_table('[% table_v %]', { ColumnGroup => 'Essential' });
+
+sub on_inheritance_end { }
 
 1;
 ENDS

@@ -10,8 +10,7 @@ __PACKAGE__->add_file({ name => 'scripts/swit_app.pl'
 #!/usr/bin/perl -w
 use strict;
 use [% class %];
-my $f = shift(@ARGV);
-[% class %]->new->$f(@ARGV);
+[% class %]->new->do_swit_app_cmd(@ARGV);
 EM
 
 __PACKAGE__->add_file({ name => 'tt_file', manifest => 1

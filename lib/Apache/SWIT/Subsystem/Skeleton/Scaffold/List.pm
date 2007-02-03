@@ -2,8 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Subsystem::Skeleton::Scaffold::List;
-use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::List
-		Apache::SWIT::Subsystem::Skeleton::Scaffold::Base);
+use base qw(Apache::SWIT::Maker::Skeleton::Scaffold::List);
 
 sub template { return <<'ENDS'; }
 use strict;
@@ -32,8 +31,7 @@ sub on_inheritance_end {
 [% FOREACH list_fields_v %]$rci->ht_add_widget(::HTV."::Marked", '[% field %]'
 		, cdbi_bind => '', column_title => '[% title %]');
 [% END %]
-	$rci->bind_to_class_dbi($class->main_subsystem_class
-			->[% db_class_v %]);
+	$rci->bind_to_class_dbi("[% db_class_v %]");
 
 	$rc->ht_add_widget(::HTV."::Form", 'form', default_value => 'u');
 	$rc->ht_add_widget(::HT."::List", '[% list_name_v %]', $rc . '::Item'

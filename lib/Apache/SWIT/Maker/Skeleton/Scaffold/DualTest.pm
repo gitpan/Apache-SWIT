@@ -102,6 +102,8 @@ $t->ht_[% form_test_v %]_u(button => [ delete_button => 'Delete' ], ht => {
 });
 
 $t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [%list_name_v%] => [] });
+
+$t->reset_db_table_from_class("[% db_class_v %]");
 ENDS
 
 1;

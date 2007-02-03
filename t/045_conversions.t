@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 33;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Test::TempDatabase;
@@ -46,6 +46,36 @@ my $mf = read_file('MANIFEST');
 like($mf, qr/ggg/);
 like($mf, qr/ccc/);
 ok(-f "boo/ccc.txt");
+
+swmani_replace_file("boo/c", "b/c/d/");
+ok(! -f "boo/ccc.txt");
+ok(-f "b/c/d/cc.txt");
+$mf = read_file('MANIFEST');
+like($mf, qr#b/c/d/cc\.txt#);
+unlike($mf, qr#ccc\.txt#);
+
+is(conv_file_to_class("lib/A/UI/G"), "A::UI::G");
+is(conv_file_to_class("lib/A/UI/G.pm"), "A::UI::G");
+is(conv_class_to_entry_point("A::UI::G::B"), "g/b");
+
+# and now with root class given
+is(conv_class_to_entry_point("A::B::C", "A::B"), "c");
+
+swmani_replace_in_files("hoho", "haha");
+my $ccf = read_file("b/c/d/cc.txt"); 
+like($ccf, qr/haha/);
+unlike($ccf, qr/hoho/);
+
+swmani_replace_in_files("haha\$", "bobo");
+$ccf = read_file("b/c/d/cc.txt"); 
+like($ccf, qr/bobo/);
+unlike($ccf, qr/haha/);
+
+swmani_replace_in_files(sub { s/b(.)/A$1/g; });
+$ccf = read_file("b/c/d/cc.txt"); 
+like($ccf, qr/AoAo/);
+unlike($ccf, qr/bobo/);
+
 chdir '/';
 
 is(conv_next_dual_test(<<ENDS), '021');

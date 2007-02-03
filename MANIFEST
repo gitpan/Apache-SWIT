@@ -41,7 +41,6 @@ lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/DualTest.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Form.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/List.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Info.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Base.pm
 lib/Apache/SWIT/Subsystem/Makefile.pm
 lib/Apache/SWIT/Subsystem/Generator.pm
 lib/Apache/SWIT/Subsystem/Base.pm
@@ -62,10 +61,12 @@ t/450_makefile.t
 t/500_swit_init.t
 t/505_dual.t
 t/510_install.t
+t/515_backup.t
 t/520_db.t
 t/525_sub_install.t
 t/530_subsystem.t
 t/540_db_class.t
+t/555_move.t
 t/550_scaffold.t
 t/560_ht_seal.t
 t/570_run_server.t

@@ -214,12 +214,4 @@ sub this_subsystem_original_tree {
 				'this_subsystem_original_tree');
 }
 
-sub use_to_extract {
-	system("make > /dev/null");
-	use lib 'blib/lib';
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	conv_eval_use('T::' . $rc);
-	return 'T::' . $_[1];
-}
-
 1;
