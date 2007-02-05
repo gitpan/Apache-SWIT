@@ -58,7 +58,8 @@ sub new_guitest {
 	if ($self->mech) {
 		eval "use Mozilla::Mechanize::GUITester";
 		die "Unable to use Mozilla::Mechanize::GUITester: $@" if $@;
-		my $m = Mozilla::Mechanize::GUITester->new(quiet => 1, visible => 0);
+		my $m = Mozilla::Mechanize::GUITester->new(quiet => 1
+				, visible => 0);
 		$self->mech($m);
 		$m->x_resize_window(800, 600);
 	}
@@ -113,13 +114,19 @@ sub _mech_render {
 	return $self->mech->content;
 }
 
+sub _filter_out_readonly {
+	my ($self, $args) = @_;
+	return if ref($self->mech) eq 'Mozilla::Mechanize::GUITester';
+	delete $args->{fields}->{$_} for map { $_->name } grep { $_->readonly }
+		$self->mech->current_form->inputs;
+}
+
 sub _mech_update {
 	my ($self, $handler_class, %args) = @_;
 	delete $args{url_to_make};
 	my $b = delete $args{button};
 	$args{button} = $b->[0] if $b;
-	delete $args{fields}->{$_} for map { $_->name } grep { $_->readonly }
-		$self->mech->current_form->inputs;
+	$self->_filter_out_readonly(\%args);
 	$self->mech->submit_form(%args);
 	return $self->mech->content;
 }

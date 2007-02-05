@@ -464,12 +464,19 @@ sub mv {
 
 	my ($ef, $et) = map { conv_class_to_entry_point($_) } ($cf, $ct);
 	my $cstr = read_file('conf/swit.yaml');
-	($cstr =~ s#$ef(.*):#$et$1:#g) and write_file('conf/swit.yaml', $cstr);
+	if (-f $to) {
+		$cstr =~ s#$ef\:#$et\:#g;
+	} else {
+		$cstr =~ s#$ef(.+):#$et$1:#g;
+	}
+	write_file('conf/swit.yaml', $cstr);
 
 	# change test functions
 	my ($tf_f, $tf_t) = ($ef, $et);
 	s#\/#_#g for ($tf_f, $tf_t);
-	swmani_replace_in_files("ht_$tf_f", "ht_$tf_t");
+	swmani_replace_in_files(-f $to ? sub {
+		s/ht_$tf_f(_\w)\b/ht_$tf_t$1/g;
+	} : ("ht_$tf_f", "ht_$tf_t"));
 
 	my $tt_ef = "templates/$ef";
 	if (-f $to) {

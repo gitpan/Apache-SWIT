@@ -32,7 +32,6 @@ sub Run {
 	unless ($<) {
 		`chmod a+w $cf_dir`;
 		`chmod a+w $top_dir/blib`;
-		Test::TempDatabase->become_postgres_user;
 	}
 	if ($not_config) {
 		$_sess_dir = tempdir('/tmp/apache_swit_dirs_XXXXXX'); 

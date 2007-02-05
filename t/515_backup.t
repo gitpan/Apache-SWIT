@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 39;
+use Test::More tests => 44;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::ModuleTester;
@@ -78,6 +78,9 @@ isnt(-f 'lib/TTT/UI/TheTable.pm', undef) or ASTU_Wait($mt->root_dir);
 ok(-f 'templates/thetable.tt');
 
 append_file('lib/TTT/UI/TheTable.pm', "# bind('TTT::UI::TheTable')\n");
+append_file('lib/TTT/UI/TheTable.pm', "# ok_ht_thetable_r\n");
+append_file('lib/TTT/UI/TheTable.pm', "# standalone: TTT::UI::TheTable\n");
+append_file('lib/TTT/UI/TheTable.pm', "# TTT::UI::TheTableA\n");
 
 $res = `$swmv lib/TTT/UI/TheTable.pm lib/TTT/UI/TheTable/D.pm 2>&1`;
 is($?, 0) or diag($res);
@@ -88,7 +91,16 @@ my $dpm = read_file('lib/TTT/UI/TheTable/D.pm');
 like($dpm, qr/TheTable::D;/) or exit 1;
 like($dpm, qr/TheTable::D::Root;/) or exit 1;
 like($dpm, qr/bind\('TTT::UI::TheTable::D'\)/) or exit 1;
-like(read_file('conf/swit.yaml'), qr/TheTable::D\n/) or exit 1;
+like($dpm, qr/ok_ht_thetable_d_r/) or exit 1;
+like($dpm, qr/standalone: TTT::UI::TheTable::D/) or exit 1;
+like($dpm, qr/TheTableA/);
+
+my $cfyaml = read_file('conf/swit.yaml');
+like($cfyaml, qr/TheTable::D\n/) or exit 1;
+unlike($cfyaml, qr#d/list#) or exit 1;
+
+my $t011 = read_file("t/dual/011_the_table.t");
+like($t011, qr/ht_thetable_list_r/) or exit 1;
 
 $res = `make test_apache 2>&1`;
 is($?, 0) or do { diag($res); ASTU_Wait($mt->root_dir); };

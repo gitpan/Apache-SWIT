@@ -9,6 +9,12 @@ use Apache::SWIT::DB::Connection;
 use Cwd qw(abs_path);
 
 my $test_db;
+unless ($<) {
+	my $chmod = "chmod -R a+rw " . abs_path(dirname($0)) . "/../";
+	print STDERR "# Running as root. Having no other choice but: $chmod\n";
+	`$chmod`;
+	Test::TempDatabase->become_postgres_user;
+}
 Apache::SWIT::Test::Apache::Run('extra.conf.swit', 'extra.conf.in', sub {
 	my $d = abs_path(dirname($0));
 	symlink("$d/conf", "$d/../blib/conf");
