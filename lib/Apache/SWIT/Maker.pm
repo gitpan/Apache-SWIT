@@ -23,6 +23,7 @@ use File::Slurp;
 use Apache::SWIT::Maker::Manifest;
 use ExtUtils::Manifest qw(maniread manicopy);
 use File::Temp qw(tempdir);
+use Data::Dumper;
 
 __PACKAGE__->mk_accessors(qw(lib_dir file_writer));
 
@@ -329,8 +330,6 @@ sub add_ht_page {
 	return $self->_make_page($pc, {}, qw(skel_ht_template skel_ht_page));
 }
 
-sub alias_class { return $_[1]; }
-
 sub session_class_for_httpd_conf {
 	return $_[1]->{session_class};
 }
@@ -364,8 +363,7 @@ sub regenerate_httpd_conf {
 	my $aliases = "";
 	while (my ($n, $v) = each %{ $tree->{pages} }) {
 		$ht_in .= $self->httpd_location_section($gq, $n, $v) . "\n";
-		$aliases .= "\"$n\" => '"
-				. $self->alias_class($v->{class}) . "',\n";
+		$aliases .= "\"$n\" => \"$v->{class}\",\n";
 	}
 
 	mkpath_write_file('blib/conf/httpd.conf', $ht_in);
@@ -433,8 +431,11 @@ sub scaffold {
 }
 
 sub run_server {
+	my ($self, $hp) = @_;
+	$hp ||= 1;
 	my $dn = abs_path(dirname($0));
-	$ENV{__APACHE_SWIT_RUN_SERVER__} = 1;
+	$self->silent_system("perl Makefile.PL") unless -f 'Makefile';
+	$ENV{__APACHE_SWIT_RUN_SERVER__} = $hp;
 	system("make test_apache");
 }
 
@@ -444,11 +445,14 @@ sub override {
 	my $p = $c->find_page($page) or die "Unable to find $page page";
 	my $rc = $c->root_class;
 	my $cc = $p->class;
-	$cc =~ /^$rc\::(\w+)::UI::(\S+)$/
-		or die "Unable to match " . Dumper($p);
-	$p->class("$rc\::UI::$1\::$2");
-	$p->do_not_use(undef);
-	$self->add_class($p->class, "use base '$cc';");
+	$cc =~ /^(\w+)::UI::(\S+)$/ or die "Unable to match " . Dumper($p);
+	my $pc = $p->class("$rc\::UI::$1\::$2");
+	$self->add_class($pc, <<ENDS);
+use base '$cc';
+
+package $pc\::Root;
+use base '$cc\::Root';
+ENDS
 	$c->save;
 }
 
@@ -498,7 +502,7 @@ add_class => [ '<class> - adds new class.', 1 ]
 , override => [ '<class> - overrides page class by inheriting from it.' ]
 , regenerate_httpd_conf => [ '- regenerates httpd.conf.' ]
 , regenerate_seal_key => [ '- regenerates new seal key.' ]
-, run_server => [ '- runs Apache on APACHE_TEST_PORT.' ]
+, run_server => [ '<host:port> - runs Apache on optional host:port.' ]
 , scaffold => [ '<table_name> - generates classes and templates supporting
 		<table_name> CRUD operation.', 1 ]
 ); }

@@ -16,8 +16,6 @@ __PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
 
-sub ht_root_class { return __PACKAGE__ . '::Root'; }
-
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
 	return $root;

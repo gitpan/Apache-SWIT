@@ -3,7 +3,7 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Maker::Config::Page;
 use base 'Class::Accessor';
-__PACKAGE__->mk_accessors(qw(class do_not_use));
+__PACKAGE__->mk_accessors(qw(class));
 
 package Apache::SWIT::Maker::Config;
 use base 'Class::Singleton', 'Class::Accessor';

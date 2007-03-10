@@ -6,25 +6,10 @@ use base 'Apache::SWIT::Maker::GeneratorBase';
 use File::Slurp;
 use Apache::SWIT::Maker::Manifest;
 
-sub location_section_prolog {
-	my ($self, $res, $loc, $e) = @_;
-	my $ec = $e->{class};
-	$res =~ s/PerlModule $ec//;
-	$e->{class} = "T::$ec";
-	return $res;
-}
-
-sub location_section_epilogue {
-	my ($self, $res, $loc, $e) = @_;
-	$e->{class} =~ s/^T:://;
-	return '';
-}
-
 sub dump_page_entry {
 	my ($self, $res, $v) = @_;
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	my $tt_file = $v->{entry_points}->{r}->{template};
-	$v->{class} =~ s/^$rc\:://;
 	$v->{file} = read_file($tt_file);
 	$tt_file =~ s#^templates/##;
 	$v->{entry_points}->{r}->{template} = $tt_file;
@@ -37,8 +22,6 @@ sub install_page_entry {
 	my $tt_file = $v->{entry_points}->{r}->{template} =
 		"templates/$lcm/" . $v->{entry_points}->{r}->{template};
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	$v->{class} = "$rc\::$module\::" . $v->{class};
-	$v->{do_not_use} = 1;
 	swmani_write_file($tt_file, $v->{file});
 	delete $v->{file};
 	return $v;

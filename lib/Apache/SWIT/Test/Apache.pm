@@ -19,6 +19,14 @@ sub Switch_Dir_Vars {
 	write_file($to, $s);
 }
 
+sub Check_For_Run_Server {
+	my $argv = shift;
+	my $rshp = $ENV{__APACHE_SWIT_RUN_SERVER__} or return;
+	my ($h, $p) = split(/:/, $rshp);
+	return unless ($h && $p);
+	push @$argv, "-servername", $h, "-port", $p;
+}
+
 sub Run {
 	my ($from, $to, @vars) = @_;
 	my $non_config_func = (@vars && ref($vars[0])) ? shift(@vars) : undef;
@@ -28,6 +36,7 @@ sub Run {
 	my $not_config = (@ARGV && $ARGV[0] ne '-config');
 	push @ARGV, '-top_dir', $top_dir;
 	my $cf_dir = "$top_dir/t/conf";
+	Check_For_Run_Server(\@ARGV);
 
 	unless ($<) {
 		`chmod a+w $cf_dir`;

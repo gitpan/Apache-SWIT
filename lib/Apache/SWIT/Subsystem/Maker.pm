@@ -157,8 +157,6 @@ sub write_swit_yaml {
 	shift()->SUPER::write_swit_yaml;
 }
 
-sub alias_class { return "T::" . $_[1]; }
-
 sub session_class_for_httpd_conf {
 	return "T::" . $_[1]->{session_class};
 }

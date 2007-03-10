@@ -1,5 +1,5 @@
 <Perl>
-	push @INC, "@ServerRoot@/../blib/lib";
+	push @INC, "@ServerRoot@/../blib/lib" if $Apache::Server::Starting;
 </Perl>
 
 PerlRequire @ServerRoot@/conf/startup.pl
@@ -79,3 +79,11 @@ PerlModule T::DBPage
 </Location>
 
 Alias /test/www @ServerRoot@/public_html 
+
+<Perl>
+if ($Apache::Server::Starting) {
+	T::SWIT->swit_startup;
+	T::SessPage->swit_startup;
+	T::HTPage->swit_startup;
+}
+</Perl>

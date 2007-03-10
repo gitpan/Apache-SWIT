@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 48;
+use Test::More tests => 49;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -42,23 +42,16 @@ sub on_inheritance_end {
 	my \$class = shift;
 	\$class->add_var('username');
 
-	my \$n = lc(\$class->main_subsystem_class);
-	\$n =~ s/::/_/g;
-	\$class->add_var(\$n);
-	\$class->add_class_dbi_var('pseudo', 
-			\$class->main_subsystem_class->ui_index_class);
+	\$class->add_var('t_ttt');
 }
 
 1;
 ENDM
 
 write_file("t/555_test.t", <<'ENDT');
-use Test::More tests => 8;
+use Test::More tests => 5;
 BEGIN { use_ok('T::TTT'); }
 is(T::TTT::DB::Random->number, 494);
-is(T::TTT->db_random_class, 'T::TTT::DB::Random');
-is(T::TTT::DB::Random->main_subsystem_class, 'T::TTT');
-is(T::TTT::UI::Index->main_subsystem_class, 'T::TTT');
 is(T::TTT->templates_dir, 'templates/');
 is(T::TTT::Session->cookie_name, 'ttt');
 can_ok(T::TTT::Session, 'get_t_ttt');
@@ -77,22 +70,20 @@ my $res = join('', `perl Makefile.PL && make 2>&1`);
 is($?, 0) or diag($res);
 
 my $ht_conf = read_file('blib/conf/httpd.conf');
-like($ht_conf, qr/T::TTT::UI::Index/);
+like($ht_conf, qr/TTT::UI::Index/);
+unlike($ht_conf, qr/T::TTT::UI::Index/);
 like($ht_conf, qr/T::TTT::Session/);
 
 my $ind_str = read_file('lib/TTT/UI/Index.pm');
 unlike($ind_str, qr/\.tt/);
-like($ind_str, qr/ht_root.+Root/);
+unlike($ind_str, qr/ht_root.+Root/);
 
 my $m_str = read_file('MANIFEST');
 unlike($m_str, qr/Test\.pm/);
 unlike($m_str, qr/PageClasses\.pm/);
 
 $res = join('', `make test 2>&1`);
-unlike($res, qr/Error/) or do {
-	diag("$td");
-#	readline(\*STDIN);
-};
+unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/success/);
 like($res, qr/localhost/);
 like($res, qr/950_install/);
@@ -162,7 +153,7 @@ isnt($ind, undef) or diag(Dumper($tree));
 is($ind->{entry_points}->{r}->{template}, 'templates/thesub/index.tt');
 is($ind->{entry_points}->{r}->{foo}, 'boo')
 	 or diag(Dumper($tree));
-is($ind->{class}, 'MU::TheSub::UI::Index');
+is($ind->{class}, 'TTT::UI::Index');
 is(read_file('templates/thesub/index.tt'), 
 		read_file('templates/index.tt'));
 
@@ -210,7 +201,7 @@ unlike($res, qr/Error/) or ASTU_Wait($td);
 
 $mt->replace_in_file('t/dual/001_load.t', '=> 5', '=> 6');
 append_file('t/dual/001_load.t', <<ENDT);
-can_ok(\$t->session, 'get_mu_thesub');
+can_ok(\$t->session, 'get_t_ttt');
 ENDT
 $res = join('', `make test_ TEST_FILES=t/950_install.t 2>&1`);
 unlike($res, qr/Error/) or do {

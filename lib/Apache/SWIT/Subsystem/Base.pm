@@ -10,20 +10,10 @@ __PACKAGE__->mk_classdata('templates_dir', 'templates/');
 sub inherit_from_class {
 	my ($class, $root, $basename) = @_;
 	my $package = "$class\::$basename";
+	my $rb = conv_eval_use("$root\::$basename");
 	no strict 'refs';
-	push @{ *{ "$package\::ISA" } }, conv_eval_use("$root\::$basename")
-		unless @{ *{ "$package\::ISA" } };
-	push @{ *{ "$package\::ISA" } }, "Class::Data::Inheritable"
-		unless $package->can('mk_classdata');
-
-	$package->mk_classdata('main_subsystem_class');
-	$package->main_subsystem_class($class);
-
-	my $data_var = lc($basename) . "_class";
-	$data_var =~ s/::/_/g;
-	$class->mk_classdata($data_var);
-	$class->$data_var($package);
-	return $package;
+	push @{ *{ "$package\::ISA" } }, $rb unless @{ *{ "$package\::ISA" } };
+	return $rb;
 }
 
 sub inherit_classes {

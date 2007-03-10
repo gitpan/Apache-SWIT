@@ -7,7 +7,12 @@ use File::Slurp;
 
 sub location_section_prolog {
 	my ($self, $res, $loc, $e) = @_;
-	return $e->{do_not_use} ? "" : "PerlModule " . $e->{class} . "\n";
+	return <<ENDS;
+PerlModule $e->{class}
+<Perl>
+$e->{class}\->swit_startup if \$Apache::Server::Starting;
+</Perl>
+ENDS
 }
 
 

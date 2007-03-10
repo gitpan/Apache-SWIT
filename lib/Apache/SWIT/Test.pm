@@ -3,6 +3,7 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Test;
 use base 'Class::Accessor', 'Class::Data::Inheritable';
+use Apache::SWIT::Maker::Conversions;
 use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
@@ -199,6 +200,7 @@ sub make_aliases {
 	my ($class, %args) = @_;
 	my %trans = (r => 'render', u => 'update');
 	while (my ($n, $v) = each %args) {
+		conv_eval_use($v)->swit_startup;
 		no strict 'refs';
 		while (my ($f, $t) = each %trans) {
 			my $func = "$n\_$f";

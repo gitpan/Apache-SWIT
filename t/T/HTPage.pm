@@ -3,19 +3,11 @@ use warnings FATAL => 'all';
 
 package T::HTPage::Root;
 use base 'HTML::Tested';
-use HTML::Tested qw(HTV);
-
-__PACKAGE__->ht_add_widget(HTV, 'hello');
-__PACKAGE__->ht_add_widget(HTV, 'v1');
-__PACKAGE__->ht_add_widget(HTV."::Upload", 'up');
-__PACKAGE__->ht_add_widget(HTV."::Upload", 'inv_up');
-__PACKAGE__->ht_add_widget(HTV."::EditBox", 'file');
-__PACKAGE__->ht_add_widget(HTV."::Hidden", 'hid', is_sealed => 1);
 
 package T::HTPage;
 use base 'Apache::SWIT::HTPage';
 use File::Slurp;
-
+use HTML::Tested qw(HTV);
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
@@ -31,6 +23,16 @@ sub ht_swit_update {
 	my $res = $up ? $up->filename : "0";
 	write_file($f, "$res\n" . read_file($root->up));
 	return '/test/basic_handler';
+}
+
+sub swit_startup {
+	my $hclass = shift()->ht_root_class;
+	$hclass->ht_add_widget(HTV, 'hello');
+	$hclass->ht_add_widget(HTV, 'v1');
+	$hclass->ht_add_widget(HTV."::Upload", 'up');
+	$hclass->ht_add_widget(HTV."::Upload", 'inv_up');
+	$hclass->ht_add_widget(HTV."::EditBox", 'file');
+	$hclass->ht_add_widget(HTV."::Hidden", 'hid', is_sealed => 1);
 }
 
 1;

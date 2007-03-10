@@ -131,7 +131,7 @@ ok(! -f "lib/TTT/UI/First/Page.pm");
 
 Apache::SWIT::Maker->new->add_ht_page('First::Page');
 like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
-like(read_file('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
+unlike(read_file('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
 
 eval { require("lib/TTT/UI/First/Page.pm") };
 like($@, qr/HTV/);

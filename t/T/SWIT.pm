@@ -4,6 +4,12 @@ use warnings FATAL => 'all';
 package T::SWIT;
 use base 'Apache::SWIT';
 use File::Slurp;
+use Carp;
+
+sub swit_startup {
+	append_file("/tmp/swit_startup_test", sprintf("%d %s %s\n"
+			, $$, $_[0], (caller)[1]));
+}
 
 sub swit_render {
 	my ($class, $r) = @_;

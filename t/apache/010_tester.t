@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 33;
+use Test::More tests => 38;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -11,15 +11,26 @@ use Apache::SWIT::Test::Utils;
 BEGIN { 
 	use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup("AA_ROOT");
-	use_ok('T::SWIT');
-	use_ok('T::Res');
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;
 
 my $td = tempdir("/tmp/swit_tester_XXXXXXX", CLEANUP => 1);
 
+# Apache::Test restarts server twice for some reason.
+my @sls = read_file("/tmp/swit_startup_test");
+is(@sls, 2) or diag(join("", @sls));
+like($sls[0], qr/T::SWIT .*extra\.conf/);
+
 Apache::SWIT::Test->make_aliases(the_page => 'T::SWIT', res => 'T::Res');
+can_ok('T::SWIT', 'can') or exit 1;
+can_ok('T::Res', 'can');
+
+@sls = read_file("/tmp/swit_startup_test");
+is(@sls, 3) or diag(join("", @sls));
+like($sls[0], qr/T::SWIT .*extra\.conf$/);
+like($sls[2], qr/T::SWIT .*Test\.pm/);
+unlink("/tmp/swit_startup_test");
 
 my $t = Apache::SWIT::Test->new;
 isa_ok($t, 'Apache::SWIT::Test');

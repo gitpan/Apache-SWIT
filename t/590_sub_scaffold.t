@@ -39,9 +39,9 @@ use Test::More tests => 3;
 use T::TempDB;
 BEGIN { use_ok('T::TTT'); }
 
-my $t = T::TTT->db_onecoltable_class->create({ ocol => 'AAA' });
+my $t = T::TTT::DB::OneColTable->create({ ocol => 'AAA' });
 is($t->id, 1);
-is_deeply([ T::TTT->db_onecoltable_class->retrieve_all ], [ $t ]);
+is_deeply([ T::TTT::DB::OneColTable->retrieve_all ], [ $t ]);
 ENDT
 
 $res = `perl Makefile.PL && make 2>&1`;

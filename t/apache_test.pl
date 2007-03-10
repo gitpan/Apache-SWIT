@@ -9,6 +9,7 @@ use Apache::SWIT::DB::Connection;
 use Cwd qw(abs_path);
 
 my $test_db;
+unlink("/tmp/swit_startup_test");
 unless ($<) {
 	my $chmod = "chmod -R a+rw " . abs_path(dirname($0)) . "/../";
 	print STDERR "# Running as root. Having no other choice but: $chmod\n";
@@ -30,4 +31,5 @@ Apache::SWIT::Test::Apache::Run('extra.conf.swit', 'extra.conf.in', sub {
 	$dbh->do("set client_min_messages to fatal");
 	$dbh->do("create table dbp (id serial primary key, val text not null)");
 });
+unlink("/tmp/swit_startup_test");
 END { $test_db->destroy if $test_db; }
