@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 BEGIN { use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup("AA_ROOT");
@@ -17,4 +17,5 @@ Apache::SWIT::Test->make_aliases(trans_fail => 'T::TransFailure');
 my $t = Apache::SWIT::Test->new;
 eval { $t->ht_trans_fail_u(ht => {}); };
 like($@, qr/check constraint/); 
+like($@, qr/fail\/u/); 
 is_deeply($dbh->selectall_arrayref("select * from trans"), []);

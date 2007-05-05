@@ -8,6 +8,7 @@ use File::Basename qw(basename);
 use Apache::SWIT::Maker;
 use File::Slurp;
 use Carp;
+use YAML;
 
 __PACKAGE__->mk_accessors(qw(root_dir root_class install_dir project_class
 			subsystem_name));
@@ -113,11 +114,15 @@ sub install_session_base {
 	my $old_rc = $self->root_class;
 	$self->root_class($self->project_class);
 	my $sub_class = $self->root_class . "::" . $self->subsystem_name;
-	my $sess_class = "$sub_class\::Session";
+	my $sess_class = "$old_rc\::Session";
 	$self->replace_in_file('lib/' . $self->module_dir . "/Session.pm", 
 			'use base [^;]+', 
-			"use $sub_class;\nuse base '$sess_class'");
+			"use base '$sess_class'");
 	$self->root_class($old_rc);
+
+	my $tree = YAML::LoadFile('conf/swit.yaml');
+	push @{ $tree->{startup_classes} }, $sess_class;
+	YAML::DumpFile('conf/swit.yaml', $tree);
 }
 
 1;

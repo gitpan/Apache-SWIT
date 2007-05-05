@@ -127,4 +127,6 @@ sub read_stash {
 
 sub sessions_dir { return shift()->{_sessions_dir} }
 
+sub swit_startup {}
+
 1;

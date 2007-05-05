@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 45;
+use Test::More tests => 49;
 use Apache::SWIT::Test::ModuleTester;
 use File::Slurp;
 use ExtUtils::Manifest qw(maniadd);
@@ -114,13 +114,17 @@ is($?, 0) or do {
 	write_file('/tmp/m', read_file('Makefile.PL'));
 };
 
+unlike(read_file('conf/httpd.conf.in'), qr/do_swit_startups/);
 $res = `make 2>&1`;
 is($?, 0) or diag($res);
 ok(-d 'blib/templates');
 ok(-f 'blib/templates/index.tt');
 ok(-f 'blib/conf/seal.key');
 ok(-f 'blib/conf/startup.pl');
+ok(-f 'blib/conf/do_swit_startups.pl');
 ok(! -f 'blib/scripts/swit_app.pl');
+unlike(read_file('blib/conf/httpd.conf'), qr/swit_startup\>/);
+like(read_file('blib/conf/do_swit_startups.pl'), qr/swit_startup/);
 
 is_deeply([ swmani_dual_tests() ], [ 't/dual/001_load.t' ]);
 

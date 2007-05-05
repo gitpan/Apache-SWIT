@@ -19,7 +19,7 @@ use base qw(Apache::SWIT::HTPage);
 
 sub ht_root_class { return __PACKAGE__ . '::Root'; }
 
-sub on_inheritance_end {
+sub swit_startup {
 	my $class = shift;
 	my $rc = $class->ht_root_class;
 	my $rci = $rc . '::Item';

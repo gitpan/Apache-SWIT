@@ -29,7 +29,7 @@ $dbh->do("create table one_col_table (id serial primary key, ocol text)");
 my $res = `./scripts/swit_app.pl add_db_class one_col_table`;
 is($?, 0) or diag($res);
 ok(-f 'lib/TTT/DB/OneColTable.pm');
-like(read_file('lib/TTT/DB/OneColTable.pm'), qr/on_inheritance_end/);
+like(read_file('lib/TTT/DB/OneColTable.pm'), qr/swit_startup/);
 like(read_file('conf/swit.yaml'), qr/OneColTable/);
 
 write_file('t/234_one_col.t', <<'ENDT');
@@ -37,16 +37,16 @@ use strict;
 use warnings FATAL => 'all';
 use Test::More tests => 3;
 use T::TempDB;
-BEGIN { use_ok('T::TTT'); }
+BEGIN { use_ok('TTT::DB::OneColTable'); }
 
-my $t = T::TTT::DB::OneColTable->create({ ocol => 'AAA' });
+my $t = TTT::DB::OneColTable->create({ ocol => 'AAA' });
 is($t->id, 1);
-is_deeply([ T::TTT::DB::OneColTable->retrieve_all ], [ $t ]);
+is_deeply([ TTT::DB::OneColTable->retrieve_all ], [ $t ]);
 ENDT
 
 $res = `perl Makefile.PL && make 2>&1`;
 is($?, 0) or diag($res);
-like(read_file('blib/lib/TTT/PageClasses.pm'), qr/OneColTable/);
+unlike(read_file('blib/lib/TTT/PageClasses.pm'), qr/OneColTable/);
 
 $res = `make test_ TEST_FILES=t/234_one_col.t 2>&1`;
 is($?, 0) or diag($res);
@@ -62,21 +62,21 @@ $res = `make realclean && perl Makefile.PL && make 2>&1`;
 is($?, 0) or diag($res);
 
 $res = read_file('blib/lib/TTT/PageClasses.pm');
-like($res, qr/Form/);
-like($res, qr/List/);
-like($res, qr/Info/);
+unlike($res, qr/Form/);
+unlike($res, qr/List/);
+unlike($res, qr/Info/);
 unlike(read_file('t/dual/011_the_table.t'), qr/Form/);
 
 $res = `make test_direct APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 is($?, 0);
 unlike($res, qr/Failed/) or ASTU_Wait($td);
-like($res, qr/success/);
+like($res, qr/success/) or ASTU_Wait($td);
 unlike($res, qr/make_tested/);
 unlike($res, qr/Please use/);
 
 $res = `make test_apache APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 is($?, 0);
-unlike($res, qr/Failed/); # or readline(\*STDIN);
+unlike($res, qr/Failed/) or ASTU_Wait($td);
 like($res, qr/success/);
 
 chdir '/';

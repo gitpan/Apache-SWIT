@@ -6,7 +6,7 @@ use base 'Apache::SWIT::Maker::Skeleton';
 
 sub add {
 	my $tree = Apache::SWIT::Maker::Config->instance;
-	push @{ $tree->{classes_for_inheritance} }, $_[1];
+	push @{ $tree->{startup_classes} }, $_[1];
 	$tree->save;
 }
 
@@ -14,14 +14,6 @@ sub output_file {
 	my $res = 'blib/lib/' . shift()->root_class_v . "/PageClasses.pm";
 	$res =~ s/::/\//g;
 	return $res;
-}
-
-sub page_classes_v {
-	my $tree = Apache::SWIT::Maker::Config->instance;
-	my $rc = $tree->root_class;
-	return [ map { s/^$rc\:://; { pc => $_ } } (
-			@{ $tree->{classes_for_inheritance} }
-			, (map { $_->{class} } values %{ $tree->{pages} })) ];
 }
 
 sub is_in_manifest { return undef; }
@@ -33,9 +25,7 @@ use warnings FATAL => 'all';
 package [% root_class_v %]::PageClasses;
 use base 'Apache::SWIT::Subsystem::Base';
 
-sub classes_for_inheritance { return qw(
-[% FOREACH page_classes_v %]	[% pc %]
-[% END %]); }
+sub classes_for_inheritance { return qw(); }
 
 1;
 ENDS

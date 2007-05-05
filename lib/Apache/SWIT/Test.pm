@@ -12,7 +12,6 @@ use Data::Dumper;
 use File::Slurp;
 use Apache::TestRequest;
 use WWW::Mechanize;
-use X11::GUITest;
 
 BEGIN {
 	no strict 'refs';
@@ -29,16 +28,18 @@ __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
 __PACKAGE__->mk_classdata('root_env_var');
 
+sub _Do_Startup {
+	package main;
+	local $0 = shift;
+	do $0 or Carp::confess "# Unable to do $0\: $@";
+}
+
 sub do_startup {
 	my ($class, $root_env_var) = @_;
 	$class->root_env_var($root_env_var);
 	$ENV{$root_env_var} = $ENV{SWIT_BLIB_DIR};
-	my $sf = $ENV{SWIT_BLIB_DIR} . "/conf/startup.pl";
-	{
-		package main;
-		local $0 = $sf;
-		do $sf or Carp::confess "# Unable to do $sf: $@";
-	};
+	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/startup.pl");
+	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/do_swit_startups.pl");
 }
 
 sub new {
@@ -57,6 +58,12 @@ sub new {
 sub new_guitest {
 	my $self = shift()->new(@_);
 	if ($self->mech) {
+		{
+			local $SIG{__WARN__} = sub {};
+			eval "require X11::GUITest";
+			die "Unable to use X11::GUITest: $@" if $@;
+			X11::GUITest::InitGUITest();
+		}
 		eval "use Mozilla::Mechanize::GUITester";
 		die "Unable to use Mozilla::Mechanize::GUITester: $@" if $@;
 		my $m = Mozilla::Mechanize::GUITester->new(quiet => 1
@@ -200,7 +207,6 @@ sub make_aliases {
 	my ($class, %args) = @_;
 	my %trans = (r => 'render', u => 'update');
 	while (my ($n, $v) = each %args) {
-		conv_eval_use($v)->swit_startup;
 		no strict 'refs';
 		while (my ($f, $t) = each %trans) {
 			my $func = "$n\_$f";

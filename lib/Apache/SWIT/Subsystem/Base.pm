@@ -22,8 +22,8 @@ sub inherit_classes {
 	my @packages = map { 
 		$class->inherit_from_class($root_class, $_)
 	} @others;
-	$_->on_inheritance_end 
-		for grep { $_->can('on_inheritance_end') } @packages;
+	$_->swit_startup 
+		for grep { $_->can('swit_startup') } @packages;
 }
 
 1;

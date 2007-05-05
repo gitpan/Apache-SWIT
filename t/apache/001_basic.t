@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 21;
+use Test::More tests => 23;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
@@ -44,6 +44,10 @@ $t->mech->submit_form(fields => { file => "$td/fff" });
 # Redirected to res handler
 is($t->mech->content, "hhhh\n");
 ok(-f "$td/fff");
+
+$t->mech_get_base("/test/cthan");
+is($t->mech->ct, "text/plain");
+is($t->mech->status, 200);
 
 like(ASTU_Read_Error_Log(), qr/normal operations/);
 like(ASTU_Read_Access_Log(), qr/GET/);

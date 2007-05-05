@@ -15,7 +15,6 @@ PerlModule T::Session
   PerlHandler T::Basic
 </Location>
 
-PerlModule T::SWIT
 <Location /test/swit/r>
   SetHandler perl-script
   PerlHandler T::SWIT->swit_render_handler
@@ -36,7 +35,6 @@ PerlModule T::SWIT
   PerlHandler T::SWIT->swit_update_handler
 </Location>
 
-PerlModule T::HTPage
 <Location /test/ht_page/r>
   SetHandler perl-script
   PerlSetVar SWITTemplate @ServerRoot@/templates/htpage.tt
@@ -48,13 +46,11 @@ PerlModule T::HTPage
   PerlHandler T::HTPage->swit_update_handler
 </Location>
 
-PerlModule T::Res
 <Location /test/res/r>
   SetHandler perl-script
   PerlHandler T::Res->swit_render_handler
 </Location>
 
-PerlModule T::SessPage
 <Location /test/sess_page/r>
   SetHandler perl-script
   PerlSetVar SWITTemplate @ServerRoot@/templates/sess_page.tt
@@ -66,7 +62,6 @@ PerlModule T::SessPage
   PerlHandler T::SessPage->swit_update_handler
 </Location>
 
-PerlModule T::DBPage
 <Location /test/db_page/r>
   SetHandler perl-script
   PerlSetVar SWITTemplate @ServerRoot@/templates/db_page.tt
@@ -78,12 +73,10 @@ PerlModule T::DBPage
   PerlHandler T::DBPage->swit_update_handler
 </Location>
 
-Alias /test/www @ServerRoot@/public_html 
+<Location /test/cthan>
+  SetHandler perl-script
+  PerlHandler T::SWIT->ct_handler
+</Location>
 
-<Perl>
-if ($Apache::Server::Starting) {
-	T::SWIT->swit_startup;
-	T::SessPage->swit_startup;
-	T::HTPage->swit_startup;
-}
-</Perl>
+Alias /test/www @ServerRoot@/public_html 
+PerlRequire @ServerRoot@/conf/do_swit_startups.pl

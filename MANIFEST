@@ -74,6 +74,7 @@ t/580_sub_override.t
 t/590_sub_scaffold.t
 t/910_self_install.t
 t/conf/extra.conf.swit
+t/conf/do_swit_startups.pl
 t/apache_test.pl
 t/apache/001_basic.t
 t/apache/010_tester.t
@@ -99,4 +100,4 @@ t/templates/sess_page.tt
 t/templates/db_page.tt
 t/public_html/hello.html
 Makefile.PL
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml

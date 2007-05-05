@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 62;
+use Test::More tests => 63;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -131,7 +131,8 @@ ok(! -f "lib/TTT/UI/First/Page.pm");
 
 Apache::SWIT::Maker->new->add_ht_page('First::Page');
 like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
-unlike(read_file('lib/TTT/UI/First/Page.pm'), qr/ht_root_class/);
+unlike(read_file('lib/TTT/UI/First/Page.pm'), qr/sub ht_root_class/);
+like(read_file('lib/TTT/UI/First/Page.pm'), qr/sub swit_startup/);
 
 eval { require("lib/TTT/UI/First/Page.pm") };
 like($@, qr/HTV/);

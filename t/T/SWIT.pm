@@ -29,4 +29,10 @@ sub swit_update {
 	return '/test/res/r?res=hhhh';
 }
 
+sub ct_handler($$) {
+	my ($class, $r) = @_;
+	$class->swit_send_http_header($r, "text/plain");
+	return 200;
+}
+
 1;

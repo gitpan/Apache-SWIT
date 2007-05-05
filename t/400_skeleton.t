@@ -388,7 +388,7 @@ my $pc = Apache::SWIT::Subsystem::Skeleton::PageClasses->new;
 ok($pc);
 
 $pc->add("Aaa::Bbb::CCC");
-is_deeply(Apache::SWIT::Maker::Config->instance->{classes_for_inheritance}
+is_deeply(Apache::SWIT::Maker::Config->instance->{startup_classes}
 		, [ "Aaa::Bbb::CCC" ]);
 like(read_file('conf/swit.yaml'), qr/CCC/);
 
@@ -401,13 +401,7 @@ use warnings FATAL => 'all';
 package Aaa::Bbb::PageClasses;
 use base 'Apache::SWIT::Subsystem::Base';
 
-sub classes_for_inheritance { return qw(
-	CCC
-	UI::Info
-	UI::P
-	UI::Form
-	Go
-); }
+sub classes_for_inheritance { return qw(); }
 
 1;
 ENDS

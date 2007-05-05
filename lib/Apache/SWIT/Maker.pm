@@ -200,12 +200,6 @@ sub write_httpd_conf_in {
 	my $app_name = Apache::SWIT::Maker::Config->instance->app_name;
 	my $seed = $$ . int(rand(65530)) . time;
 	swmani_write_file('conf/httpd.conf.in', sprintf(<<ENDM
-PerlSetEnv %s \@ServerRoot\@
-<Perl>
-	use lib '\@ServerRoot\@/lib';
-</Perl>
-PerlRequire \@ServerRoot\@/conf/startup.pl
-
 $more
 <Location $root_location>
 	PerlAccessHandler \@SessionClass\@\->access_handler
@@ -334,16 +328,31 @@ sub session_class_for_httpd_conf {
 	return $_[1]->{session_class};
 }
 
+sub _location_section_start {
+	my ($self, $l, $c, $h) = @_;
+return <<ENDS
+<Location $l>
+	SetHandler perl-script
+	PerlHandler $c\->$h
+ENDS
+}
+
 sub httpd_location_section {
 	my ($self, $gq, $loc, $entry) = @_;
 	my $res = $gq->run('location_section_prolog', $loc, $entry);
 	my $l = Apache::SWIT::Maker::Config->instance->root_location ."/$loc";
-	while (my ($n, $v) = each %{ $entry->{entry_points} }) {
-		$res .= "<Location $l/$n>\n";
-		$res .= "\tSetHandler perl-script\n";
-		$res .= "\tPerlHandler $entry->{class}\->$v->{handler}\n";
-		$res .= $gq->run('location_section_contents', $n, $v);
+	my $ep = $entry->{entry_points};
+	if (!$ep) {
+		$res .= $self->_location_section_start($l
+				, $entry->{class}, $entry->{handler});
 		$res .= "</Location>\n";
+	} else {
+		while (my ($n, $v) = each %$ep) {
+			$res .= $self->_location_section_start("$l/$n",
+					$entry->{class}, $v->{handler});
+			$res .= $gq->run('location_section_contents', $n, $v);
+			$res .= "</Location>\n";
+		}
 	}
 	$res .= ($gq->run('location_section_epilogue', $loc, $entry) || '');
 	return $res;
@@ -358,15 +367,26 @@ sub regenerate_httpd_conf {
 	my $self = shift;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
 	my $tree = Apache::SWIT::Maker::Config->instance;
-	my $ht_in = $gq->run('httpd_conf_start');
-
-	my $aliases = "";
+	my $ht_in = sprintf(<<ENDS, $tree->root_env_var);
+PerlSetEnv %s \@ServerRoot\@
+<Perl>
+	use lib '\@ServerRoot\@/lib';
+</Perl>
+PerlRequire \@ServerRoot\@/conf/startup.pl
+PerlRequire \@ServerRoot\@/conf/do_swit_startups.pl
+ENDS
+	my ($aliases, $spl) = ("", join("\n", map {
+		"use $_;\n$_\->swit_startup;"
+	} @{ $tree->{startup_classes} || [] }));
 	while (my ($n, $v) = each %{ $tree->{pages} }) {
 		$ht_in .= $self->httpd_location_section($gq, $n, $v) . "\n";
 		$aliases .= "\"$n\" => \"$v->{class}\",\n";
+		$spl .= "use $v->{class};\n$v->{class}->swit_startup;\n"
 	}
 
-	mkpath_write_file('blib/conf/httpd.conf', $ht_in);
+	mkpath_write_file('blib/conf/httpd.conf'
+			, $ht_in . $gq->run('httpd_conf_start'));
+	write_file('blib/conf/do_swit_startups.pl', "$spl\n1;\n");
 	$self->makefile_class->deploy_httpd_conf("blib", "blib");
 	$self->file_writer->write_t_t_test_pm({
 		session_class => $tree->{session_class}

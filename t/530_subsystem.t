@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 49;
+use Test::More tests => 50;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -38,10 +38,9 @@ ENDF
 $mt->replace_in_file('lib/TTT.pm', '__PACKAGE__'
 		, '__PACKAGE__, "DB::Random"');
 $mt->replace_in_file('lib/' . $mt->module_dir . "/Session.pm", '1', <<ENDM);
-sub on_inheritance_end {
+sub swit_startup {
 	my \$class = shift;
 	\$class->add_var('username');
-
 	\$class->add_var('t_ttt');
 }
 
@@ -53,8 +52,8 @@ use Test::More tests => 5;
 BEGIN { use_ok('T::TTT'); }
 is(T::TTT::DB::Random->number, 494);
 is(T::TTT->templates_dir, 'templates/');
-is(T::TTT::Session->cookie_name, 'ttt');
-can_ok(T::TTT::Session, 'get_t_ttt');
+is(TTT::Session->cookie_name, 'ttt');
+can_ok(TTT::Session, 'get_t_ttt');
 ENDT
 
 my $tree = Apache::SWIT::Maker::Config->instance;
@@ -72,7 +71,8 @@ is($?, 0) or diag($res);
 my $ht_conf = read_file('blib/conf/httpd.conf');
 like($ht_conf, qr/TTT::UI::Index/);
 unlike($ht_conf, qr/T::TTT::UI::Index/);
-like($ht_conf, qr/T::TTT::Session/);
+unlike($ht_conf, qr/T::TTT::Session/);
+like($ht_conf, qr/TTT::Session/);
 
 my $ind_str = read_file('lib/TTT/UI/Index.pm');
 unlike($ind_str, qr/\.tt/);
@@ -157,21 +157,17 @@ is($ind->{class}, 'TTT::UI::Index');
 is(read_file('templates/thesub/index.tt'), 
 		read_file('templates/index.tt'));
 
-$mt->replace_in_file('conf/httpd.conf.in', 'PerlModule MU::TheSub',
-	"<Perl>\nuse lib '$td/TTT/blib/lib'\n</Perl>\nPerlModule MU::TheSub");
+symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT");
 `perl Makefile.PL && make 2>&1`;
 like(read_file('t/T/Test.pm'), qr/\bthesub\/index/);
 $mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 8');
+symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT") or die "# Unable to symlink";
 append_file('t/dual/001_load.t', <<ENDT);
-use lib '$td/TTT/blib/lib';
 use MU::TheSub;
 \$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
 ENDT
 $res = join('', `make test 2>&1`);
-unlike($res, qr/Error/) or do {
-#	diag("here $td");
-#	readline(\*STDIN);
-};
+unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/thesub\/001/);
 
 chdir "$td/TTT";
@@ -204,9 +200,6 @@ append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_t_ttt');
 ENDT
 $res = join('', `make test_ TEST_FILES=t/950_install.t 2>&1`);
-unlike($res, qr/Error/) or do {
-#	diag($td);
-#	readline(\*STDIN);
-};
+unlike($res, qr/Error/) or ASTU_Wait($td);
 
 chdir '/';

@@ -114,11 +114,6 @@ chdir '/';
 ENDT
 }
 
-sub more_stuff_in_httpd_conf_in { 
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	return 'PerlModule T::' . "$rc\n"; 
-}
-
 sub write_maker_pm {
 	my $self = shift;
 	$self->write_pm_file(Apache::SWIT::Maker::Config->instance->root_class . "::Maker", <<ENDM);
@@ -157,10 +152,6 @@ sub write_swit_yaml {
 	shift()->SUPER::write_swit_yaml;
 }
 
-sub session_class_for_httpd_conf {
-	return "T::" . $_[1]->{session_class};
-}
-
 sub install_subsystem {
 	my ($self, $module) = @_;
 	my $lcm = lc($module);
@@ -185,8 +176,6 @@ sub templates_dir { return 'templates/$lcm'; }
 
 __PACKAGE__->inherit_classes;
 ENDM
-	append_file('conf/httpd.conf.in', "PerlModule $full_name\n");
-
 	my $tests = $self->this_subsystem_original_tree->{dumped_tests};
 	while (my ($n, $t) = each %$tests) {
 		$t =~ s/T::$sn/$full_name/g;

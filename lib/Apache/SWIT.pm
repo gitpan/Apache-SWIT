@@ -36,9 +36,7 @@ It tries to capture several often occuring paradigms in mod_perl development.
 It provides user with the tools to bootstrap a new project, write tests easily,
 etc.
 
-=head1 USAGE
-
-
+=head1 METHODS
 
 =cut
 
@@ -48,15 +46,30 @@ use warnings FATAL => 'all';
 package Apache::SWIT;
 use Template;
 use Apache::Request;
+use Carp;
+use Data::Dumper;
 
-our $VERSION = 0.24;
+our $VERSION = 0.25;
 
 sub swit_startup {}
 
+=head2 $class->swit_send_http_header($r, $ct)
+
+Sends HTTP default headers: session cookie and content type. C<$r> is apache
+request and C<$ct> is optional content type (defaults to
+C<text/html; charset=utf-8>.
+
+=cut
 sub swit_send_http_header {
-	my ($class, $r) = @_;
+	my ($class, $r, $ct) = @_;
 	$r->pnotes('SWITSession')->end;
-	$r->send_http_header("text/html; charset=utf-8");
+	$r->send_http_header($ct || "text/html; charset=utf-8");
+}
+
+sub swit_die {
+	my ($class, $msg, $r, @more) = @_;
+	confess "$msg with request:\n" . $r->as_string . "and more:\n"
+			. join("\n", map { Dumper($_) } @more);
 }
 
 sub swit_update_finish {

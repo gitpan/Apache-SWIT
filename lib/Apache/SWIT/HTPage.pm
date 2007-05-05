@@ -5,7 +5,6 @@ package Apache::SWIT::HTPage;
 use base 'Apache::SWIT';
 use HTML::Tested;
 use Apache::SWIT::DB::Connection;
-use Data::Dumper;
 
 sub ht_root_class { return shift() . '::Root'; }
 
@@ -13,7 +12,9 @@ sub swit_render {
 	my ($class, $r) = @_;
 	my $stash = {};
 	my $tested = $class->ht_root_class->ht_convert_request_to_tree($r);
-	my $root = $class->ht_swit_render($r, $tested);
+	my $root;
+	eval { $root = $class->ht_swit_render($r, $tested); };
+	$class->swit_die("render failed: $@", $r, $tested) if $@;
 	$root->ht_render($stash);
 	return $stash;
 }
@@ -29,7 +30,7 @@ sub ht_swit_transactional_update {
 		eval { $dbh->rollback };
 		my $exc = "Original exception: $err";
 		$exc .= "\nRollback exception: $@" if $@;
-		die $exc;
+		$class->swit_die($exc, $r, $tested);
 	}
 	$dbh->commit;
 	return $res;
@@ -38,9 +39,8 @@ sub ht_swit_transactional_update {
 sub swit_update {
 	my ($class, $r) = @_;
 	my $tested = $class->ht_root_class->ht_convert_request_to_tree($r);
-	my @val_errs = $tested->ht_validate;
-	die "ht_validate failed on " . Dumper($tested)
-		. "with errors: " . Dumper(\@val_errs) if (@val_errs);
+	my @errs = $tested->ht_validate;
+	$class->swit_die("ht_validate failed", $r, $tested, \@errs) if @errs;
 	return $class->ht_swit_transactional_update($r, $tested);
 }
 

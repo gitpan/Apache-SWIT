@@ -5,17 +5,6 @@ package Apache::SWIT::Maker::Generator;
 use base 'Apache::SWIT::Maker::GeneratorBase';
 use File::Slurp;
 
-sub location_section_prolog {
-	my ($self, $res, $loc, $e) = @_;
-	return <<ENDS;
-PerlModule $e->{class}
-<Perl>
-$e->{class}\->swit_startup if \$Apache::Server::Starting;
-</Perl>
-ENDS
-}
-
-
 sub location_section_contents {
 	my ($self, $res, $n, $v) = @_;
 	my $t = $v->{template};

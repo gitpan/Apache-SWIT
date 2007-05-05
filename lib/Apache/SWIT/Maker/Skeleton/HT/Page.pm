@@ -10,11 +10,15 @@ use warnings FATAL => 'all';
 
 package [% class_v %]::Root;
 use base 'HTML::Tested';
-__PACKAGE__->ht_add_widget(::HTV."::Marked", 'first');
-__PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
+
+sub swit_startup {
+	my $rc = shift()->ht_root_class;
+	$rc->ht_add_widget(::HTV."::Marked", 'first');
+	$rc->ht_add_widget(::HTV."::Form", form => default_value => 'u');
+}
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;

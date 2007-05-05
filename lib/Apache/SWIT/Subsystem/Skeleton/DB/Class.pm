@@ -14,7 +14,7 @@ use base 'Apache::SWIT::DB::Base';
 
 __PACKAGE__->set_up_table('[% table_v %]', { ColumnGroup => 'Essential' });
 
-sub on_inheritance_end { }
+sub swit_startup { }
 
 1;
 ENDS

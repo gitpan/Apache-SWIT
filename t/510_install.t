@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 26;
+use Test::More tests => 28;
 use File::Slurp;
 
 BEGIN { use_ok('Apache::SWIT::Maker');
@@ -63,6 +63,8 @@ is($?, 0) or do {
 isnt(-d "$td/inst/share/ttt", undef);
 is(-d "$td/inst/share/perl", undef);
 
+ok(-f "$td/inst/share/ttt/conf/startup.pl");
+ok(-f "$td/inst/share/ttt/conf/do_swit_startups.pl");
 like(read_file("$td/inst/share/ttt/conf/httpd.conf"), 
 		qr#TTT_ROOT $td/inst/share/ttt\n#) or diag($lines);
 ok(-f "public_html/main.css");

@@ -9,6 +9,7 @@ use File::Slurp;
 use Apache::SWIT::Test::Utils;
 
 BEGIN { 
+	unlink "/tmp/swit_startup_test";
 	use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup("AA_ROOT");
 }
@@ -17,19 +18,18 @@ $ENV{SWIT_HAS_APACHE} = 0;
 
 my $td = tempdir("/tmp/swit_tester_XXXXXXX", CLEANUP => 1);
 
-# Apache::Test restarts server twice for some reason.
 my @sls = read_file("/tmp/swit_startup_test");
-is(@sls, 2) or diag(join("", @sls));
-like($sls[0], qr/T::SWIT .*extra\.conf/);
+is(@sls, 1) or diag(join("", @sls));
+like($sls[0], qr/T::SWIT .*blib.*do_swit_startups/);
 
 Apache::SWIT::Test->make_aliases(the_page => 'T::SWIT', res => 'T::Res');
 can_ok('T::SWIT', 'can') or exit 1;
 can_ok('T::Res', 'can');
 
 @sls = read_file("/tmp/swit_startup_test");
-is(@sls, 3) or diag(join("", @sls));
-like($sls[0], qr/T::SWIT .*extra\.conf$/);
-like($sls[2], qr/T::SWIT .*Test\.pm/);
+is(@sls, 1) or diag(join("", @sls));
+like($sls[0], qr/T::SWIT .*blib.*do_swit_startups/);
+unlike(join("", @sls), qr/T .*Test\.pm/);
 unlink("/tmp/swit_startup_test");
 
 my $t = Apache::SWIT::Test->new;

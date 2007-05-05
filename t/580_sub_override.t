@@ -54,6 +54,20 @@ is($?, 0) or diag($res);
 ok(-f 'lib/MU/UI/TTT/P1.pm');
 
 my $p5var = "PERL5LIB=\$PERL5LIB:$td/TTT/blib/lib";
+
+write_file('lib/MU/UI/Index.pm', <<'ENDS');
+use strict;
+use warnings FATAL => 'all';
+
+package MU::UI::Index::Root;
+use base 'HTML::Tested';
+
+package MU::UI::Index;
+use base 'TTT::UI::P1';
+
+1;
+ENDS
+
 $res = `perl Makefile.PL && $p5var make test_direct 2>&1`;
 unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/success/);
