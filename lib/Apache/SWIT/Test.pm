@@ -125,8 +125,10 @@ sub _mech_render {
 sub _filter_out_readonly {
 	my ($self, $args) = @_;
 	return if ref($self->mech) eq 'Mozilla::Mechanize::GUITester';
+	my $form = $self->mech->current_form or confess "No form found in\n"
+			. $self->mech->content;
 	delete $args->{fields}->{$_} for map { $_->name } grep { $_->readonly }
-		$self->mech->current_form->inputs;
+		$form->inputs;
 }
 
 sub _mech_update {
@@ -173,11 +175,11 @@ sub _mech_ht_update {
 	goto OUT unless $r->upload;
 
 	if (my $form_number = $args{'form_number'}) {
-		$self->mech->form_number($form_number);
+		$self->mech->form_number($form_number) or confess "No number";
 	} elsif (my $form_name = $args{'form_name'}) {
-		$self->mech->form_name($form_name);
+		$self->mech->form_name($form_name) or confess "No form_name";
 	}
-	my $form = $self->mech->current_form;
+	my $form = $self->mech->current_form or confess "No form found!";
 	confess "Form method is not POST" if $form->method ne "POST";
 	confess "Form enctype is not multipart/form-data"
 	           if $form->enctype ne "multipart/form-data";

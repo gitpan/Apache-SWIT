@@ -31,7 +31,7 @@ realclean ::
     EXE_FILES    => [ 'scripts/swit_init' ],
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
 	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.23',
-	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.11',
+	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.12',
 	'Apache::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache::Cookie' => '', 'DBIx::VersionedSchema' => '',
 	'Test::TempDatabase' => '0.1', 'Class::DBI::Pg::More' => '0.02',

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 58;
+use Test::More tests => 54;
 use Data::Dumper;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -15,7 +15,6 @@ BEGIN {
 	use_ok('Apache::SWIT::Maker::Skeleton::Scaffold::Info');
 	use_ok('Apache::SWIT::Maker::Skeleton::ApacheTest');
 	use_ok('Apache::SWIT::Maker::Skeleton::ApacheTestRun');
-	use_ok('Apache::SWIT::Subsystem::Skeleton::PageClasses');
 	use_ok('Apache::SWIT::Maker');
 };
 
@@ -384,28 +383,10 @@ ColC: [% col_c %] <br />
 </html>
 ENDS
 
-my $pc = Apache::SWIT::Subsystem::Skeleton::PageClasses->new;
-ok($pc);
-
-$pc->add("Aaa::Bbb::CCC");
-is_deeply(Apache::SWIT::Maker::Config->instance->{startup_classes}
-		, [ "Aaa::Bbb::CCC" ]);
+my $config = Apache::SWIT::Maker::Config->instance;
+$config->add_startup_class("Aaa::Bbb::CCC");
+is_deeply($config->{startup_classes}, [ "Aaa::Bbb::CCC" ]);
 like(read_file('conf/swit.yaml'), qr/CCC/);
-
-$pc->write_output;
-ok(-f 'blib/lib/Aaa/Bbb/PageClasses.pm');
-is(read_file('blib/lib/Aaa/Bbb/PageClasses.pm'), <<'ENDS');
-use strict;
-use warnings FATAL => 'all';
-
-package Aaa::Bbb::PageClasses;
-use base 'Apache::SWIT::Subsystem::Base';
-
-sub classes_for_inheritance { return qw(); }
-
-1;
-ENDS
-
 unlike(read_file('MANIFEST'), qr/PageClasses/);
 
 chdir '/';

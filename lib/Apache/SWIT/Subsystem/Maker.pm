@@ -10,12 +10,10 @@ use Apache::SWIT::Subsystem::Makefile;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Subsystem::Skeleton::Class;
-use Apache::SWIT::Subsystem::Skeleton::PageClasses;
 
 sub makefile_class { return 'Apache::SWIT::Subsystem::Makefile'; }
 
-my %_skel_overrides = qw(skel_db_class DB::Class dual_001_load Dual001Load
-		scaffold_dual_test Scaffold::DualTest
+my %_skel_overrides = qw(skel_db_class DB::Class 
 		scaffold_form Scaffold::Form
 		scaffold_list Scaffold::List
 		scaffold_info Scaffold::Info);
@@ -63,32 +61,17 @@ sub write_t_module {
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
 	my $rvn = Apache::SWIT::Maker::Config->instance->root_env_var;
 	$self->write_pm_file("T::$rc", <<ENDM);
-use base '$rc';
 use Apache::SWIT::Test;
 use File::Basename qw(dirname);
 use Cwd qw(abs_path);
 
 \$ENV{SWIT_BLIB_DIR} = abs_path(dirname(\$0) . "/../blib");
 Apache::SWIT::Test->do_startup('$rvn') unless \$ENV{$rvn};
-__PACKAGE__->inherit_classes;
 ENDM
 }
 
-sub use_ok_in_010_db_t { return 'T::' . Apache::SWIT::Maker::Config->instance->root_class; }
-
-sub rewrite_root_module {
-	my $self = shift;
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	$self->write_pm_file($rc, <<ENDM);
-use base '$rc\::PageClasses';
-
-our \$VERSION = 0.01;
-
-sub classes_for_inheritance { 
-	# Add classes to inherit from relative to package
-	return (__PACKAGE__, shift()->SUPER::classes_for_inheritance);
-}
-ENDM
+sub use_ok_in_010_db_t {
+	return 'T::' . Apache::SWIT::Maker::Config->instance->root_class;
 }
 
 sub write_950_install_t {
@@ -123,7 +106,6 @@ ENDM
 
 sub write_db_connection_pm {
 	my $self = shift;
-	$self->rewrite_root_module;
 	$self->write_950_install_t;
 	$self->write_maker_pm;
 	$self->with_lib_dir("t", sub {
@@ -136,14 +118,7 @@ sub write_db_connection_pm {
 sub add_class {
 	my ($self, $new_class, $str) = @_;
 	$self->SUPER::add_class($new_class, $str);
-	Apache::SWIT::Subsystem::Skeleton::PageClasses->add($new_class);
-}
-
-sub regenerate_httpd_conf {
-	my $self = shift;
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	$self->SUPER::regenerate_httpd_conf;
-	Apache::SWIT::Subsystem::Skeleton::PageClasses->new->write_output;
+	Apache::SWIT::Maker::Config->instance->add_startup_class($new_class);
 }
 
 sub write_swit_yaml {
@@ -167,18 +142,8 @@ sub install_subsystem {
 			$gq->run('install_page_entry', $v, $module);
 	}
 	$tree->save;
-
-	my $sn = $self->this_subsystem_name;
-	$self->write_pm_file($full_name, <<ENDM);
-use base '$sn';
-
-sub templates_dir { return 'templates/$lcm'; }
-
-__PACKAGE__->inherit_classes;
-ENDM
 	my $tests = $self->this_subsystem_original_tree->{dumped_tests};
 	while (my ($n, $t) = each %$tests) {
-		$t =~ s/T::$sn/$full_name/g;
 		$t =~ s/ht_([^\(\)]+_[ru])/ht_$lcm\_$1/g;
 		swmani_write_file("t/dual/$lcm/$n", $t);
 	}

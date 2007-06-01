@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 50;
+use Test::More tests => 48;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -35,8 +35,6 @@ Apache::SWIT::Subsystem::Maker->new->write_pm_file('TTT::DB::Random', <<ENDF);
 sub number { return 494; }
 ENDF
 
-$mt->replace_in_file('lib/TTT.pm', '__PACKAGE__'
-		, '__PACKAGE__, "DB::Random"');
 $mt->replace_in_file('lib/' . $mt->module_dir . "/Session.pm", '1', <<ENDM);
 sub swit_startup {
 	my \$class = shift;
@@ -49,9 +47,10 @@ ENDM
 
 write_file("t/555_test.t", <<'ENDT');
 use Test::More tests => 5;
-BEGIN { use_ok('T::TTT'); }
-is(T::TTT::DB::Random->number, 494);
-is(T::TTT->templates_dir, 'templates/');
+BEGIN { use_ok('T::TTT');
+	use_ok('TTT::DB::Random');
+}
+is(TTT::DB::Random->number, 494);
 is(TTT::Session->cookie_name, 'ttt');
 can_ok(TTT::Session, 'get_t_ttt');
 ENDT
@@ -132,18 +131,10 @@ $mt->install_subsystem('TheSub');
 ok(require 'TTT/Maker.pm');
 
 eval "use lib 'lib'";
-isnt(-f 'lib/MU/TheSub.pm', undef) or do {
-	diag($td);
-#	readline(\*STDIN);
-};
+is(-f 'lib/MU/TheSub.pm', undef);
 use_ok('HTML::Tested', qw(HT HTV));
-is(require 'lib/MU/TheSub.pm', 1);
-is(MU::TheSub->templates_dir, 'templates/thesub');
 
-isnt(-f "t/dual/thesub/001_load.t", undef) or do {
-	diag($td);
-#	readline(\*STDIN);
-};
+isnt(-f "t/dual/thesub/001_load.t", undef) or ASTU_Wait($td);
 like(read_file("t/dual/thesub/001_load.t"), qr/ht_id/);
 
 undef $Apache::SWIT::Maker::Config::_instance;
@@ -163,7 +154,6 @@ like(read_file('t/T/Test.pm'), qr/\bthesub\/index/);
 $mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 8');
 symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT") or die "# Unable to symlink";
 append_file('t/dual/001_load.t', <<ENDT);
-use MU::TheSub;
 \$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
 ENDT
 $res = join('', `make test 2>&1`);
@@ -179,9 +169,10 @@ my \$arr = Apache::SWIT::DB::Connection->instance->db_handle
 return \$
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 5');
+$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 10');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_username');
+\$t->ok_ht_index_r(make_url => 1, ht => { first => '' });
 \$t->ht_index_u(ht => {});
 \$t->ok_ht_index_r(ht => { first => '' });
 ENDT
@@ -195,7 +186,7 @@ ENDM
 $res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or ASTU_Wait($td);
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 5', '=> 6');
+$mt->replace_in_file('t/dual/001_load.t', '=> 10', '=> 11');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_t_ttt');
 ENDT

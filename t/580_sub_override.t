@@ -25,7 +25,7 @@ my $res = `./scripts/swit_app.pl add_ht_page P1`;
 ok(-f 'lib/TTT/UI/P1.pm');
 ok(-f 'templates/p1.tt');
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 3', '=> 4');
+$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 8');
 append_file("t/dual/001_load.t", '
 $t->ok_ht_p1_r(make_url => 1, ht => { first => ""});
 ');
@@ -42,7 +42,7 @@ $mt->make_swit_project(root_class => 'MU');
 is(Apache::SWIT::Maker::Config->instance->app_name, 'mu');
 
 $mt->install_subsystem('TheSub');
-isnt(-f 'lib/MU/TheSub.pm', undef);
+is(-f 'lib/MU/TheSub.pm', undef);
 
 $res = `./scripts/swit_app.pl override P89 2>&1`;
 isnt($?, 0);
@@ -72,9 +72,9 @@ $res = `perl Makefile.PL && $p5var make test_direct 2>&1`;
 unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/success/);
 
-$mt->replace_in_file('t/dual/thesub/001_load.t', '=> 4', '=> 5');
-$mt->replace_in_file('t/dual/thesub/001_load.t', 'TheSub'
-		, "TheSub'); use_ok('MU::UI::TTT::P1");
+$mt->replace_in_file('t/dual/thesub/001_load.t', '=> 8', '=> 9');
+$mt->replace_in_file('t/dual/thesub/001_load.t', 'Index'
+		, "Index'); use_ok('MU::UI::TTT::P1");
 
 $res = `$p5var make test 2>&1`;
 like($res, qr/success/);

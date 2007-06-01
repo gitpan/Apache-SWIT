@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
@@ -63,3 +63,11 @@ eval {
 			, ht => { inv_up => "$td/up.txt" });
 };
 like($@, qr/multipart/);
+
+eval {
+	local *STDERR;
+	open STDERR, '>/dev/null';
+	$t->ht_another_page_u(form_name => 'bwbbw'
+			, ht => { inv_up => "$td/up.txt" });
+};
+like($@, qr/No form_name/);

@@ -4,6 +4,7 @@ README
 scripts/swit_init
 lib/Apache/SWIT.pm
 lib/Apache/SWIT/Maker.pm
+lib/Apache/SWIT/LargeObjectHandler.pm
 lib/Apache/SWIT/Maker/Config.pm
 lib/Apache/SWIT/Maker/Skeleton.pm
 lib/Apache/SWIT/Maker/Skeleton/Scaffold.pm
@@ -33,17 +34,13 @@ lib/Apache/SWIT/Maker/GeneratorBase.pm
 lib/Apache/SWIT/Maker/GeneratorsQueue.pm
 lib/Apache/SWIT/Maker/Makefile.pm
 lib/Apache/SWIT/Subsystem/Maker.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Dual001Load.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Class.pm
-lib/Apache/SWIT/Subsystem/Skeleton/PageClasses.pm
 lib/Apache/SWIT/Subsystem/Skeleton/DB/Class.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/DualTest.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Form.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/List.pm
 lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Info.pm
 lib/Apache/SWIT/Subsystem/Makefile.pm
 lib/Apache/SWIT/Subsystem/Generator.pm
-lib/Apache/SWIT/Subsystem/Base.pm
 lib/Apache/SWIT/HTPage.pm
 lib/Apache/SWIT/DB/Connection.pm
 lib/Apache/SWIT/DB/Base.pm
@@ -84,6 +81,8 @@ t/apache/040_transactions.t
 t/apache/050_validate.t
 t/apache/060_guitest.t
 t/apache/070_unicode.t
+t/apache/080_upload.t
+t/T/Upload.pm
 t/T/Basic.pm
 t/T/SWIT.pm
 t/T/TransFailure.pm
@@ -93,6 +92,7 @@ t/T/Res.pm
 t/T/HTPage.pm
 t/T/Session.pm
 t/T/SessPage.pm
+t/templates/upload.tt
 t/templates/test.tt
 t/templates/res.tt
 t/templates/htpage.tt

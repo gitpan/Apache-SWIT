@@ -83,4 +83,10 @@ sub create_new_page {
 	return $entry;
 }
 
+sub add_startup_class {
+	my ($self, $sclass) = @_;
+	push @{ $self->{startup_classes} }, $sclass;
+	$self->save;
+}
+
 1;

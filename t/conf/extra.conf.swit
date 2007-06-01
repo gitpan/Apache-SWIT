@@ -78,5 +78,22 @@ PerlModule T::Session
   PerlHandler T::SWIT->ct_handler
 </Location>
 
+<Location /test/upload/r>
+  SetHandler perl-script
+  PerlSetVar SWITTemplate @ServerRoot@/templates/upload.tt
+  PerlHandler T::Upload->swit_render_handler
+</Location>
+
+<Location /test/upload/u>
+  SetHandler perl-script
+  PerlHandler T::Upload->swit_update_handler
+</Location>
+
+<Location /test/download/r>
+  SetHandler perl-script
+  PerlHandler Apache::SWIT::LargeObjectHandler->swit_render_handler
+</Location>
+
+
 Alias /test/www @ServerRoot@/public_html 
 PerlRequire @ServerRoot@/conf/do_swit_startups.pl

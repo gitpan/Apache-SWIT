@@ -16,7 +16,7 @@ unless ($<) {
 	`$chmod`;
 	Test::TempDatabase->become_postgres_user;
 }
-Apache::SWIT::Test::Apache::Run('extra.conf.swit', 'extra.conf.in', sub {
+Apache::SWIT::Test::Apache->swit_run('extra.conf.swit', 'extra.conf.in', sub {
 	my $d = abs_path(dirname($0));
 	symlink("$d/conf", "$d/../blib/conf");
 	write_file("$d/conf/seal.key", "boo boo boo");
@@ -30,6 +30,8 @@ Apache::SWIT::Test::Apache::Run('extra.conf.swit', 'extra.conf.in', sub {
 	my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
 	$dbh->do("set client_min_messages to fatal");
 	$dbh->do("create table dbp (id serial primary key, val text not null)");
+	$dbh->do("create table upt (id serial primary key
+			, loid oid unique not null)");
 });
 unlink("/tmp/swit_startup_test");
 END { $test_db->destroy if $test_db; }

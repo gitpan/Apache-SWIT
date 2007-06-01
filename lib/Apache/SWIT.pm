@@ -49,7 +49,7 @@ use Apache::Request;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.25;
+our $VERSION = 0.26;
 
 sub swit_startup {}
 

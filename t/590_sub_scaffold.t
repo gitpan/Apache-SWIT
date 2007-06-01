@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 26;
+use Test::More tests => 24;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -46,7 +46,7 @@ ENDT
 
 $res = `perl Makefile.PL && make 2>&1`;
 is($?, 0) or diag($res);
-unlike(read_file('blib/lib/TTT/PageClasses.pm'), qr/OneColTable/);
+is(-f 'blib/lib/TTT/PageClasses.pm', undef);
 
 $res = `make test_ TEST_FILES=t/234_one_col.t 2>&1`;
 is($?, 0) or diag($res);
@@ -61,11 +61,8 @@ is($?, 0) or do {
 $res = `make realclean && perl Makefile.PL && make 2>&1`;
 is($?, 0) or diag($res);
 
-$res = read_file('blib/lib/TTT/PageClasses.pm');
-unlike($res, qr/Form/);
-unlike($res, qr/List/);
-unlike($res, qr/Info/);
-unlike(read_file('t/dual/011_the_table.t'), qr/Form/);
+is(-f 'blib/lib/TTT/PageClasses.pm', undef);
+like(read_file('t/dual/011_the_table.t'), qr/Form/);
 
 $res = `make test_direct APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 is($?, 0);

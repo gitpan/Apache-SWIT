@@ -27,8 +27,8 @@ sub Check_For_Run_Server {
 	push @$argv, "-servername", $h, "-port", $p;
 }
 
-sub Run {
-	my ($from, $to, @vars) = @_;
+sub swit_run {
+	my ($class, $from, $to, @vars) = @_;
 	my $non_config_func = (@vars && ref($vars[0])) ? shift(@vars) : undef;
 	push @vars, 'SWITSessionsDir';
 	my $top_dir = abs_path(dirname($0) . "/../");
@@ -38,10 +38,6 @@ sub Run {
 	my $cf_dir = "$top_dir/t/conf";
 	Check_For_Run_Server(\@ARGV);
 
-	unless ($<) {
-		`chmod a+w $cf_dir`;
-		`chmod a+w $top_dir/blib`;
-	}
 	if ($not_config) {
 		$_sess_dir = tempdir('/tmp/apache_swit_dirs_XXXXXX'); 
 		mkdir "$_sess_dir/$_" for @vars;
