@@ -92,6 +92,7 @@ t/T/Res.pm
 t/T/HTPage.pm
 t/T/Session.pm
 t/T/SessPage.pm
+t/templates/more.tt
 t/templates/upload.tt
 t/templates/test.tt
 t/templates/res.tt

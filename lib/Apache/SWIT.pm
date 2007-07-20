@@ -49,7 +49,7 @@ use Apache::Request;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.26;
+our $VERSION = 0.27;
 
 sub swit_startup {}
 
@@ -66,6 +66,12 @@ sub swit_send_http_header {
 	$r->send_http_header($ct || "text/html; charset=utf-8");
 }
 
+=head $class->swit_die($msg, $r, @data_to_dump)
+
+Dies with C<$msg> using Carp::confess and dumps request C<$r> and
+C<@data_to_dump> with Data::Dumper.
+
+=cut
 sub swit_die {
 	my ($class, $msg, $r, @more) = @_;
 	confess "$msg with request:\n" . $r->as_string . "and more:\n"
@@ -89,16 +95,22 @@ sub swit_update_handler($$) {
 	return $class->swit_update_finish($ar, $to);
 }
 
+sub swit_new_template {
+	my ($class, $r) = @_;
+	return Template->new({ ABSOLUTE => 1, INCLUDE_PATH =>
+		$r->dir_config('SWITIncludePath') });
+}
+
 sub swit_render_handler($$) {
 	my($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
 	my $vars = $class->swit_render(Apache::Request->new($r));
-	my $t = Template->new({ ABSOLUTE => 1 }) or die "No template";
-	my $file = $r->pnotes('SWITTemplate') or die "No template file";
+	my $t = $class->swit_new_template($r) or confess "No new template";
+	my $file = $r->pnotes('SWITTemplate') or confess "No template file";
 	$class->swit_send_http_header($r);
 	my $out;
 	$t->process($file, $vars, \$out)
-		or die "No result for $file: " . $t->error;
+		or $class->swit_die("No result for $file\: " . $t->error, $r);
 	$r->print($out);
 	return 200;
 }

@@ -1,5 +1,8 @@
 <html>
 <body>
+
+[% INCLUDE templates/more.tt %]
+
 <form action="u" method="post" enctype="multipart/form-data">
 hello [% hello %]
 file: [% file %]

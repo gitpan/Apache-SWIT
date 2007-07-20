@@ -34,6 +34,9 @@ sub _Do_Startup {
 	do $0 or Carp::confess "# Unable to do $0\: $@";
 }
 
+=head1 METHODS
+
+=cut
 sub do_startup {
 	my ($class, $root_env_var) = @_;
 	$class->root_env_var($root_env_var);
@@ -118,7 +121,14 @@ sub _mech_render {
 	my $goto = $args{base_url};
 	$goto = $self->root_location . "/" . $args{url_to_make} 
 			if ($args{make_url});
-	$self->mech_get_base($goto) if $goto;
+	goto OUT if !$goto;
+	my $p = $args{param} or goto GET_IT;
+	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
+	$r->set_params($args{param}) if $args{param};
+	$goto .= "?" . join("&", map { "$_=" . $r->param($_) } $r->param);
+GET_IT:
+	$self->mech_get_base($goto);
+OUT:
 	return $self->mech->content;
 }
 
@@ -230,13 +240,22 @@ sub make_aliases {
 	}
 }
 
+=head2 $test->ok_follow_link(%args)
+
+See WWW::Mechanize for possible C<%args> values.
+
+Returns 1 on success, C<undef> on failure. -1 in direct test.
+
+=cut
 sub ok_follow_link {
 	my ($self, %arg) = @_;
+	my $res = -1;
 	$self->with_or_without_mech_do(1, sub {
-		isnt($self->mech->follow_link(%arg), undef)
+		$res = isnt($self->mech->follow_link(%arg), undef)
 			or carp('# Unable to follow: ' . Dumper(\%arg)
 				. "in\n" . $self->mech->content);
 	});
+	return $res;
 }
 
 sub ok_get {

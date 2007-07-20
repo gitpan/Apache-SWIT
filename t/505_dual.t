@@ -26,7 +26,7 @@ write_file('t/dual/030_load.t', <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 3;
+use Test::More tests => 5;
 use File::Slurp;
 
 BEGIN { use_ok('T::Test'); };
@@ -34,6 +34,8 @@ BEGIN { use_ok('T::Test'); };
 my $t = T::Test->new;
 $t->with_or_without_mech_do(1, sub { ok 1; write_file("A", ""); },
 		1, sub { ok 1; write_file("D", ""); });
+$t->ok_ht_index_r(make_url => 1, ht => { first => '' });
+$t->content_like(qr/hrum/);
 ENDS
 
 like(read_file("lib/TTT/UI/Index.pm"), qr/sub swit_startup/);
@@ -43,6 +45,9 @@ sub swit_startup {
 	append_file("$td/swit_startup_test", sprintf("\%d \%s \%s\n"
 			, \$\$, \$0, (caller)[1]));
 ENDS
+append_file('templates/index.tt', '[% INCLUDE templates/inc.tt %]');
+write_file('templates/inc.tt', "hrum\nhrum\n");
+append_file('MANIFEST', "\ntemplates/inc.tt\n");
 
 my $res = `./scripts/swit_app.pl add_class SC`;
 is($?, 0);

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 38;
+use Test::More tests => 40;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -51,7 +51,7 @@ is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
 # does nothing
-$t->ok_follow_link(text => 'This');
+is($t->ok_follow_link(text => 'This'), -1);
 $t->ok_get('/test/www/hello.html');
 $t->content_like(qr/HELLO, HTML/);
 
@@ -111,7 +111,7 @@ hello world
 ENDS
 
 # works
-$t->ok_follow_link(text => 'This');
+is($t->ok_follow_link(text => 'This'), 1);
 $t->ok_get('/test/www/hello.html');
 $t->content_like(qr/HELLO, HTML/);
 $t->ok_get('/test/www/nothing.html', 404);
