@@ -119,8 +119,11 @@ sub mech_get_base {
 sub _mech_render {
 	my ($self, $handler_class, %args) = @_;
 	my $goto = $args{base_url};
-	$goto = $self->root_location . "/" . $args{url_to_make} 
-			if ($args{make_url});
+	if ($args{make_url}) {
+		my $rl = $self->root_location;
+		confess "Please set root_location" unless defined($rl);
+		$goto = "$rl/" . $args{url_to_make};
+	}
 	goto OUT if !$goto;
 	my $p = $args{param} or goto GET_IT;
 	my $r = $self->fake_request || HTML::Tested::Test::Request->new;

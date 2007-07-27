@@ -49,7 +49,7 @@ use Apache::Request;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.27;
+our $VERSION = 0.28;
 
 sub swit_startup {}
 
@@ -66,7 +66,7 @@ sub swit_send_http_header {
 	$r->send_http_header($ct || "text/html; charset=utf-8");
 }
 
-=head $class->swit_die($msg, $r, @data_to_dump)
+=head2 $class->swit_die($msg, $r, @data_to_dump)
 
 Dies with C<$msg> using Carp::confess and dumps request C<$r> and
 C<@data_to_dump> with Data::Dumper.
@@ -78,9 +78,27 @@ sub swit_die {
 			. join("\n", map { Dumper($_) } @more);
 }
 
-sub swit_update_finish {
+=head2 $class->swit_redirect($class, $r, $to)
+
+Redirects request to C<$to> parameter. If C<$to> is regular string then 302
+status is produced with Location equal to C<$to>.
+
+If C<$to> is array reference and first item is a number then the status with
+C<$to->[0]> is produced and $to->[1] is returned as response body.
+
+I.e. [ 200, "Hello" ] will respond with C<200 OK> status and C<Hello> as a body.
+
+The first item can also be C<INTERNAL> magic string. In that case internal
+redirect to the second array item is produced.
+
+=cut
+sub swit_redirect {
 	my ($class, $r, $to) = @_;
 	my $s = ref($to) ? $to->[0] : 302;
+	if ($s eq 'INTERNAL') {
+		$r->internal_redirect($r->uri . "/../" . $to->[1]);
+		return 200;
+	}
 	$r->status($s);
 	$r->header_out(Location => $to) unless ref($to);
 	$class->swit_send_http_header($r);
@@ -92,7 +110,7 @@ sub swit_update_handler($$) {
 	my($class, $r) = @_;
 	my $ar = Apache::Request->new($r);
 	my $to = $class->swit_update($ar);
-	return $class->swit_update_finish($ar, $to);
+	return $class->swit_redirect($ar, $to);
 }
 
 sub swit_new_template {
@@ -105,6 +123,8 @@ sub swit_render_handler($$) {
 	my($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
 	my $vars = $class->swit_render(Apache::Request->new($r));
+	return $class->swit_redirect($r, $vars) if (ref($vars) ne 'HASH'); 
+
 	my $t = $class->swit_new_template($r) or confess "No new template";
 	my $file = $r->pnotes('SWITTemplate') or confess "No template file";
 	$class->swit_send_http_header($r);

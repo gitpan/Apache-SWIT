@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 17;
+use Test::More tests => 18;
 use File::Slurp;
 use Test::TempDatabase;
 use Cwd;
@@ -22,11 +22,18 @@ is(system("$cwd/scripts/swit_init"), 0);
 isnt(-f "conf/swit.yaml", undef);
 unlike(read_file("lib/TTT/UI/Index.pm"), qr/sub ht_root_class/);
 
+`./scripts/swit_app.pl add_page Red`;
+is($?, 0);
+$mt->replace_in_file("lib/TTT/UI/Red.pm", "swit_render {", <<ENDS);
+swit_render {
+	return [ INTERNAL => "../index/r" ];
+ENDS
+
 write_file('t/dual/030_load.t', <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 5;
+use Test::More tests => 7;
 use File::Slurp;
 
 BEGIN { use_ok('T::Test'); };
@@ -36,6 +43,11 @@ $t->with_or_without_mech_do(1, sub { ok 1; write_file("A", ""); },
 		1, sub { ok 1; write_file("D", ""); });
 $t->ok_ht_index_r(make_url => 1, ht => { first => '' });
 $t->content_like(qr/hrum/);
+$t->red_r(make_url => 1);
+$t->content_like(qr/hrum/);
+$t->with_or_without_mech_do(1, sub {
+	like($t->mech->uri, qr#red/r#);
+});
 ENDS
 
 like(read_file("lib/TTT/UI/Index.pm"), qr/sub swit_startup/);

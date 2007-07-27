@@ -4,6 +4,7 @@ use T::HTPage;
 use T::Upload;
 use T::SWIT;
 use T::Res;
+use T::Redirect;
 use Apache::SWIT::LargeObjectHandler;
 
 T::SWIT->swit_startup;

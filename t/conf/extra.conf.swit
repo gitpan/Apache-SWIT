@@ -1,5 +1,6 @@
 <Perl>
-	push @INC, "@ServerRoot@/../blib/lib" if $Apache::Server::Starting;
+	# make our version first (in case there is an installed one)
+	unshift @INC, "@ServerRoot@/../blib/lib" if $Apache::Server::Starting;
 </Perl>
 
 PerlRequire @ServerRoot@/conf/startup.pl
@@ -91,6 +92,11 @@ PerlModule T::Session
 <Location /test/upload/u>
   SetHandler perl-script
   PerlHandler T::Upload->swit_update_handler
+</Location>
+
+<Location /test/redirect/r>
+  SetHandler perl-script
+  PerlHandler T::Redirect->swit_render_handler
 </Location>
 
 <Location /test/download/r>

@@ -82,6 +82,8 @@ t/apache/050_validate.t
 t/apache/060_guitest.t
 t/apache/070_unicode.t
 t/apache/080_upload.t
+t/apache/090_redirect.t
+t/T/Redirect.pm
 t/T/Upload.pm
 t/T/Basic.pm
 t/T/SWIT.pm
