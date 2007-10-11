@@ -17,7 +17,7 @@ $mt->run_modulemaker_and_chdir;
 ok(-f 'LICENSE');
 
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
-is(-f './t/001_load.t', undef);
+isnt(-f './t/001_load.t', undef);
 isnt(-f './conf/startup.pl', undef);
 
 my $res = `scripts/swit_app.pl add_ht_page BB`;

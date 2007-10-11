@@ -34,11 +34,6 @@ lib/Apache/SWIT/Maker/GeneratorBase.pm
 lib/Apache/SWIT/Maker/GeneratorsQueue.pm
 lib/Apache/SWIT/Maker/Makefile.pm
 lib/Apache/SWIT/Subsystem/Maker.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Class.pm
-lib/Apache/SWIT/Subsystem/Skeleton/DB/Class.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Form.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/List.pm
-lib/Apache/SWIT/Subsystem/Skeleton/Scaffold/Info.pm
 lib/Apache/SWIT/Subsystem/Makefile.pm
 lib/Apache/SWIT/Subsystem/Generator.pm
 lib/Apache/SWIT/HTPage.pm
@@ -49,6 +44,7 @@ lib/Apache/SWIT/Session.pm
 lib/Apache/SWIT/Test/ModuleTester.pm
 lib/Apache/SWIT/Test/Apache.pm
 lib/Apache/SWIT/Test/Utils.pm
+lib/Apache/SWIT/Test/DB.pm
 t/100_session.t
 t/050_file_writer.t
 t/045_conversions.t

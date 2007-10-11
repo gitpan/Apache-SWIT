@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 48;
+use Test::More tests => 49;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -23,11 +23,13 @@ chdir $td;
 $mt->run_modulemaker_and_chdir;
 ok(-f 'LICENSE');
 
+my $tttpm = read_file('lib/TTT.pm');
 Apache::SWIT::Subsystem::Maker->new->write_initial_files();
 is(-f './lib/TTT/DB/Connection.pm', undef);
 is(-f './t/T/TTT/DB/Connection.pm', undef);
-is(-f './t/001_load.t', undef);
+isnt(-f './t/001_load.t', undef);
 is(-f 'lib/TTT/DB/Base.pm', undef);
+is(read_file('lib/TTT.pm'), $tttpm);
 like(read_file('Makefile.PL'),
 	       	qr/Apache::SWIT::Subsystem::Makefile/);
 
@@ -47,7 +49,7 @@ ENDM
 
 write_file("t/555_test.t", <<'ENDT');
 use Test::More tests => 5;
-BEGIN { use_ok('T::TTT');
+BEGIN { use_ok('T::Test');
 	use_ok('TTT::DB::Random');
 }
 is(TTT::DB::Random->number, 494);

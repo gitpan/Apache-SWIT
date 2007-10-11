@@ -25,8 +25,7 @@ Apache::SWIT - mod_perl based application server with integrated testing.
 
 =head1 DISCLAIMER
 	
-	This is pre-alpha quality software. Please use it on your own
-risk.
+This is pre-alpha quality software. Please use it on your own risk.
 
 =head1 DESCRIPTION
 
@@ -49,7 +48,7 @@ use Apache::Request;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.28;
+our $VERSION = 0.29;
 
 sub swit_startup {}
 
@@ -78,21 +77,7 @@ sub swit_die {
 			. join("\n", map { Dumper($_) } @more);
 }
 
-=head2 $class->swit_redirect($class, $r, $to)
-
-Redirects request to C<$to> parameter. If C<$to> is regular string then 302
-status is produced with Location equal to C<$to>.
-
-If C<$to> is array reference and first item is a number then the status with
-C<$to->[0]> is produced and $to->[1] is returned as response body.
-
-I.e. [ 200, "Hello" ] will respond with C<200 OK> status and C<Hello> as a body.
-
-The first item can also be C<INTERNAL> magic string. In that case internal
-redirect to the second array item is produced.
-
-=cut
-sub swit_redirect {
+sub _raw_respond {
 	my ($class, $r, $to) = @_;
 	my $s = ref($to) ? $to->[0] : 302;
 	if ($s eq 'INTERNAL') {
@@ -101,16 +86,38 @@ sub swit_redirect {
 	}
 	$r->status($s);
 	$r->header_out(Location => $to) unless ref($to);
-	$class->swit_send_http_header($r);
-	$r->print($to->[1]) if ref($to);
+	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
+	$r->print($to->[1]) if (ref($to) && defined($to->[1]));
 	return $s;
 }
 
+=head2 $class->swit_update_handler($class, $r)
+
+Entry point for an update handler. Calls $class->swit_update($apr) function with
+C<Apache::Request> parameter. The result of C<swit_update> henceforth is called
+C<$to> is passed down.
+
+If C<$to> is regular string then 302 status is produced with Location equal to
+C<$to>.
+
+If C<$to> is array reference and first item is a number then the status with
+C<$to->[0]> is produced and $to->[1] is returned as response body. $to->[2]
+may by used as content type.
+
+I.e. [ 200, "Hello", "text/plain" ] will respond with C<200 OK> status and
+C<Hello> as a body with C<text/plain> as content type.
+
+The first item can also be C<INTERNAL> magic string. In that case internal
+redirect to the second array item is produced.
+
+Of C<$to> parameters only $to->[0] is mandatory.
+
+=cut
 sub swit_update_handler($$) {
 	my($class, $r) = @_;
 	my $ar = Apache::Request->new($r);
 	my $to = $class->swit_update($ar);
-	return $class->swit_redirect($ar, $to);
+	return $class->_raw_respond($ar, $to);
 }
 
 sub swit_new_template {
@@ -123,7 +130,7 @@ sub swit_render_handler($$) {
 	my($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
 	my $vars = $class->swit_render(Apache::Request->new($r));
-	return $class->swit_redirect($r, $vars) if (ref($vars) ne 'HASH'); 
+	return $class->_raw_respond($r, $vars) if (ref($vars) ne 'HASH');
 
 	my $t = $class->swit_new_template($r) or confess "No new template";
 	my $file = $r->pnotes('SWITTemplate') or confess "No template file";

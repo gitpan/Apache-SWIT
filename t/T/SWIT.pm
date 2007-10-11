@@ -23,6 +23,8 @@ sub swit_update {
 	my $f = $r->param('file') or die "No file given";
 	if ($f =~ /RESPOND/) {
 		return [ 200, 'This is RESPONSE' ];
+	} elsif ($f =~ /CTYPE/) {
+		return [ 200, undef, 'text/plain' ];
 	} else {
 		write_file($f, $r->param('but') || '');
 	}

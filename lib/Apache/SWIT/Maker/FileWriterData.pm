@@ -29,10 +29,7 @@ use strict;
 use warnings FATAL => 'all';
 use Test::Harness;
 use T::TempDB;
-use File::Basename qw(dirname);
-use Cwd qw(abs_path);
 
-$ENV{SWIT_BLIB_DIR} = abs_path(dirname($0) . "/../blib");
 runtests(@ARGV);
 EM
 
@@ -55,7 +52,10 @@ use warnings FATAL => 'all';
 package T::Test;
 use base 'Apache::SWIT::Test';
 
-BEGIN { __PACKAGE__->do_startup('[% root_env_var %]'); };
+BEGIN {
+	$ENV{SWIT_BLIB_DIR} = '[% blib_dir %]';
+	__PACKAGE__->do_startup('[% root_env_var %]');
+};
 
 use [% session_class %];
 

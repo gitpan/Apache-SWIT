@@ -50,7 +50,6 @@ sub swit_run {
 	}
 
 	$ENV{SWIT_HAS_APACHE} = 1;
-	$ENV{SWIT_BLIB_DIR} = "$top_dir/blib";
 	__PACKAGE__->new->run(@ARGV);
 }
 

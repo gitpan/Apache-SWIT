@@ -6,6 +6,7 @@ use File::Slurp;
 use Test::TempDatabase;
 use Cwd;
 use YAML;
+use Apache::SWIT::Test::Utils;
 
 Test::TempDatabase->become_postgres_user;
 
@@ -33,7 +34,7 @@ write_file('t/dual/030_load.t', <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use File::Slurp;
 
 BEGIN { use_ok('T::Test'); };
@@ -48,6 +49,8 @@ $t->content_like(qr/hrum/);
 $t->with_or_without_mech_do(1, sub {
 	like($t->mech->uri, qr#red/r#);
 });
+$t->aga_html_r(make_url => 1);
+$t->content_like(qr/hrum/);
 ENDS
 
 like(read_file("lib/TTT/UI/Index.pm"), qr/sub swit_startup/);
@@ -74,11 +77,14 @@ ENDS
 my $tree = YAML::LoadFile('conf/swit.yaml');
 isnt($tree, undef);
 $tree->{startup_classes} = [ 'TTT::SC' ];
+
+$tree->{pages}->{"aga.html"} = { class => 'TTT::UI::Red'
+			, handler => 'swit_render_handler' };
 YAML::DumpFile('conf/swit.yaml', $tree);
 
 $res = `perl Makefile.PL && make test_dual 2>&1`;
 like($res, qr/030_load/);
-like($res, qr/success/);
+like($res, qr/success/) or ASTU_Wait();
 unlike($res, qr/Fail/);
 unlike($res, qr/010_db/);
 isnt(-f "A", undef) or diag($res);

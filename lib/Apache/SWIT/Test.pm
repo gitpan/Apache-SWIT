@@ -225,7 +225,7 @@ sub make_aliases {
 		no strict 'refs';
 		while (my ($f, $t) = each %trans) {
 			my $func = "$n\_$f";
-			$func =~ s/\//_/g;
+			$func =~ s/[\/\.]/_/g;
 			my $url = "$n/$f";
 			*{ "$class\::$func" } = 
 				$class->_make_test_function($v, $t, $url);

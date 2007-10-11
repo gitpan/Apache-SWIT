@@ -120,15 +120,6 @@ sub cookie_name { return '$an'; }
 ENDM
 }
 
-sub db_env_var {
-	my $db_var = Apache::SWIT::Maker::Config->instance->root_env_var;
-	$db_var =~ s/ROOT$/DB/;
-	return $db_var;
-}
-
-sub write_db_connection_pm {
-}
-
 sub write_db_schema_file {
 	my $self = shift;
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
@@ -143,41 +134,22 @@ __PACKAGE__->add_version(sub {
 ENDM
 }
 
-sub with_lib_dir {
-	my ($self , $new_ld, $func) = @_;
-	my $ld = $self->lib_dir;
-	$self->lib_dir($new_ld);
-	$func->();
-	$self->lib_dir($ld);
-}
-
 sub write_test_db_file {
-	my $self = shift;
-	my $sc = $self->schema_class;
-	my $an = Apache::SWIT::Maker::Config->instance->app_name;
-	my $db_var = $self->db_env_var;
-	$self->with_lib_dir('t', sub {
-		$self->write_pm_file('T::TempDB', <<ENDM);
-use Test::TempDatabase;
-use $sc;
-use Apache::SWIT::DB::Connection;
-
-\$ENV{APACHE_SWIT_DB_NAME} = '$an\_test_db';
-our \$test_db = Test::TempDatabase->create(
-			dbname => '$an\_test_db', schema => '$sc'
-			, dbi_args => Apache::SWIT::DB::Connection->DBIArgs);
-Apache::SWIT::DB::Connection->instance(\$test_db->handle);
-END { \$test_db->destroy; }
-ENDM
-	});
+	swmani_write_file('t/T/TempDB.pm', sprintf(<<'ENDS'
+package T::TempDB;
+use Apache::SWIT::Test::DB;
+Apache::SWIT::Test::DB->setup('%s_test_db', '%s');
+1;
+ENDS
+	, Apache::SWIT::Maker::Config->instance->app_name
+	, shift()->schema_class));
 }
 
 sub write_t_extra_conf_in {
 	my $self = shift;
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
-	my $db_var = $self->db_env_var;
 	swmani_write_file('t/conf/extra.conf.in', <<ENDM);
-PerlSetEnv APACHE_SWIT_DB_NAME $an\_test_db
+PerlPassEnv APACHE_SWIT_DB_NAME
 Include ../blib/conf/httpd.conf
 ENDM
 }
@@ -212,10 +184,6 @@ ENDM
 
 }
 
-sub use_ok_in_010_db_t {
-	return Apache::SWIT::Maker::Config->instance->root_class;
-}
-
 sub add_test {
 	my ($self, $file, $number, $content) = @_;
 	unless ($number) {
@@ -235,14 +203,8 @@ ENDT
 }
 
 sub write_010_db_t {
-	my $self = shift;
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	my $more_uses = $self->use_ok_in_010_db_t;
-	$self->add_test('t/010_db.t', 2, <<ENDM);
+	shift()->add_test('t/010_db.t', 1, <<ENDM);
 use T::TempDB;
-
-BEGIN { use_ok('$more_uses');
-}
 
 package T::DBI;
 use base 'Apache::SWIT::DB::Base';
@@ -277,7 +239,6 @@ sub write_initial_files {
 	$self->write_session_pm;
 	$self->write_db_schema_file;
 	$self->write_test_db_file;
-	$self->write_db_connection_pm;
 	$self->write_t_extra_conf_in;
 	$self->write_httpd_conf_in;
 	swmani_write_file("public_html/main.css", "# Sample CSS file\n");
@@ -392,6 +353,7 @@ ENDS
 		session_class => $tree->{session_class}
 		, root_location => $tree->{root_location}
 		, root_env_var => $tree->root_env_var,
+		, blib_dir => abs_path("blib")
 		, aliases => $aliases, httpd_session_class =>
 			$self->session_class_for_httpd_conf($tree) });
 	return $tree;
@@ -423,7 +385,9 @@ sub remove_page {
 
 sub add_db_class {
 	my ($self, $table) = @_;
-	$self->skel_db_class->new({ table => $table })->write_output;
+	my $sc = $self->skel_db_class->new({ table => $table });
+	$sc->write_output;
+	return $sc->class_v;
 }
 
 sub _extract_columns {
@@ -437,24 +401,22 @@ sub _extract_columns {
 
 sub scaffold {
 	my ($self, $table) = @_;
-	$self->add_db_class($table);
-	my $ct = conv_table_to_class($table);
-	my $db_class = Apache::SWIT::Maker::Config->instance->root_class
-				. "::DB::$ct";
+	my $db_class = $self->add_db_class($table);
 
 	my @cols = $self->_extract_columns($db_class);
 	my $args = { columns => [ @cols ], table => $table };
 	$self->scaffold_dual_test->new($args)->write_output;
 
+	my $ct = conv_table_to_class($table);
 	$self->_make_page("$ct\::$_", $args, "scaffold_".lc($_)
 		, "scaffold_".lc($_)."_template") for qw(List Info Form);
 }
 
 sub run_server {
-	my ($self, $hp) = @_;
+	my ($self, $hp, $dbn) = @_;
 	$hp ||= 1;
-	my $dn = abs_path(dirname($0));
 	$self->silent_system("perl Makefile.PL") unless -f 'Makefile';
+	$ENV{APACHE_SWIT_DB_NAME} = $dbn if $dbn;
 	$ENV{__APACHE_SWIT_RUN_SERVER__} = $hp;
 	system("make test_apache");
 }

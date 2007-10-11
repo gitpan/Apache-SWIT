@@ -37,7 +37,7 @@ my @x = $t->ht_another_page_u(ht => { file => "$td/uuu"
 my $ur = read_file("$td/uuu");
 is(unlink("$td/uuu"), 1);
 is_deeply(\@x, [ '/test/basic_handler' ]);
-is($ur, "up.txt\nHello\nworld\n");
+is($ur, "$td/up.txt\nHello\nworld\n");
 
 $ENV{SWIT_HAS_APACHE} = 1;
 $t = Apache::SWIT::Test->new;
@@ -62,7 +62,7 @@ $ur = read_file("$td/uuu");
 is(unlink("$td/uuu"), 1);
 is(@x, 1);
 like($x[0], qr/hhhh/);
-is($ur, "up.txt\nHello\nworld\n");
+is($ur, "$td/up.txt\nHello\nworld\n");
 
 $t->ok_ht_and_another_r(base_url => '/test/ht_page/r', ht => { 
 		hello => 'world' });

@@ -9,26 +9,8 @@ use Apache::SWIT::Maker::Manifest;
 use Apache::SWIT::Subsystem::Makefile;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
-use Apache::SWIT::Subsystem::Skeleton::Class;
 
 sub makefile_class { return 'Apache::SWIT::Subsystem::Makefile'; }
-
-my %_skel_overrides = qw(skel_db_class DB::Class 
-		scaffold_form Scaffold::Form
-		scaffold_list Scaffold::List
-		scaffold_info Scaffold::Info);
-
-while (my ($n, $v) = each %_skel_overrides) {
-	my $sc = conv_eval_use("Apache::SWIT::Subsystem::Skeleton::" . $v);
-	no strict 'refs';
-	*{ __PACKAGE__ . "::" . $n } = sub { return $sc; };
-}
-
-for (qw(DB::Class)) {
-	no strict 'refs';
-	unshift @{ "Apache::SWIT::Subsystem::Skeleton::$_\::ISA" }
-			, 'Apache::SWIT::Subsystem::Skeleton::Class';
-}
 
 sub make_this_subsystem_dumps {
 	my $self = shift;
@@ -56,24 +38,6 @@ sub write_installation_content_pm {
 	} keys %dumps ] })
 }
 
-sub write_t_module {
-	my $self = shift;
-	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
-	my $rvn = Apache::SWIT::Maker::Config->instance->root_env_var;
-	$self->write_pm_file("T::$rc", <<ENDM);
-use Apache::SWIT::Test;
-use File::Basename qw(dirname);
-use Cwd qw(abs_path);
-
-\$ENV{SWIT_BLIB_DIR} = abs_path(dirname(\$0) . "/../blib");
-Apache::SWIT::Test->do_startup('$rvn') unless \$ENV{$rvn};
-ENDM
-}
-
-sub use_ok_in_010_db_t {
-	return 'T::' . Apache::SWIT::Maker::Config->instance->root_class;
-}
-
 sub write_950_install_t {
 	my $self = shift;
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
@@ -97,6 +61,7 @@ chdir '/';
 ENDT
 }
 
+# InstallationContent inherits it
 sub write_maker_pm {
 	my $self = shift;
 	$self->write_pm_file(Apache::SWIT::Maker::Config->instance->root_class . "::Maker", <<ENDM);
@@ -104,15 +69,11 @@ use base 'Apache::SWIT::Subsystem::Maker';
 ENDM
 }
 
-sub write_db_connection_pm {
+sub write_initial_files {
 	my $self = shift;
+	$self->SUPER::write_initial_files(@_);
 	$self->write_950_install_t;
 	$self->write_maker_pm;
-	$self->with_lib_dir("t", sub {
-		$self->SUPER::write_db_connection_pm;
-		$self->write_t_module;
-		$self->remove_file('t/001_load.t');
-	});
 }
 
 sub add_class {

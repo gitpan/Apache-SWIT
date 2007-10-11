@@ -14,11 +14,13 @@ $ENV{ASTU_WAIT} = 0;
 sub ASTU_Wait {
 	my $dir = shift || "";
 	unless ($ASTU_Should_Wait) {
-		print STDERR "# ASTU_WAIT: no \$ENV{ASTU_WAIT} is given\n";
-		return;
+		print STDERR "# ASTU_WAIT: no \$ENV{ASTU_WAIT} is given $dir\n";
+		goto OUT;
 	}
 	print STDERR "# Test is in $dir ...\nPress ENTER to continue ...\n";
 	readline(\*STDIN);
+OUT:
+	exit 1;
 }
 
 sub ASTU_Read_Error_Log {

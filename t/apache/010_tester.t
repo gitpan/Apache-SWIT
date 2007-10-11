@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 40;
+use Test::More tests => 42;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -87,6 +87,11 @@ $t->the_page_r(base_url => '/test/swit/r');
 is(read_file("$td/uuu"), 'Push');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ "hhhh\n" ]);
+
+$t->the_page_r(base_url => '/test/swit/r');
+$t->the_page_u(fields => { file => "$td/CTYPE" });
+is($t->mech->ct, "text/plain");
+unlike(ASTU_Read_Error_Log(), qr/\[error\]/);
 
 $t->the_page_r(base_url => '/test/swit/r');
 $t->the_page_u(fields => { file => "$td/RESPOND" });

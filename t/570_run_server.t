@@ -1,8 +1,9 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 12;
+use Test::More tests => 25;
 use Test::TempDatabase;
+use Apache::SWIT::Test::Utils;
 Test::TempDatabase->become_postgres_user;
 
 use LWP::UserAgent;
@@ -19,7 +20,7 @@ $mt->make_swit_project;
 ok(-f 'LICENSE');
 `perl Makefile.PL && make 2>&1`;
 
-
+my $psql = `psql -l`;
 my @cmd = ("./scripts/swit_app.pl", "run_server"); 
 my ($in, $out, $err);
 my $t = timeout(30);
@@ -61,6 +62,46 @@ pump $h until $err =~ /Press Enter to finish \.\.\./;
 like($err, qr/Press Enter to finish \.\.\./);
 is($host, "goo.ga:11111");
 finish $h or die "cmd returned $?" ;
+
+$mt->insert_into_schema_pm('
+$dbh->do("create table one_col_table (id serial primary key, ocol text)");
+');
+
+push @cmd, "swit_run_server_db";
+$h = start(\@cmd, \$in, \$out, \$err, $t);
+eval { pump $h until $err =~ /Press Enter to finish \.\.\./; };
+is($@, '') or ASTU_Wait($err);
+($host) = ($out =~ /server ([^\n]+) started/);
+like($err, qr/Press Enter to finish \.\.\./);
+is($host, "goo.ga:11111");
+like(`psql -l`, qr/swit_run_server_db/);
+finish $h or die "cmd returned $?" ;
+
+like(`psql -l`, qr/swit_run_server_db/);
+
+`psql -c "insert into one_col_table (ocol) values ('gggg')" swit_run_server_db`;
+is($?, 0);
+
+`./scripts/swit_app.pl scaffold one_col_table 2>&1`;
+is($?, 0);
+ok(-f 'lib/TTT/DB/OneColTable.pm');
+
+$cmd[2] = 1;
+$h = start(\@cmd, \$in, \$out, \$err, $t);
+eval { pump $h until $err =~ /Press Enter to finish \.\.\./; };
+is($@, '') or ASTU_Wait("$out,\n$err");
+($host) = ($out =~ /server ([^\n]+) started/);
+like($err, qr/Press Enter to finish \.\.\./);
+like($ua->get("http://$host/ttt/onecoltable/list/r")->content, qr/gggg/)
+	or ASTU_Wait($td);
+finish $h or die "cmd returned $?" ;
+
+like(`psql -l`, qr/swit_run_server_db/);
+
+END {
+`dropdb swit_run_server_db 2>&1 1>/dev/null`;
+is(`psql -l`, $psql);
+};
 
 chdir '/';
 
