@@ -7,6 +7,7 @@ use Data::Dumper;
 use File::Path qw(rmtree);
 use Test::TempDatabase;
 use Apache::SWIT::Test::ModuleTester;
+use Apache::SWIT::Test::Utils;
 use File::Slurp;
 
 BEGIN { use_ok('Apache::SWIT::Maker'); }
@@ -48,7 +49,7 @@ my @tmp_contents = glob('/tmp/*');
 my $tres = join('', `make test 2>&1`);
 like($tres, qr/All tests successful/);
 like($tres, qr/t\/dual\/001_load/);
-like($tres, qr/started\n.*dual/);
+like($tres, qr/started\n.*dual/) or ASTU_Wait($mt->root_dir);
 like($tres, qr/Files=2/);
 unlike($tres, qr/Error/);
 unlike($tres, qr/Please use/);
@@ -134,8 +135,12 @@ like(read_file('conf/swit.yaml'), qr/TTT::UI::First::Page/);
 unlike(read_file('lib/TTT/UI/First/Page.pm'), qr/sub ht_root_class/);
 like(read_file('lib/TTT/UI/First/Page.pm'), qr/sub swit_startup/);
 
-eval { require("lib/TTT/UI/First/Page.pm") };
-like($@, qr/HTV/);
+{
+	use Package::Alias 'Apache2::Const::OK' => sub { 200; }
+		, 'Apache2::Const::REDIRECT' => sub { 302; };
+	eval { require("lib/TTT/UI/First/Page.pm") };
+}
+like($@, qr/HTV/) or ASTU_Wait($mt->root_dir);
 
 use_ok('HTML::Tested', qw(HT HTV));
 ok(require("lib/TTT/UI/First/Page.pm"));

@@ -5,6 +5,7 @@ package T::SWIT;
 use base 'Apache::SWIT';
 use File::Slurp;
 use Carp;
+use File::Basename qw(dirname);
 
 sub swit_startup {
 	append_file("/tmp/swit_startup_test", sprintf("%d %s %s\n"
@@ -13,8 +14,8 @@ sub swit_startup {
 
 sub swit_render {
 	my ($class, $r) = @_;
-	$r->pnotes('SWITTemplate',  
-			$r->server_root_relative('templates/test.tt'));
+	my $f = dirname($INC{'T/SWIT.pm'}) . "/../templates/test.tt";
+	$r->pnotes('SWITTemplate', $f);
 	return { hello => 'world' };
 }
 
@@ -22,9 +23,9 @@ sub swit_update {
 	my ($class, $r) = @_;
 	my $f = $r->param('file') or die "No file given";
 	if ($f =~ /RESPOND/) {
-		return [ 200, 'This is RESPONSE' ];
+		return [ Apache2::Const::OK, 'This is RESPONSE' ];
 	} elsif ($f =~ /CTYPE/) {
-		return [ 200, undef, 'text/plain' ];
+		return [ Apache2::Const::OK, undef, 'text/plain' ];
 	} else {
 		write_file($f, $r->param('but') || '');
 	}
@@ -34,7 +35,7 @@ sub swit_update {
 sub ct_handler($$) {
 	my ($class, $r) = @_;
 	$class->swit_send_http_header($r, "text/plain");
-	return 200;
+	return Apache2::Const::OK;
 }
 
 1;

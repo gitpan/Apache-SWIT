@@ -4,20 +4,19 @@ use warnings FATAL => 'all';
 package Apache::SWIT::Session;
 use Digest::MD5 qw(md5_hex);
 use Storable qw(lock_store lock_retrieve);
-use Apache::Cookie;
 
 sub access_handler($$) {
 	my ($class, $r) = @_;
 	my $session = $class->begin($r);
 	$r->pnotes("SWITSession", $session);
-	return 200;
+	return Apache2::Const::OK();
 }
 
 sub begin {
 	my ($class, $r) = @_;
 	my %args = (_request => $r, 
 		_sessions_dir => $r->dir_config('SWITSessionsDir'));
-	my %cookies = Apache::Cookie->fetch;
+	my %cookies = Apache2::Cookie->fetch($r);
 	$args{session_id} = $cookies{$class->cookie_name}->value
 		if $cookies{$class->cookie_name};
 	my $self = $class->new(%args);
@@ -27,10 +26,10 @@ sub begin {
 
 sub end {
 	my $self = shift;
-	my $cookie = Apache::Cookie->new($self->{_request}, 
+	my $cookie = Apache2::Cookie->new($self->{_request}, 
 			'-name' => $self->cookie_name,
 			'-value' => $self->session_id);
-	$cookie->bake;
+	$cookie->bake($self->{_request});
 	$self->write_stash;
 }
 

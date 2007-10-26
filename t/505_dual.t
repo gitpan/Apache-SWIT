@@ -92,10 +92,10 @@ isnt(-f "D", undef);
 
 my $sws = read_file("$td/swit_startup_test");
 like($sws, qr/do_swit_startups\.pl/);
-like($sws, qr/httpd\.conf/);
+unlike($sws, qr/httpd\.conf/);
 
 my $sct = read_file("$td/startup_classes_test");
 like($sws, qr/do_swit_startups\.pl/);
-like($sws, qr/httpd\.conf/);
+unlike($sws, qr/httpd\.conf/);
 
 chdir '/';

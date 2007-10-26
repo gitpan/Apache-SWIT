@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 13;
+use Test::More tests => 16;
 use Data::Dumper;
 use File::Temp qw(tempdir);
 use File::Slurp;
@@ -9,9 +9,10 @@ use File::Slurp;
 BEGIN { use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup("AA_ROOT");
 	use_ok('T::Upload');
+	use_ok('T::Empty');
 };
 
-Apache::SWIT::Test->make_aliases(upload => 'T::Upload');
+Apache::SWIT::Test->make_aliases(upload => 'T::Upload', empty => 'T::Empty');
 
 my $td = tempdir('/tmp/lo_test_XXXXXXXX', CLEANUP => 1);
 my $t = Apache::SWIT::Test->new;
@@ -43,3 +44,7 @@ $t->ht_upload_u(ht => { mime_upload => '/etc/passwd' });
 $t->ok_follow_link(text => 'Get Mime');
 is($t->mech->content, read_file('/etc/passwd'));
 is($t->mech->ct, 'text/plain');
+
+$t->ok_ht_empty_r(base_url => '/test/empty/r', ht => { first => '' });
+$t->ht_empty_u(ht => {});
+$t->ok_ht_empty_r(ht => { first => '' });

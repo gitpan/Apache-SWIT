@@ -197,7 +197,7 @@ sub _mech_ht_update {
 	confess "Form enctype is not multipart/form-data"
 	           if $form->enctype ne "multipart/form-data";
 
-	for my $u ($r->upload) {
+	for my $u (map { $r->upload($_) } $r->upload) {
 		my $i = $self->mech->current_form->find_input($u->name)
 			or die "Unable to find input for " . $u->name;
 		my $c = read_file($u->fh);

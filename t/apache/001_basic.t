@@ -32,7 +32,7 @@ my $t = Apache::SWIT::Test->new;
 like($0, qr/001_basic/);
 ok($t->mech);
 $t->mech_get_base("/test/basic_handler");
-like($t->mech->content, qr/hhhh/);
+like($t->mech->content, qr/hhhh/) or ASTU_Wait();
 like($t->mech->content, qr/blib/);
 
 $t->mech_get_base("/test/swit/r");
@@ -42,7 +42,7 @@ my $td = tempdir("/tmp/swit_basic_XXXXXXX", CLEANUP => 1);
 $t->mech->submit_form(fields => { file => "$td/fff" });
 
 # Redirected to res handler
-is($t->mech->content, "hhhh\n");
+is($t->mech->content, "hhhh\n") or ASTU_Wait();
 ok(-f "$td/fff");
 
 $t->mech_get_base("/test/cthan");

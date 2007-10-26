@@ -11,7 +11,8 @@ sub ht_root_class { return shift() . '::Root'; }
 sub swit_render {
 	my ($class, $r) = @_;
 	my $stash = {};
-	my $tested = $class->ht_root_class->ht_convert_request_to_tree($r);
+	my %pars = map { ($_, $r->param($_)) } $r->param;
+	my $tested = $class->ht_root_class->ht_load_from_params(%pars);
 	my $root;
 	eval { $root = $class->ht_swit_render($r, $tested); };
 	$class->swit_die("render failed: $@", $r, $tested) if $@;
@@ -38,7 +39,10 @@ sub ht_swit_transactional_update {
 
 sub swit_update {
 	my ($class, $r) = @_;
-	my $tested = $class->ht_root_class->ht_convert_request_to_tree($r);
+	my @pars = map { ($_, $r->param($_)) } $r->param;
+	push @pars, map { ($r->upload($_)->name, $r->upload($_)) } $r->upload
+		if $r->body_status !~ 'End of file';
+	my $tested = $class->ht_root_class->ht_load_from_params(@pars);
 	my @errs = $tested->ht_validate;
 	$class->swit_die("ht_validate failed", $r, $tested, \@errs) if @errs;
 	return $class->ht_swit_transactional_update($r, $tested);

@@ -1,11 +1,11 @@
-<Perl>
-	# make our version first (in case there is an installed one)
-	unshift @INC, "@ServerRoot@/../blib/lib" if $Apache::Server::Starting;
-</Perl>
+<IfModule !apreq_module.c>
+	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
+</IfModule>
 
-PerlRequire @ServerRoot@/conf/startup.pl
+PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
+
+PerlPostConfigRequire @ServerRoot@/../blib/conf/startup.pl
 PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
-PerlModule T::Session
 <Location /test>
 	PerlAccessHandler T::Session->access_handler
 	PerlSetVar SWITSessionsDir UNKNOWN YET
@@ -13,7 +13,7 @@ PerlModule T::Session
 
 <Location /test/basic_handler>
   SetHandler perl-script
-  PerlHandler T::Basic
+  PerlResponseHandler T::Basic
 </Location>
 
 <Location /test/swit/r>
@@ -94,6 +94,18 @@ PerlModule T::Session
   PerlHandler T::Upload->swit_update_handler
 </Location>
 
+<Location /test/empty/r>
+  SetHandler perl-script
+  PerlSetVar SWITIncludePath @ServerRoot@
+  PerlSetVar SWITTemplate templates/empty_up.tt
+  PerlHandler T::Empty->swit_render_handler
+</Location>
+
+<Location /test/empty/u>
+  SetHandler perl-script
+  PerlHandler T::Empty->swit_update_handler
+</Location>
+
 <Location /test/redirect/r>
   SetHandler perl-script
   PerlHandler T::Redirect->swit_render_handler
@@ -106,4 +118,4 @@ PerlModule T::Session
 
 
 Alias /test/www @ServerRoot@/public_html 
-PerlRequire @ServerRoot@/conf/do_swit_startups.pl
+PerlPostConfigRequire @ServerRoot@/conf/do_swit_startups.pl

@@ -45,6 +45,7 @@ sub write_950_install_t {
 use Apache::SWIT::Maker;
 use Apache::SWIT::Test::ModuleTester;
 use Apache::SWIT::Test::Utils;
+use File::Slurp;
 
 my \$mt = Apache::SWIT::Test::ModuleTester->new({ root_class => '$rc' });
 \$mt->run_make_install;
@@ -55,7 +56,10 @@ chdir \$mt->root_dir;
 \$mt->install_subsystem('TheSub');
 
 my \$res = join('', `perl Makefile.PL && make test 2>&1`);
-unlike(\$res, qr/Error/) or ASTU_Wait(\$mt->root_dir);
+unlike(\$res, qr/Error/) or do {
+	diag(read_file('t/logs/error_log'));
+	ASTU_Wait(\$mt->root_dir);
+};
 
 chdir '/';
 ENDT

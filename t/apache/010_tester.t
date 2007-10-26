@@ -97,7 +97,7 @@ $t->the_page_r(base_url => '/test/swit/r');
 $t->the_page_u(fields => { file => "$td/RESPOND" });
 $t->content_like(qr/RESPONSE/);
 is(-f "$td/RESPOND", undef);
-like(ASTU_Read_Access_Log(), qr/RESPOND.*200/);
+like(ASTU_Read_Access_Log(), qr/RESPOND.*HTTP/);
 
 Apache::SWIT::Test->make_aliases("another/page" => 'T::SWIT');
 $t->root_location('/test');

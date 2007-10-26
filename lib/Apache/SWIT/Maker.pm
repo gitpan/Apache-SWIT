@@ -154,30 +154,18 @@ Include ../blib/conf/httpd.conf
 ENDM
 }
 
-sub more_stuff_in_httpd_conf_in {
-	my $self = shift;
-	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
-	return <<ENDS
-RewriteEngine on
-RewriteRule ^/\$ $rl/index/r [R]
-PerlModule \@SessionClass\@;
-ENDS
-}
-
 sub write_httpd_conf_in {
 	my $self = shift;
-	my $root_location = Apache::SWIT::Maker::Config->instance
-				->root_location;
-	my $more = $self->more_stuff_in_httpd_conf_in;
+	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
 	my $app_name = Apache::SWIT::Maker::Config->instance->app_name;
-	my $seed = $$ . int(rand(65530)) . time;
 	swmani_write_file('conf/httpd.conf.in', sprintf(<<ENDM
-$more
-<Location $root_location>
+RewriteEngine on
+RewriteRule ^/\$ $rl/index/r [R]
+<Location $rl>
 	PerlAccessHandler \@SessionClass\@\->access_handler
 	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
 </Location>
-Alias $root_location/www \@ServerRoot\@/public_html 
+Alias $rl/www \@ServerRoot\@/public_html 
 Alias /html-tested-javascript /usr/local/share/libhtml-tested-javascript-perl
 ENDM
 		, Apache::SWIT::Maker::Config->instance->root_env_var));
@@ -329,12 +317,18 @@ sub regenerate_httpd_conf {
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
 	my $tree = Apache::SWIT::Maker::Config->instance;
 	my $ht_in = sprintf(<<ENDS, $tree->root_env_var);
+<IfModule !apreq_module.c>
+	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
+</IfModule>
+<IfModule !rewrite_module.c>
+	LoadModule rewrite_module /usr/lib/apache2/modules/mod_rewrite.so
+</IfModule>
+
+PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
+
 PerlSetEnv %s \@ServerRoot\@
-<Perl>
-	use lib '\@ServerRoot\@/lib';
-</Perl>
-PerlRequire \@ServerRoot\@/conf/startup.pl
-PerlRequire \@ServerRoot\@/conf/do_swit_startups.pl
+PerlPostConfigRequire \@ServerRoot\@/conf/startup.pl
+PerlPostConfigRequire \@ServerRoot\@/conf/do_swit_startups.pl
 ENDS
 	my ($aliases, $spl) = ("", join("\n", map {
 		"use $_;\n$_\->swit_startup;"

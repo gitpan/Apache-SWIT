@@ -87,10 +87,12 @@ t/T/TransFailure.pm
 t/T/ValidateFailure.pm
 t/T/DBPage.pm
 t/T/Res.pm
+t/T/Empty.pm
 t/T/HTPage.pm
 t/T/Session.pm
 t/T/SessPage.pm
 t/templates/more.tt
+t/templates/empty_up.tt
 t/templates/upload.tt
 t/templates/test.tt
 t/templates/res.tt

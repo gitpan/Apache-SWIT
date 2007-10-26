@@ -3,9 +3,9 @@ use warnings FATAL => 'all';
 
 package T::Basic;
  
-sub handler ($$) {
-	my($class, $r) = @_;
-	$r->send_http_header("text/plain");
+sub handler {
+	my $r = shift;
+	$r->content_type("text/plain");
 	print "hhhh\n$INC[0]";
 	return 200;
 }

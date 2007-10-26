@@ -2,8 +2,11 @@ use strict;
 use warnings FATAL => 'all';
 
 use Test::More tests => 24;
+use CGI::Cookie;
+use Package::Alias 'Apache2::Cookie' => 'CGI::Cookie'
+	, 'Apache2::Const::OK' => sub { 200; };
 
-BEGIN { use_ok('Apache::SWIT::Session'); }
+use_ok('Apache::SWIT::Session');
 
 use File::Temp qw(tempdir);
 use File::Path qw(rmtree);

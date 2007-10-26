@@ -3,11 +3,12 @@ use warnings FATAL => 'all';
 
 package T::Res;
 use base 'Apache::SWIT';
+use File::Basename qw(dirname);
 
 sub swit_render {
 	my ($class, $r) = @_;
-	$r->pnotes('SWITTemplate', 
-			$r->server_root_relative('templates/res.tt'));
+	my $f = dirname($INC{'T/Res.pm'}) . "/../templates/res.tt";
+	$r->pnotes('SWITTemplate', $f);
 	return { res => $r->param('res') };
 }
 

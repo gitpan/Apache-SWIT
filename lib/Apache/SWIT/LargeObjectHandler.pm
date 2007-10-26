@@ -7,7 +7,7 @@ use Carp;
 
 sub swit_render_handler($$) {
 	my($class, $ar) = @_;
-	my $r = Apache::Request->new($ar);
+	my $r = Apache2::Request->new($ar);
 	my $enc_loid = $r->param("loid") or confess "No loid was given";
 	my $ct = $r->param("ct");
 	my $loid = HTML::Tested::Seal->instance->decrypt($enc_loid)
@@ -33,7 +33,7 @@ sub swit_render_handler($$) {
 	} else {
 		$dbh->commit;
 	}
-	return 200;
+	return Apache2::Const::OK;
 }
 
 1;

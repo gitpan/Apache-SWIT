@@ -44,11 +44,10 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT;
 use Template;
-use Apache::Request;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.29;
+our $VERSION = 0.30;
 
 sub swit_startup {}
 
@@ -62,7 +61,7 @@ C<text/html; charset=utf-8>.
 sub swit_send_http_header {
 	my ($class, $r, $ct) = @_;
 	$r->pnotes('SWITSession')->end;
-	$r->send_http_header($ct || "text/html; charset=utf-8");
+	$r->content_type($ct || "text/html; charset=utf-8");
 }
 
 =head2 $class->swit_die($msg, $r, @data_to_dump)
@@ -79,13 +78,13 @@ sub swit_die {
 
 sub _raw_respond {
 	my ($class, $r, $to) = @_;
-	my $s = ref($to) ? $to->[0] : 302;
+	my $s = ref($to) ? $to->[0] : Apache2::Const::REDIRECT();
 	if ($s eq 'INTERNAL') {
 		$r->internal_redirect($r->uri . "/../" . $to->[1]);
-		return 200;
+		return Apache2::Const::OK();
 	}
 	$r->status($s);
-	$r->header_out(Location => $to) unless ref($to);
+	$r->headers_out->add(Location => $to) unless ref($to);
 	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
 	$r->print($to->[1]) if (ref($to) && defined($to->[1]));
 	return $s;
@@ -94,7 +93,7 @@ sub _raw_respond {
 =head2 $class->swit_update_handler($class, $r)
 
 Entry point for an update handler. Calls $class->swit_update($apr) function with
-C<Apache::Request> parameter. The result of C<swit_update> henceforth is called
+C<Apache2::Request> parameter. The result of C<swit_update> henceforth is called
 C<$to> is passed down.
 
 If C<$to> is regular string then 302 status is produced with Location equal to
@@ -115,7 +114,7 @@ Of C<$to> parameters only $to->[0] is mandatory.
 =cut
 sub swit_update_handler($$) {
 	my($class, $r) = @_;
-	my $ar = Apache::Request->new($r);
+	my $ar = Apache2::Request->new($r);
 	my $to = $class->swit_update($ar);
 	return $class->_raw_respond($ar, $to);
 }
@@ -127,9 +126,9 @@ sub swit_new_template {
 }
 
 sub swit_render_handler($$) {
-	my($class, $r) = @_;
+	my ($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
-	my $vars = $class->swit_render(Apache::Request->new($r));
+	my $vars = $class->swit_render(Apache2::Request->new($r));
 	return $class->_raw_respond($r, $vars) if (ref($vars) ne 'HASH');
 
 	my $t = $class->swit_new_template($r) or confess "No new template";
@@ -139,7 +138,7 @@ sub swit_render_handler($$) {
 	$t->process($file, $vars, \$out)
 		or $class->swit_die("No result for $file\: " . $t->error, $r);
 	$r->print($out);
-	return 200;
+	return Apache2::Const::OK();
 }
 
 1;
