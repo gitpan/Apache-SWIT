@@ -8,7 +8,7 @@ PerlPostConfigRequire @ServerRoot@/../blib/conf/startup.pl
 PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 <Location /test>
 	PerlAccessHandler T::Session->access_handler
-	PerlSetVar SWITSessionsDir UNKNOWN YET
+	PerlSetVar SWITRootLocation /test
 </Location>
 
 <Location /test/basic_handler>

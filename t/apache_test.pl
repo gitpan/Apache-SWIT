@@ -19,7 +19,7 @@ unless ($<) {
 
 my $d = abs_path(dirname($0));
 $ENV{SWIT_BLIB_DIR} = "$d/../blib";
-Apache::SWIT::Test::Apache->swit_run('extra.conf.swit', 'extra.conf.in', sub {
+Apache::SWIT::Test::Apache->swit_run(sub {
 	symlink("$d/conf", "$d/../blib/conf");
 	write_file("$d/conf/seal.key", "boo boo boo");
 	write_file("$d/conf/startup.pl"

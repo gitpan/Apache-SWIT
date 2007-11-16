@@ -153,7 +153,7 @@ is(read_file('templates/thesub/index.tt'),
 symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT");
 `perl Makefile.PL && make 2>&1`;
 like(read_file('t/T/Test.pm'), qr/\bthesub\/index/);
-$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 8');
+$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 9');
 symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT") or die "# Unable to symlink";
 append_file('t/dual/001_load.t', <<ENDT);
 \$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
@@ -171,7 +171,7 @@ my \$arr = Apache::SWIT::DB::Connection->instance->db_handle
 return \$
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 10');
+$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 11');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_username');
 \$t->ok_ht_index_r(make_url => 1, ht => { first => '' });
@@ -188,7 +188,7 @@ ENDM
 $res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or ASTU_Wait($td);
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 10', '=> 11');
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 12');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_t_ttt');
 ENDT

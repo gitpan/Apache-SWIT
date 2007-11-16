@@ -28,7 +28,7 @@ sub get_makefile_rules {
 	for my $r (@$rules) {
 		$res .= join(' ',  @{ $r->{targets} }) . " :: ";
 		$res .= join(' ', @{ $r->{dependencies} || [] }) . "\n\t";
-		$res .= join("\n\t", @{ $r->{actions} }) . "\n\n";
+		$res .= join("\n\t", @{ $r->{actions} || [] }) . "\n\n";
 	}
 	return $res;
 }
@@ -73,27 +73,37 @@ sub _mm_test {
 	return $res;
 }
 
+sub find_tests_str {
+	return sprintf('`find t/%s -name "*.t" | sort`', $_[1]);
+}
+
+sub test_apache_lines {
+	return ('$(RM_F) t/logs/access_log  t/logs/error_log'
+		, 'ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) '
+			. '-I t -I blib/lib t/apache_test.pl ' . $_[1]);
+}
+
 sub _mm_postamble {
-	return __PACKAGE__->get_makefile_rules . q{
+	return __PACKAGE__->get_makefile_rules . sprintf(q{
 test_dual :: test_direct test_apache 
 
 test :: test_direct test_apache 
 
-APACHE_TEST_FILES = `find t/dual -name "*.t" | sort`
+APACHE_TEST_FILES = %s
 
 test_direct :: pure_all
 	PERL_DL_NONLAZY=1 $(FULLPERLRUN) -I t -I blib/lib t/direct_test.pl $(APACHE_TEST_FILES)
 
 test_apache :: pure_all
-	$(RM_F) t/logs/access_log  t/logs/error_log
-	ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) -I t -I blib/lib t/apache_test.pl $(APACHE_TEST_FILES)
+	%s
 
 realclean ::
 	$(RM_RF) t/htdocs t/logs
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl t/T/Test.pm
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
-	$(RM_F) blib/conf/httpd.conf
-};
+	$(RM_F) blib/conf/httpd.conf t/conf/mime.types
+}, __PACKAGE__->find_tests_str('dual'), join("\n\t"
+	, __PACKAGE__->test_apache_lines('$(APACHE_TEST_FILES)')));
 }
 
 my @_swit_overrides = qw(test postamble constants install);

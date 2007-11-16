@@ -2,8 +2,8 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT::Session;
-use Digest::MD5 qw(md5_hex);
-use Storable qw(lock_store lock_retrieve);
+use Storable qw(thaw freeze);
+use HTML::Tested::Seal;
 
 sub access_handler($$) {
 	my ($class, $r) = @_;
@@ -14,10 +14,9 @@ sub access_handler($$) {
 
 sub begin {
 	my ($class, $r) = @_;
-	my %args = (_request => $r, 
-		_sessions_dir => $r->dir_config('SWITSessionsDir'));
+	my %args = (_request => $r);
 	my %cookies = Apache2::Cookie->fetch($r);
-	$args{session_id} = $cookies{$class->cookie_name}->value
+	$args{session_value} = $cookies{$class->cookie_name}->value
 		if $cookies{$class->cookie_name};
 	my $self = $class->new(%args);
 	$self->read_stash;
@@ -26,16 +25,16 @@ sub begin {
 
 sub end {
 	my $self = shift;
+	$self->write_stash;
 	my $cookie = Apache2::Cookie->new($self->{_request}, 
 			'-name' => $self->cookie_name,
-			'-value' => $self->session_id);
+			'-value' => $self->session_value);
+	$cookie->path($self->{_request}->dir_config("SWITRootLocation"));
 	$cookie->bake($self->{_request});
-	$self->write_stash;
 }
 
 sub new {
 	my ($class, %args) = @_;
-	$args{session_id} ||= md5_hex(rand(1024) . time() . $$);
 	return bless(\%args, $class);
 }
 
@@ -99,23 +98,28 @@ sub add_var {
 	}
 }
 
-sub session_id { return shift()->{session_id}; }
+sub session_value { return shift()->{session_value}; }
 
 sub write_stash {
 	my $self = shift;
-	my $file = $self->sessions_dir . "/" . $self->session_id;
 	my %s;
 	while (my ($n, $v) = each %{ $self->{_stash} }) {
 		my $in = $self->_get_args($n)->{deflate};
 		$s{$n} = $in ? $in->($v) : $v;
 	}
-	lock_store(\%s, $file);
+	$self->{session_value} = HTML::Tested::Seal->instance->encrypt(
+					freeze(\%s));
+}
+
+sub _thaw {
+	my $v = shift->session_value or return {};
+	my $res = HTML::Tested::Seal->instance->decrypt($v) or return {};
+	return thaw($res);
 }
 
 sub read_stash {
 	my $self = shift;
-	my $file = $self->sessions_dir . "/" . $self->session_id;
-	my $s = -f $file ? lock_retrieve($file) : {};
+	my $s = $self->_thaw;
 	my %stash;
 	while (my ($n, $v) = each %$s) {
 		my $d = $self->_get_args($n)->{inflate};
@@ -123,8 +127,6 @@ sub read_stash {
 	}
 	$self->{_stash} = \%stash;
 }
-
-sub sessions_dir { return shift()->{_sessions_dir} }
 
 sub swit_startup {}
 

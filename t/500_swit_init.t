@@ -32,16 +32,12 @@ ok(-f "lib/TTT/Session.pm");
 `./scripts/swit_app.pl add_test t/dual/newdir/987_test.t`;
 ok(-f 't/dual/newdir/987_test.t');
 
-$mt->replace_in_file('t/apache_test_run.pl', '\);', ', "gogog");');
-$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 9');
+$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 9');
 append_file('t/dual/001_load.t', <<'ENDM');
-if ($t->mech) {
-	ok(-d $ENV{SWIT_TEST_DIR});
-	ok(-d $ENV{SWIT_TEST_DIR} . "/gogog");
-} else {
-	ok(1);
-	ok(1);
-}
+use Apache::SWIT::Test::Utils;
+$t->with_or_without_mech_do(1, sub {
+	unlike(ASTU_Read_Error_Log(), qr/\[debug\]/);
+});
 ENDM
 
 my @tmp_contents = glob('/tmp/*');
@@ -95,7 +91,7 @@ close $fh;
 
 my $ht_conf = read_file('conf/httpd.conf.in');
 unlike($ht_conf, qr/TTT::Session/);
-like($ht_conf, qr/SessionClass/);
+unlike($ht_conf, qr/SessionClass/);
 
 `make 2>&1`;
 $ht_conf = read_file('blib/conf/httpd.conf');

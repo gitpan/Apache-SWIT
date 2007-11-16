@@ -150,6 +150,10 @@ sub write_t_extra_conf_in {
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	swmani_write_file('t/conf/extra.conf.in', <<ENDM);
 PerlPassEnv APACHE_SWIT_DB_NAME
+LogLevel notice
+<IfModule mod_mime.c>
+	Include "/etc/apache2/mods-enabled/mime.conf"
+</IfModule>
 Include ../blib/conf/httpd.conf
 ENDM
 }
@@ -161,10 +165,6 @@ sub write_httpd_conf_in {
 	swmani_write_file('conf/httpd.conf.in', sprintf(<<ENDM
 RewriteEngine on
 RewriteRule ^/\$ $rl/index/r [R]
-<Location $rl>
-	PerlAccessHandler \@SessionClass\@\->access_handler
-	PerlSetVar SWITSessionsDir /tmp/$app_name-sessions
-</Location>
 Alias $rl/www \@ServerRoot\@/public_html 
 Alias /html-tested-javascript /usr/local/share/libhtml-tested-javascript-perl
 ENDM
@@ -273,10 +273,6 @@ sub add_ht_page {
 	return $self->_make_page($pc, {}, qw(skel_ht_template skel_ht_page));
 }
 
-sub session_class_for_httpd_conf {
-	return $_[1]->{session_class};
-}
-
 sub _location_section_start {
 	my ($self, $l, $c, $h) = @_;
 return <<ENDS
@@ -316,6 +312,7 @@ sub regenerate_httpd_conf {
 	my $self = shift;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
 	my $tree = Apache::SWIT::Maker::Config->instance;
+	my ($sc, $rl) = ($tree->{session_class}, $tree->{root_location});
 	my $ht_in = sprintf(<<ENDS, $tree->root_env_var);
 <IfModule !apreq_module.c>
 	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
@@ -329,6 +326,10 @@ PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
 PerlSetEnv %s \@ServerRoot\@
 PerlPostConfigRequire \@ServerRoot\@/conf/startup.pl
 PerlPostConfigRequire \@ServerRoot\@/conf/do_swit_startups.pl
+<Location $rl>
+	PerlAccessHandler $sc\->access_handler
+	PerlSetVar SWITRootLocation $rl
+</Location>
 ENDS
 	my ($aliases, $spl) = ("", join("\n", map {
 		"use $_;\n$_\->swit_startup;"
@@ -349,7 +350,7 @@ ENDS
 		, root_env_var => $tree->root_env_var,
 		, blib_dir => abs_path("blib")
 		, aliases => $aliases, httpd_session_class =>
-			$self->session_class_for_httpd_conf($tree) });
+			$tree->{session_class} });
 	return $tree;
 }
 
@@ -409,10 +410,28 @@ sub scaffold {
 sub run_server {
 	my ($self, $hp, $dbn) = @_;
 	$hp ||= 1;
-	$self->silent_system("perl Makefile.PL") unless -f 'Makefile';
+	conv_silent_system("perl Makefile.PL") unless -f 'Makefile';
 	$ENV{APACHE_SWIT_DB_NAME} = $dbn if $dbn;
 	$ENV{__APACHE_SWIT_RUN_SERVER__} = $hp;
 	system("make test_apache");
+}
+
+sub add_migration {
+	my ($self, $name, $sql) = @_;
+	mkpath("t/$name");
+	copy($sql, "t/$name/db.sql") or die "Unable to copy $sql to t/$name";
+	append_file('MANIFEST', "\nt/$name/db.sql\n");
+
+	my @ac = Apache::SWIT::Maker::Makefile->test_apache_lines(
+			Apache::SWIT::Maker::Makefile->find_tests_str($name));
+	my $load = "APACHE_SWIT_LOAD_DB=t/mig/db.sql";
+	$ac[1] =~ s#PERL_DL_NONLAZY#$load PERL_DL_NONLAZY#;
+			
+	my $mr = YAML::LoadFile('conf/makefile_rules.yaml');
+	push @$mr, { targets => [ "test_$name" ], dependencies => [ "pure_all" ]
+			, actions => \@ac }
+		, { targets => [ "test" ], dependencies => [ "test_$name" ] };
+	YAML::DumpFile('conf/makefile_rules.yaml', $mr);
 }
 
 sub override {
@@ -478,9 +497,11 @@ add_class => [ '<class> - adds new class.', 1 ]
 , override => [ '<class> - overrides page class by inheriting from it.' ]
 , regenerate_httpd_conf => [ '- regenerates httpd.conf.' ]
 , regenerate_seal_key => [ '- regenerates new seal key.' ]
-, run_server => [ '<host:port> - runs Apache on optional host:port.' ]
+, run_server => [ '<host:port> <db> - runs Apache on optional host:port using
+			db name if given.' ]
 , scaffold => [ '<table_name> - generates classes and templates supporting
 		<table_name> CRUD operation.', 1 ]
+, add_migration => [ '<name> <sql> - create migration test target', 1 ]
 ); }
 
 sub swit_app_cmd_params {
@@ -496,11 +517,6 @@ sub swit_app_cmd_params {
 	return undef;
 }
 
-sub silent_system {
-	my ($self, $cmd) = @_;
-	system("$cmd 2>&1 1>/dev/null") and die "Unable to do $cmd";
-}
-
 sub do_swit_app_cmd {
 	my ($self, $cmd, @args) = @_;
 	my $p = $self->swit_app_cmd_params($cmd) or return;
@@ -513,7 +529,7 @@ sub do_swit_app_cmd {
 	if ($p->[1]) {
 		$mf_before = maniread();
 		manicopy($mf_before, $backup_dir);
-		$self->silent_system("make realclean") if -f 'Makefile';
+		conv_silent_system("make realclean") if -f 'Makefile';
 	}
 	eval { $self->$cmd(@args); };
 	my $err = $@;
@@ -528,7 +544,7 @@ sub do_swit_app_cmd {
 		# diff returns 1 for some reason
 		system("diff -uN $backup_dir/$_ $_ >> backups/$bf_name.patch")
 				for (sort keys %$mf);
-		$self->silent_system("perl Makefile.PL");
+		conv_silent_system("perl Makefile.PL");
 	}
 	rmtree($backup_dir);
 	die "Rolled back. Original exception is $err" if $err;

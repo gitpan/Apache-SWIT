@@ -9,7 +9,11 @@ use Carp;
 our @EXPORT = qw(conv_table_to_class conv_make_full_class
 		conv_next_dual_test conv_class_to_app_name
 		conv_forced_write_file conv_eval_use conv_file_to_class
-		conv_class_to_entry_point);
+		conv_class_to_entry_point conv_silent_system);
+
+sub conv_silent_system {
+	system("$_[0] 2>&1 1>/dev/null") and die "Unable to do $_[0]";
+}
 
 sub _capitalize {
 	my ($l, $rest) = ($_[0] =~ /(\w)(\w*)/);

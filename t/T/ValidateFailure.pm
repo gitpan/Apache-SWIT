@@ -19,7 +19,7 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my ($class, $r) = @_;
-	write_file($ENV{SWIT_TEST_DIR} . "/a", "");
+	write_file("/tmp/apache_swit_validate_failure", "");
 	return "r";
 }
 

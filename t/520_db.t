@@ -24,7 +24,7 @@ __PACKAGE__->columns(Essential => qw(id a));
 __PACKAGE__->db_Main->do('select * from ttt_table');
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 7', '=> 10');
+$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 11');
 $mt->replace_in_file('t/dual/001_load.t', '\};', 
 	"\n\tuse_ok('Apache::SWIT::DB::Connection'); };");
 $mt->insert_into_schema_pm('\$dbh->do("create table ttt_table ('

@@ -8,7 +8,7 @@ postamble => sub { return q{
 config :: t/conf/httpd.conf
 	$(NOECHO) $(NOOP)
 			
-t/conf/httpd.conf :: t/conf/extra.conf.swit
+t/conf/httpd.conf :: t/conf/extra.conf.in
 	ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) t/apache_test.pl -config
 
 APACHE_TEST_FILES = t/apache/*.t
@@ -21,7 +21,6 @@ realclean ::
 	$(RM_RF) t/htdocs t/logs
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
-	$(RM_F) t/conf/extra.conf.in
 	$(RM_F) t/conf/startup.pl t/conf/seal.key blib/conf
 }}, } })->write_makefile(
     NAME         => 'Apache::SWIT',
@@ -30,7 +29,7 @@ realclean ::
     ABSTRACT     => 'mod_perl server with integrated testing',
     EXE_FILES    => [ 'scripts/swit_init' ],
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
-	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.30',
+	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.31',
 	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.14',
 	'Apache2::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache2::Cookie' => '', 'DBIx::VersionedSchema' => '0.03',

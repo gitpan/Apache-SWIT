@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 use Data::Dumper;
 
 BEGIN { use_ok('Apache::SWIT::Test');
@@ -23,9 +23,14 @@ $t->ok_ht_sess_page_r(ht => { persbox => 'hello' });
 $ENV{SWIT_HAS_APACHE} = 1;
 $t = Apache::SWIT::Test->new;
 $t->ok_ht_sess_page_r(base_url => '/test/sess_page/r', ht => { persbox => '' });
+$t->ok_get('/test/www/hello.html');
+$t->ok_ht_sess_page_r(base_url => '/test/sess_page/r', ht => { persbox => '' });
 like($t->mech->cookie_jar->as_string, qr/foo/);
 
 $t->ht_sess_page_u(ht => { persbox => 'life' });
 $t->ok_ht_sess_page_r(ht => { persbox => 'life' });
+
+# and now it is going to be denied by Session
+$t->ok_get('/test/www/hello.html', 403);
 
 

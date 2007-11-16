@@ -1,19 +1,15 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 24;
+use Test::More tests => 25;
 use CGI::Cookie;
 use Package::Alias 'Apache2::Cookie' => 'CGI::Cookie'
 	, 'Apache2::Const::OK' => sub { 200; };
 
 use_ok('Apache::SWIT::Session');
 
-use File::Temp qw(tempdir);
-use File::Path qw(rmtree);
 use Data::Dumper;
-use Storable qw(retrieve);
-
-my $td = tempdir("/tmp/apache_swit_session_XXXXXX");
+use Storable qw(thaw);
 
 package Obj;
 
@@ -34,7 +30,9 @@ __PACKAGE__->add_class_dbi_var('obj', 'Obj');
 
 package main;
 
-my $s = MySession->new(_sessions_dir => $td, _stash => { hello => 'world' });
+HTML::Tested::Seal->instance('aaa');
+
+my $s = MySession->new(_stash => { hello => 'world' });
 is($s->get_hello, 'world');
 
 is($s->delete_hello, 'world');
@@ -63,15 +61,17 @@ is_deeply($s->{_stash}, { hello => 'planet', bye => 'world',
 		infdef => 'defme_foooooo', obj => {} });
 is($s->get_infdef, 'defme_foooooo');
 
-isnt($s->session_id, undef);
-
-my $s2 = MySession->new(_sessions_dir => $td, session_id => $s->session_id);
-is($s2->session_id, $s->session_id);
-
 $s->write_stash;
-my $sess_file = $s->sessions_dir . "/" . $s->session_id;
-ok(-f $sess_file);
-is_deeply(retrieve($sess_file), { hello => 'planet', bye => 'world', 
+
+isnt($s->session_value, undef);
+unlike($s->session_value, qr/[^\w]/);
+eval { thaw($s->session_value); };
+isnt($@, '');
+
+my $s2 = MySession->new(session_value => $s->session_value);
+is($s2->session_value, $s->session_value);
+
+is_deeply($s->_thaw, { hello => 'planet', bye => 'world', 
 		infdef => 'defme', obj => '17' });
 
 $s->{_stash} = {};
@@ -108,6 +108,4 @@ for my $i (1 .. 5) {
 waitpid($_, 0) for @children;
 $s->read_stash;
 is_deeply($s->{_stash}, \%stash) or diag(Dumper($s->{_stash}));
-
-rmtree($td);
 
