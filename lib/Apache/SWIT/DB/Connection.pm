@@ -8,8 +8,9 @@ use Carp;
 
 __PACKAGE__->mk_classdata('Instance');
 __PACKAGE__->mk_classdata('DBIArgs', { PrintError => 0
-			, RaiseError => 1, AutoCommit => 1,
-			RootClass => 'DBIx::ContextualFetch', });
+			, AutoCommit => 1
+			, HandleError => sub { confess($_[0]); }
+			, RootClass => 'DBIx::ContextualFetch', });
 
 __PACKAGE__->mk_accessors(qw(db_handle pid));
 
@@ -30,8 +31,8 @@ sub connect {
 	my $class = shift;
 	my $dbn = $ENV{APACHE_SWIT_DB_NAME} 
 			or confess "# No \$ENV{APACHE_SWIT_DB_NAME} given!";
-	my $dbh = DBI->connect("dbi:Pg:dbname=$dbn"
-				, undef, undef, $class->DBIArgs)
+	my $dbh = DBI->connect("dbi:Pg:dbname=$dbn", $ENV{APACHE_SWIT_DB_USER}
+			, undef, $class->DBIArgs)
 		or die "Unable to connect to $dbn db";
 	return $dbh;
 }

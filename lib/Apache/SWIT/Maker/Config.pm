@@ -11,7 +11,7 @@ use YAML;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
 
-__PACKAGE__->mk_accessors(qw(root_class app_name root_location root_env_var
+__PACKAGE__->mk_accessors(qw(root_class app_name root_location
 			session_class generators pages));
 
 sub _initial_tree {
@@ -21,14 +21,11 @@ sub _initial_tree {
 	my $rl = lc("/" . $root_class);
 	$rl =~ s/::/\//g;
 
-	my $rvn = uc($root_class) . "_ROOT";
-	$rvn =~ s/::/_/g;
 	return {
 		root_class => $root_class, 
 		app_name => conv_class_to_app_name($root_class),
 		root_location => $rl,
 		session_class => $root_class . "::Session",
-		root_env_var => $rvn,
 		pages => {},
 		generators => [ 'Apache::SWIT::Maker::Generator' ],
 	};

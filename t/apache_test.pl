@@ -20,10 +20,12 @@ unless ($<) {
 my $d = abs_path(dirname($0));
 $ENV{SWIT_BLIB_DIR} = "$d/../blib";
 Apache::SWIT::Test::Apache->swit_run(sub {
-	symlink("$d/conf", "$d/../blib/conf");
-	write_file("$d/conf/seal.key", "boo boo boo");
-	write_file("$d/conf/startup.pl"
+	mkpath("$ENV{SWIT_BLIB_DIR}/conf");
+	write_file("$ENV{SWIT_BLIB_DIR}/conf/seal.key", "boo boo boo");
+	write_file("$ENV{SWIT_BLIB_DIR}/conf/startup.pl"
 		, Apache::SWIT::Maker::Skeleton::Startup->new->get_output);
+	symlink("$d/conf/do_swit_startups.pl"
+		, "$ENV{SWIT_BLIB_DIR}/conf/do_swit_startups.pl");
 	$test_db = Test::TempDatabase->create(dbname => 'swit_test_db'
 			, dbi_args => Apache::SWIT::DB::Connection->DBIArgs);
 	Apache::SWIT::DB::Connection->instance($test_db->handle);

@@ -12,6 +12,7 @@ use Cwd qw(abs_path);
 use ExtUtils::Install;
 use Apache::SWIT::Maker::Config;
 use Apache::SWIT::Maker::Conversions;
+use Carp;
 
 __PACKAGE__->mk_accessors('overrides', 'blib_filter', 'no_swit_overrides');
 
@@ -26,6 +27,9 @@ sub get_makefile_rules {
 		or die "No makefile rules found";
 	my $res = "";
 	for my $r (@$rules) {
+		while (my ($n, $v) = each %{ $r->{vars} || {} }) {
+			$res .= "$n = $v\n";
+		}
 		$res .= join(' ',  @{ $r->{targets} }) . " :: ";
 		$res .= join(' ', @{ $r->{dependencies} || [] }) . "\n\t";
 		$res .= join("\n\t", @{ $r->{actions} || [] }) . "\n\n";
@@ -101,7 +105,7 @@ realclean ::
 	$(RM_RF) t/htdocs t/logs
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl t/T/Test.pm
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
-	$(RM_F) blib/conf/httpd.conf t/conf/mime.types
+	$(RM_F) blib/conf/httpd.conf t/conf/mime.types t/conf/schema.sql
 }, __PACKAGE__->find_tests_str('dual'), join("\n\t"
 	, __PACKAGE__->test_apache_lines('$(APACHE_TEST_FILES)')));
 }
@@ -139,13 +143,35 @@ sub deploy_httpd_conf {
 	my $to_ap = abs_path($to);
 	$_ = read_file("$from_ap/conf/httpd.conf");
 	s#$from_ap#$to_ap#g;
-	s/\@ServerRoot\@/$to_ap/g;
-	conv_forced_write_file("$to_ap/conf/httpd.conf", $_);
+	conv_forced_write_file("$to_ap/conf/httpd.conf", "PerlSetEnv "
+			. "APACHE_SWIT_DB_NAME $ENV{APACHE_SWIT_DB_NAME}\n$_");
+}
+
+sub update_db_schema {
+	my ($class, $to) = @_;
+	if (!$ENV{APACHE_SWIT_DB_NAME} && -f "$to/conf/httpd.conf") {
+		my @lines = read_file("$to/conf/httpd.conf");
+		($ENV{APACHE_SWIT_DB_NAME}) = ($lines[0]
+				=~ /PerlSetEnv APACHE_SWIT_DB_NAME (\w+)/);
+	}
+	confess "No APACHE_SWIT_DB_NAME given" unless $ENV{APACHE_SWIT_DB_NAME};
+	push @INC, "t", "blib/lib";
+
+	# become_postgres_user changes uid of the process. We will not be
+	# able to copy files afterwards. Do it in child then.
+	if (fork) {
+		wait;
+	} else {
+		conv_eval_use("T::TempDB");
+		exit;
+	}
 }
 
 sub do_install {
 	my ($class, $from, $to) = @_;
-	ExtUtils::Install::install({ $from, $to });
+	$class->update_db_schema($to);
+	my $pf = "$to/.packfile";
+	ExtUtils::Install::install({ $from, $to, "write" => $pf, "read", $pf });
 	$class->deploy_httpd_conf($from, $to);
 }
 

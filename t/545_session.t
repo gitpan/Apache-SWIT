@@ -32,7 +32,7 @@ $r->pnotes('SWITSession')->set_deny(1);
 return "
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 10');
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 13');
 append_file('t/dual/001_load.t', <<'ENDM');
 $t->ok_ht_index_r(make_url => 1, ht => { first => '' });
 $t->ht_index_u(ht => {});

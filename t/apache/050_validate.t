@@ -4,7 +4,7 @@ use warnings FATAL => 'all';
 use Test::More tests => 7;
 
 BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup("AA_ROOT");
+	Apache::SWIT::Test->do_startup;
 	use_ok('T::ValidateFailure');
 };
 

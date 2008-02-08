@@ -6,6 +6,7 @@ use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::ModuleTester;
 use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Test::Utils;
 use ExtUtils::Manifest;
 
 Test::TempDatabase->become_postgres_user;
@@ -68,7 +69,7 @@ ok(-f "templates/the/table/info.tt");
 ok(! -f "templates/thetable/info.tt");
 
 $res = `perl Makefile.PL && make test_direct 2>&1`;
-is($?, 0);
+is($?, 0) or ASTU_Wait($res);
 like($res, qr/success/);
 
 $res = `make test_apache 2>&1`;

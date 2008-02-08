@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 49;
+use Test::More tests => 48;
 use Apache::SWIT::Test::ModuleTester;
 use File::Slurp;
 use ExtUtils::Manifest qw(maniadd);
@@ -18,7 +18,6 @@ $mt->run_modulemaker_and_chdir;
 ok(-f 'Makefile.PL');
 is(Apache::SWIT::Maker::Config->instance->root_class, 'TTT');
 is(Apache::SWIT::Maker::Config->instance->app_name, 'ttt');
-is(Apache::SWIT::Maker::Config->instance->root_env_var, 'TTT_ROOT');
 is(Apache::SWIT::Maker::Config->instance->root_location, '/ttt');
 is(Apache::SWIT::Maker::Config->instance->session_class, 'TTT::Session');
 
@@ -148,13 +147,13 @@ like($m, qr/share\/ttt/);
 
 ok(-f "blib/conf/httpd.conf");
 ok(-f "blib/conf/startup.pl");
-write_file("blib/conf/httpd.conf", { append => 1 }, "# \@ServerRoot\@\n");
+$ENV{APACHE_SWIT_DB_NAME} = "moo";
 Apache::SWIT::Maker::Makefile->deploy_httpd_conf("blib", "$td/hdir");
 ok(-f "$td/hdir/conf/httpd.conf");
 
 $m = read_file("$td/hdir/conf/httpd.conf");
 like($m, qr/$td\/hdir/);
 unlike($m, qr/blib/);
-unlike($m, qr/ServerRoot/);
+like($m, qr/APACHE_SWIT_DB_NAME moo/);
 
 chdir '/';

@@ -26,7 +26,6 @@ BEGIN {
 
 __PACKAGE__->mk_accessors(qw(mech fake_request session));
 __PACKAGE__->mk_classdata('root_location');
-__PACKAGE__->mk_classdata('root_env_var');
 
 sub _Do_Startup {
 	package main;
@@ -38,16 +37,12 @@ sub _Do_Startup {
 
 =cut
 sub do_startup {
-	my ($class, $root_env_var) = @_;
-	$class->root_env_var($root_env_var);
-	$ENV{$root_env_var} = $ENV{SWIT_BLIB_DIR};
 	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/startup.pl");
 	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/do_swit_startups.pl");
 }
 
 sub new {
 	my ($class, $args) = @_;
-	confess "Please call do_startup first!" unless $class->root_env_var;
 	$args ||= {};
 	if ($ENV{SWIT_HAS_APACHE}) {
 		$args->{mech} = WWW::Mechanize->new;

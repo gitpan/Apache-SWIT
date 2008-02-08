@@ -7,7 +7,7 @@ use File::Temp qw(tempdir);
 use File::Slurp;
 
 BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup("AA_ROOT");
+	Apache::SWIT::Test->do_startup;
 	use_ok('T::Upload');
 	use_ok('T::Empty');
 };

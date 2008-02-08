@@ -20,10 +20,16 @@ sub setup {
 	$Test_DB = Test::TempDatabase->create(no_drop => $nd
 		, dbname => $ENV{APACHE_SWIT_DB_NAME}
 		, dbi_args => ($args || Apache::SWIT::DB::Connection->DBIArgs));
+
+	my $ssql = "t/conf/schema.sql";
+	$ENV{APACHE_SWIT_LOAD_DB} = $ssql
+		if (-f $ssql && !$nd && !$ENV{APACHE_SWIT_LOAD_DB});
+
 	# -f option doesn't always work for large objects
-	conv_silent_system("psql --single-transaction"
-			. " -d $ENV{APACHE_SWIT_DB_NAME}"
-			. " < $ENV{APACHE_SWIT_LOAD_DB}")
+	conv_silent_system("(echo \\\\set ON_ERROR_STOP;"
+			. " cat $ENV{APACHE_SWIT_LOAD_DB})"
+			. " | psql --single-transaction"
+			. " -d $ENV{APACHE_SWIT_DB_NAME}")
 		if ($ENV{APACHE_SWIT_LOAD_DB});
 	$sc->new($Test_DB->handle)->run_updates;
 	Apache::SWIT::DB::Connection->instance($Test_DB->handle);

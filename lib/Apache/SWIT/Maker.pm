@@ -162,14 +162,12 @@ sub write_httpd_conf_in {
 	my $self = shift;
 	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
 	my $app_name = Apache::SWIT::Maker::Config->instance->app_name;
-	swmani_write_file('conf/httpd.conf.in', sprintf(<<ENDM
+	swmani_write_file('conf/httpd.conf.in', <<ENDM);
 RewriteEngine on
 RewriteRule ^/\$ $rl/index/r [R]
 Alias $rl/www \@ServerRoot\@/public_html 
 Alias /html-tested-javascript /usr/local/share/libhtml-tested-javascript-perl
 ENDM
-		, Apache::SWIT::Maker::Config->instance->root_env_var));
-
 }
 
 sub add_test {
@@ -231,11 +229,21 @@ sub write_initial_files {
 	$self->write_httpd_conf_in;
 	swmani_write_file("public_html/main.css", "# Sample CSS file\n");
 	$self->file_writer->write_t_direct_test_pl;
-	$self->file_writer->write_conf_makefile_rules_yaml;
+
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	$self->file_writer->write_conf_makefile_rules_yaml({ rc => $rc });
+
 	$self->write_makefile_pl;
 	$self->write_010_db_t;
 	$self->write_swit_app_pl;
 	$self->add_ht_page('Index');
+}
+
+sub dump_db {
+	push @INC, "t", "lib";
+	unlink("t/conf/schema.sql");
+	conv_eval_use('T::TempDB');
+	system("pg_dump $ENV{APACHE_SWIT_DB_NAME} > t/conf/schema.sql");
 }
 
 sub _make_page {
@@ -313,17 +321,20 @@ sub regenerate_httpd_conf {
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
 	my $tree = Apache::SWIT::Maker::Config->instance;
 	my ($sc, $rl) = ($tree->{session_class}, $tree->{root_location});
-	my $ht_in = sprintf(<<ENDS, $tree->root_env_var);
+	my $ht_in = <<ENDS;
 <IfModule !apreq_module.c>
 	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
 </IfModule>
 <IfModule !rewrite_module.c>
 	LoadModule rewrite_module /usr/lib/apache2/modules/mod_rewrite.so
 </IfModule>
+<IfModule !mod_deflate.c>
+	LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
+</IfModule>
+AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript
 
 PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
 
-PerlSetEnv %s \@ServerRoot\@
 PerlPostConfigRequire \@ServerRoot\@/conf/startup.pl
 PerlPostConfigRequire \@ServerRoot\@/conf/do_swit_startups.pl
 <Location $rl>
@@ -340,14 +351,15 @@ ENDS
 		$spl .= "use $v->{class};\n$v->{class}->swit_startup;\n"
 	}
 
-	mkpath_write_file('blib/conf/httpd.conf'
-			, $ht_in . $gq->run('httpd_conf_start'));
+	my $hcstr = $ht_in . $gq->run('httpd_conf_start');
+	my $blib = abs_path("blib");
+	$hcstr =~ s/\@ServerRoot\@/$blib/g;
+	mkpath_write_file('blib/conf/httpd.conf', $hcstr);
+
 	write_file('blib/conf/do_swit_startups.pl', "$spl\n1;\n");
-	$self->makefile_class->deploy_httpd_conf("blib", "blib");
 	$self->file_writer->write_t_t_test_pm({
 		session_class => $tree->{session_class}
 		, root_location => $tree->{root_location}
-		, root_env_var => $tree->root_env_var,
 		, blib_dir => abs_path("blib")
 		, aliases => $aliases, httpd_session_class =>
 			$tree->{session_class} });
@@ -422,14 +434,15 @@ sub add_migration {
 	copy($sql, "t/$name/db.sql") or die "Unable to copy $sql to t/$name";
 	append_file('MANIFEST', "\nt/$name/db.sql\n");
 
-	my @ac = Apache::SWIT::Maker::Makefile->test_apache_lines(
-			Apache::SWIT::Maker::Makefile->find_tests_str($name));
+	my $fstr = Apache::SWIT::Maker::Makefile->find_tests_str($name);
+	my $vn = uc($name) . "_TEST_FILES";
+	my @ac = Apache::SWIT::Maker::Makefile->test_apache_lines("\$($vn)");
 	my $load = "APACHE_SWIT_LOAD_DB=t/mig/db.sql";
 	$ac[1] =~ s#PERL_DL_NONLAZY#$load PERL_DL_NONLAZY#;
 			
 	my $mr = YAML::LoadFile('conf/makefile_rules.yaml');
 	push @$mr, { targets => [ "test_$name" ], dependencies => [ "pure_all" ]
-			, actions => \@ac }
+			, actions => \@ac, vars => { $vn, $fstr } }
 		, { targets => [ "test" ], dependencies => [ "test_$name" ] };
 	YAML::DumpFile('conf/makefile_rules.yaml', $mr);
 }
@@ -502,6 +515,7 @@ add_class => [ '<class> - adds new class.', 1 ]
 , scaffold => [ '<table_name> - generates classes and templates supporting
 		<table_name> CRUD operation.', 1 ]
 , add_migration => [ '<name> <sql> - create migration test target', 1 ]
+, dump_db => [ 'dumps temporary database into t/conf/schema.sql' ]
 ); }
 
 sub swit_app_cmd_params {

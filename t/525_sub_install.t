@@ -5,6 +5,7 @@ use Test::More tests => 18;
 use YAML;
 use Data::Dumper;
 use File::Slurp;
+use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');

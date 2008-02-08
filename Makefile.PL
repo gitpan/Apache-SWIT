@@ -21,7 +21,7 @@ realclean ::
 	$(RM_RF) t/htdocs t/logs
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
-	$(RM_F) t/conf/startup.pl t/conf/seal.key blib/conf
+	$(RM_RF) blib/conf
 }}, } })->write_makefile(
     NAME         => 'Apache::SWIT',
     VERSION_FROM => 'lib/Apache/SWIT.pm', # finds $VERSION
@@ -30,12 +30,12 @@ realclean ::
     EXE_FILES    => [ 'scripts/swit_init' ],
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
 	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.31',
-	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.14',
+	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.15',
 	'Apache2::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache2::Cookie' => '', 'DBIx::VersionedSchema' => '0.03',
-	'Test::TempDatabase' => '0.12', 'Class::DBI::Pg::More' => '0.02',
+	'Test::TempDatabase' => '0.13', 'Class::DBI::Pg::More' => '0.03',
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
-	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.07'
+	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.11'
 	, 'Package::Alias' => ''
     },
 );

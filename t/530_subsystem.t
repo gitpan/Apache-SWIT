@@ -90,9 +90,9 @@ like($res, qr/localhost/);
 like($res, qr/950_install/);
 unlike($res, qr/Please use/);
 
-append_file('conf/startup.pl', '`touch $ENV{TTT_ROOT}/touched`; 1;');
+append_file('conf/startup.pl', '`touch $INC[0]/../touched`; 1;');
 $res = join('', `make test_apache 2>&1`);
-like($res, qr/success/); # or readline(\*STDIN);
+like($res, qr/success/) or ASTU_Wait($res);
 
 like(read_file('blib/conf/startup.pl'), qr/touch/);
 ok(-f 'blib/touched');
@@ -153,7 +153,7 @@ is(read_file('templates/thesub/index.tt'),
 symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT");
 `perl Makefile.PL && make 2>&1`;
 like(read_file('t/T/Test.pm'), qr/\bthesub\/index/);
-$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 9');
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 12');
 symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT") or die "# Unable to symlink";
 append_file('t/dual/001_load.t', <<ENDT);
 \$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
@@ -171,7 +171,7 @@ my \$arr = Apache::SWIT::DB::Connection->instance->db_handle
 return \$
 ENDM
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 11');
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 14');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_username');
 \$t->ok_ht_index_r(make_url => 1, ht => { first => '' });
@@ -188,7 +188,7 @@ ENDM
 $res = join('', `make test 2>&1`);
 unlike($res, qr/Error/) or ASTU_Wait($td);
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 12');
+$mt->replace_in_file('t/dual/001_load.t', '=> 14', '=> 15');
 append_file('t/dual/001_load.t', <<ENDT);
 can_ok(\$t->session, 'get_t_ttt');
 ENDT

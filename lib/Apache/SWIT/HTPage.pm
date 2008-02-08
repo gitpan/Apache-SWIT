@@ -27,14 +27,17 @@ sub ht_swit_transactional_update {
 	$dbh->begin_work;
 	eval { $res = $class->ht_swit_update($r, $tested); };
 	my $err = $@;
-	if ($err) {
-		eval { $dbh->rollback };
-		my $exc = "Original exception: $err";
-		$exc .= "\nRollback exception: $@" if $@;
-		$class->swit_die($exc, $r, $tested);
-	}
-	$dbh->commit;
+	goto ROLLBACK if $err;
+	eval { $dbh->commit; };
+	$err = $@;
+	goto EXCEPTION if $err;
 	return $res;
+
+ROLLBACK:
+	eval { $dbh->rollback };
+	my $re = "\nRollback exception: $@" if $@;
+EXCEPTION:
+	$class->swit_die("Original exception: $err" . ($re || ""), $r, $tested);
 }
 
 sub swit_update {

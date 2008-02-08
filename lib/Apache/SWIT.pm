@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.31;
+our $VERSION = 0.32;
 
 sub swit_startup {}
 
@@ -83,7 +83,6 @@ sub _raw_respond {
 		$r->internal_redirect($r->uri . "/../" . $to->[1]);
 		return Apache2::Const::OK();
 	}
-	$r->status($s);
 	$r->headers_out->add(Location => $to) unless ref($to);
 	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
 	$r->print($to->[1]) if (ref($to) && defined($to->[1]));

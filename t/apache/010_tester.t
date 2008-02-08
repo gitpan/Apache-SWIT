@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 42;
+use Test::More tests => 45;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -11,7 +11,7 @@ use Apache::SWIT::Test::Utils;
 BEGIN { 
 	unlink "/tmp/swit_startup_test";
 	use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup("AA_ROOT");
+	Apache::SWIT::Test->do_startup;
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;
@@ -98,6 +98,15 @@ $t->the_page_u(fields => { file => "$td/RESPOND" });
 $t->content_like(qr/RESPONSE/);
 is(-f "$td/RESPOND", undef);
 like(ASTU_Read_Access_Log(), qr/RESPOND.*HTTP/);
+
+my $uri = $t->mech->uri;
+$t->mech->get($uri);
+is($t->mech->status, 200) or ASTU_Wait;
+
+$t->mech->post($t->mech->uri, { file => "$td/RESPOND" }
+	, 'Accept-Encoding', 'gzip,deflate');
+is($t->mech->status, 200) or ASTU_Wait;
+unlike($t->mech->content, qr/RES/);
 
 Apache::SWIT::Test->make_aliases("another/page" => 'T::SWIT');
 $t->root_location('/test');

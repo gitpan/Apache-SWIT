@@ -32,7 +32,7 @@ ok(-f "lib/TTT/Session.pm");
 `./scripts/swit_app.pl add_test t/dual/newdir/987_test.t`;
 ok(-f 't/dual/newdir/987_test.t');
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 8', '=> 9');
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 12');
 append_file('t/dual/001_load.t', <<'ENDM');
 use Apache::SWIT::Test::Utils;
 $t->with_or_without_mech_do(1, sub {
@@ -43,11 +43,11 @@ ENDM
 my @tmp_contents = glob('/tmp/*');
 `perl Makefile.PL`;
 my $tres = join('', `make test 2>&1`);
-like($tres, qr/All tests successful/);
+like($tres, qr/All tests successful/) or ASTU_Wait;
 like($tres, qr/t\/dual\/001_load/);
 like($tres, qr/started\n.*dual/) or ASTU_Wait($mt->root_dir);
 like($tres, qr/Files=2/);
-unlike($tres, qr/Error/);
+unlike($tres, qr/Error/) or ASTU_Wait;
 unlike($tres, qr/Please use/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
@@ -151,8 +151,8 @@ close $fh;
 is_deeply([ `psql -l | grep ttt_test_db` ], []);
 `perl Makefile.PL`;
 $tres = join('', `make test_apache 2>&1`);
-like($tres, qr/All tests successful/);
-unlike($tres, qr/Fail/);
+like($tres, qr/All tests successful/) or ASTU_Wait;
+unlike($tres, qr/Fail/) or ASTU_Wait;
 is_deeply([ `psql -l | grep ttt_test_db` ], []);
 
 $tres = join('', `make disttest 2>&1`);

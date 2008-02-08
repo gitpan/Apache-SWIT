@@ -54,7 +54,7 @@ use base 'Apache::SWIT::Test';
 
 BEGIN {
 	$ENV{SWIT_BLIB_DIR} = '[% blib_dir %]';
-	__PACKAGE__->do_startup('[% root_env_var %]');
+	__PACKAGE__->do_startup;
 };
 
 use [% session_class %];
@@ -94,8 +94,14 @@ __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
     - t/conf/httpd.conf
     - blib/conf/httpd.conf
     - blib/conf/seal.key
+    - t/conf/schema.sql
   actions:
     - $(NOECHO) $(NOOP)
+- targets: [ t/conf/schema.sql ]
+  actions:
+    - ./scripts/swit_app.pl dump_db
+  dependencies: 
+    - lib/[% rc %]/DB/Schema.pm
 - targets: [ t/conf/httpd.conf ]
   dependencies: 
     - t/conf/extra.conf.in

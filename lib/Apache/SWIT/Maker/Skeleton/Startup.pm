@@ -13,7 +13,7 @@ use warnings FATAL => 'all';
 BEGIN {
 	use File::Basename qw(dirname);
 	use Cwd qw(abs_path);
-	unshift @INC, abs_path(dirname((caller)[1]) . "/../../blib/lib");
+	unshift @INC, abs_path(dirname(__FILE__) . "/../lib");
 }
 
 use Apache2::RequestRec ();

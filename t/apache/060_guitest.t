@@ -6,7 +6,7 @@ use Apache::SWIT::Test::Utils;
 use Encode;
 
 BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup("AA_ROOT");
+	Apache::SWIT::Test->do_startup;
 	use_ok('T::DBPage');
 }
 

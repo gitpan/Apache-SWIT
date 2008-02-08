@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 7;
+use Test::More tests => 10;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -38,6 +38,27 @@ ENDT
 $res = `perl Makefile.PL && make test_ TEST_FILES=t/234_the_table.t 2>&1`;
 unlike($res, qr/Failed/);
 like($res, qr/success/);
+
+append_file('t/conf/schema.sql', "insert into the_table (a) values ('b')");
+write_file('t/234_the_table.t', <<'ENDT');
+use strict;
+use warnings FATAL => 'all';
+use Test::More tests => 3;
+use T::TempDB;
+BEGIN { use_ok('Apache::SWIT::DB::Connection');
+	use_ok('TTT::DB::TheTable');
+}
+
+is(scalar(TTT::DB::TheTable->retrieve_all), 1);
+ENDT
+
+$res = `make test_ TEST_FILES=t/234_the_table.t 2>&1`;
+unlike($res, qr/Failed/);
+like($res, qr/success/);
+
+`make realclean && perl Makefile.PL`;
+my @lines = `make distcheck 2>&1 | grep MANIFEST`;
+is(@lines, 2) or diag(join("", @lines)); # backups, test are 2 lines only
 
 chdir '/'
 

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 15;
+use Test::More tests => 21;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -75,3 +75,22 @@ like($res, qr/111_m/);
 $res = `make test 2>&1`;
 is($?, 0) or ASTU_Wait($res);
 like($res, qr/111_m/);
+
+write_file('t/mig/200_o.t', <<'ENDM');
+use strict;
+use warnings FATAL => 'all';
+
+use Test::More tests => 1;
+ok 1;
+ENDM
+
+$res = `make test_mig MIG_TEST_FILES=t/mig/200_o.t 2>&1`;
+is($?, 0) or ASTU_Wait($res);
+like($res, qr/200_o/);
+like($res, qr/start: ok/);
+unlike($res, qr/111_m/);
+
+append_file("t/mig/db.sql", "boom\n");
+$res = `make test_mig 2>&1`;
+isnt($?, 0) or ASTU_Wait($res);
+like($res, qr/Unable to do/);
