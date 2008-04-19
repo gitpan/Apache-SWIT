@@ -8,14 +8,11 @@ sub template { return <<'ENDS' };
 use strict;
 use warnings FATAL => 'all';
 
-package [% class_v %]::Root;
-use base 'HTML::Tested';
-
 package [% class_v %];
 use base qw(Apache::SWIT::HTPage);
 
 sub swit_startup {
-	my $rc = shift()->ht_root_class;
+	my $rc = shift()->ht_make_root_class;
 	$rc->ht_add_widget(::HTV."::Marked", 'first');
 	$rc->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 }

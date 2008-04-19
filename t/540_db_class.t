@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 10;
+use Test::More tests => 12;
 use Test::TempDatabase;
 use File::Slurp;
 Test::TempDatabase->become_postgres_user;
@@ -56,7 +56,9 @@ $res = `make test_ TEST_FILES=t/234_the_table.t 2>&1`;
 unlike($res, qr/Failed/);
 like($res, qr/success/);
 
+isnt(-f 't/conf/schema.sql', undef);
 `make realclean && perl Makefile.PL`;
+is(-f 't/conf/schema.sql', undef);
 my @lines = `make distcheck 2>&1 | grep MANIFEST`;
 is(@lines, 2) or diag(join("", @lines)); # backups, test are 2 lines only
 

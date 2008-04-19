@@ -86,4 +86,19 @@ sub add_startup_class {
 	$self->save;
 }
 
+sub for_each_url {
+	my ($self, $cb) = @_;
+	while (my ($n, $v) = each %{ $self->pages }) {
+		my $l = $self->root_location . "/$n";
+		my $ep = $v->{entry_points};
+		if (!$ep) {
+			$cb->($l, $n, $v, $v);
+			next;
+		}
+		while (my ($en, $ev) = each %$ep) {
+			$cb->("$l/$en", $n, $v, $ev);
+		}
+	}
+}
+
 1;

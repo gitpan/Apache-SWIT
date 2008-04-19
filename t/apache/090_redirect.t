@@ -1,9 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 6;
+use Test::More tests => 15;
+use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('Apache::SWIT::Test');
+	use_ok('Apache::SWIT::Session');
 	Apache::SWIT::Test->do_startup;
 	use_ok('T::Redirect');
 };
@@ -16,6 +18,35 @@ $t->redirect_r(make_url => 1);
 like($t->mech->uri, qr#/test/swit/r#);
 like($t->mech->content, qr/hello world/);
 
-$t->redirect_r(make_url => 1, param => { internal => 1 });
+$t->redirect_r(make_url => 1, param => { internal => "../swit/r" });
 like($t->mech->uri, qr#/test/redirect/r#);
 like($t->mech->content, qr/hello world/);
+
+$t->redirect_r(make_url => 1, param => { internal => "../cthan" });
+is($t->mech->ct, "text/plain");
+is($t->mech->status, 200);
+
+Apache::SWIT::Test->make_aliases(ht_error => 'T::HTError');
+
+$t->ok_ht_ht_error_r(make_url => 1, ht => { name => "buh", error => ""
+		, password => "" });
+$t->ht_ht_error_u(ht => { name => "foo", password => "boo" });
+$t->ok_ht_ht_error_r(ht => { name => "foo", password => ""
+		, error => "validate" });
+
+$t->ht_ht_error_u(ht => { name => "swid", password => "hru" });
+$t->ok_ht_ht_error_r(ht => { name => "swid", error => "updateho"
+		, password => "" });
+
+$t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
+$t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
+		, password => "" });
+
+$ENV{SWIT_HAS_APACHE} = 0;
+$t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
+$t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
+$t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
+		, password => "" });
+
+$t->ht_ht_error_u(ht => { name => "FORBID", password => "hru" });
+ok 1;

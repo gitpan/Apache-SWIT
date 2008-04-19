@@ -1,7 +1,9 @@
 <html>
 <body>
 [% form %]
-[% first %]
+[% name %]
+[% password %]
+[% error %]
 <input type="submit" />
 </form>
 </body>

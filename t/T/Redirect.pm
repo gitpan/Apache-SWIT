@@ -6,7 +6,7 @@ use base 'Apache::SWIT';
 
 sub swit_render {
 	my ($class, $r) = @_;
-	return [ INTERNAL => "../swit/r" ] if $r->param('internal');
+	return [ INTERNAL => $r->param('internal') ] if $r->param('internal');
 	return "../swit/r";
 }
 

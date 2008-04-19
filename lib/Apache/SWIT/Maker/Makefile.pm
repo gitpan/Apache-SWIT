@@ -167,11 +167,16 @@ sub update_db_schema {
 	}
 }
 
+sub install_files {
+	my ($class, $from, $to) = @_;
+	my $pf = "$to/.packfile";
+	ExtUtils::Install::install({ $from, $to, "write" => $pf, "read", $pf });
+}
+
 sub do_install {
 	my ($class, $from, $to) = @_;
 	$class->update_db_schema($to);
-	my $pf = "$to/.packfile";
-	ExtUtils::Install::install({ $from, $to, "write" => $pf, "read", $pf });
+	$class->install_files($from, $to);
 	$class->deploy_httpd_conf($from, $to);
 }
 

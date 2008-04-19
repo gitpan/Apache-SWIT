@@ -25,7 +25,7 @@ use ExtUtils::Manifest qw(maniread manicopy);
 use File::Temp qw(tempdir);
 use Data::Dumper;
 
-__PACKAGE__->mk_accessors(qw(lib_dir file_writer));
+__PACKAGE__->mk_accessors(qw(file_writer));
 
 my @_initial_skels = qw(apache_test apache_test_run dual_001_load startup);
 
@@ -56,7 +56,6 @@ sub makefile_class { return 'Apache::SWIT::Maker::Makefile'; }
 
 sub new {
 	my $self = shift->SUPER::new(@_);
-	$self->lib_dir("lib") unless $self->lib_dir;
 	$self->{file_writer} ||= Apache::SWIT::Maker::FileWriterData->new;
 	return $self;
 }
@@ -84,22 +83,6 @@ $mc\->new->write_makefile$args;
 ENDM
 }
 
-sub write_pm_file {
-	my ($self, $module_class, $str, $no_manifest) = @_;
-	my $module_file = $self->lib_dir . "/$module_class.pm";
-	$module_file =~ s/::/\//g;
-	mkpath_write_file($module_file, <<ENDM);
-use strict;
-use warnings FATAL => 'all';
-
-package $module_class;
-$str
-
-1;
-ENDM
-	append_file('MANIFEST', "\n$module_file") unless $no_manifest;
-}
-
 sub add_class { 
 	my ($self, $new_class, $str) = @_;
 	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
@@ -123,7 +106,8 @@ ENDM
 sub write_db_schema_file {
 	my $self = shift;
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
-	$self->write_pm_file($self->schema_class, <<ENDM);
+	swmani_write_file("lib/" . conv_class_to_file($self->schema_class)
+			, conv_module_contents($self->schema_class, <<ENDM));
 use base 'DBIx::VersionedSchema';
 __PACKAGE__->Name('$an');
 
@@ -155,6 +139,9 @@ LogLevel notice
 	Include "/etc/apache2/mods-enabled/mime.conf"
 </IfModule>
 Include ../blib/conf/httpd.conf
+<Location />
+	PerlInitHandler Apache::SWIT::Test::ResetKids->access_handler
+</Location>
 ENDM
 }
 
@@ -214,7 +201,14 @@ sub write_swit_app_pl {
 
 sub install {
 	my ($self, $inst_dir) = @_;
+	my $si = Apache::SWIT::Maker::Config->instance->{skip_install} || [];
+	my %skips = map {
+		my $v = read_file($_) or die "Nothing for $_";
+		($_, $v);
+	} map { "blib/$_" } @$si;
+	unlink($_) for keys %skips;
 	$self->makefile_class->do_install("blib", $inst_dir);
+	write_file($_, $skips{$_}) for keys %skips;
 }
 
 sub write_initial_files {
@@ -243,7 +237,7 @@ sub dump_db {
 	push @INC, "t", "lib";
 	unlink("t/conf/schema.sql");
 	conv_eval_use('T::TempDB');
-	system("pg_dump $ENV{APACHE_SWIT_DB_NAME} > t/conf/schema.sql");
+	system("pg_dump -c $ENV{APACHE_SWIT_DB_NAME} > t/conf/schema.sql");
 }
 
 sub _make_page {
@@ -290,27 +284,6 @@ return <<ENDS
 ENDS
 }
 
-sub httpd_location_section {
-	my ($self, $gq, $loc, $entry) = @_;
-	my $res = $gq->run('location_section_prolog', $loc, $entry);
-	my $l = Apache::SWIT::Maker::Config->instance->root_location ."/$loc";
-	my $ep = $entry->{entry_points};
-	if (!$ep) {
-		$res .= $self->_location_section_start($l
-				, $entry->{class}, $entry->{handler});
-		$res .= "</Location>\n";
-	} else {
-		while (my ($n, $v) = each %$ep) {
-			$res .= $self->_location_section_start("$l/$n",
-					$entry->{class}, $v->{handler});
-			$res .= $gq->run('location_section_contents', $n, $v);
-			$res .= "</Location>\n";
-		}
-	}
-	$res .= ($gq->run('location_section_epilogue', $loc, $entry) || '');
-	return $res;
-}
-
 sub regenerate_seal_key {
 	my $seed = $$ . int(rand(65530)) . time;
 	mkpath_write_file('blib/conf/seal.key', $seed);
@@ -342,21 +315,34 @@ PerlPostConfigRequire \@ServerRoot\@/conf/do_swit_startups.pl
 	PerlSetVar SWITRootLocation $rl
 </Location>
 ENDS
-	my ($aliases, $spl) = ("", join("\n", map {
+	my $evars = $tree->{env_vars} || {};
+	my $s = join("\n", map { "\$ENV{$_} = '$evars->{$_}';" } keys %$evars);
+
+	my ($aliases, $spl) = ("", "BEGIN {\n$s\n};\n" . join("\n", map {
 		"use $_;\n$_\->swit_startup;"
-	} @{ $tree->{startup_classes} || [] }));
+	} @{ $tree->{startup_classes} || [] }) . "\n");
+
+	$tree->for_each_url(sub {
+		my ($url, $pname, $pentry, $ep) = @_; 
+		my $res = $gq->run('location_section_prolog', $pname, $pentry);
+		$ht_in .= $self->_location_section_start($url, $pentry->{class}
+				, $ep->{handler});
+		$ht_in .= $gq->run('location_section_contents', $url, $ep);
+		$ht_in .= "</Location>\n";
+
+	});
 	while (my ($n, $v) = each %{ $tree->{pages} }) {
-		$ht_in .= $self->httpd_location_section($gq, $n, $v) . "\n";
 		$aliases .= "\"$n\" => \"$v->{class}\",\n";
 		$spl .= "use $v->{class};\n$v->{class}->swit_startup;\n"
 	}
 
+	mkpath_write_file('blib/conf/do_swit_startups.pl', "$spl\n1;\n");
+
 	my $hcstr = $ht_in . $gq->run('httpd_conf_start');
 	my $blib = abs_path("blib");
 	$hcstr =~ s/\@ServerRoot\@/$blib/g;
-	mkpath_write_file('blib/conf/httpd.conf', $hcstr);
+	write_file('blib/conf/httpd.conf', $hcstr);
 
-	write_file('blib/conf/do_swit_startups.pl', "$spl\n1;\n");
 	$self->file_writer->write_t_t_test_pm({
 		session_class => $tree->{session_class}
 		, root_location => $tree->{root_location}
@@ -457,9 +443,6 @@ sub override {
 	my $pc = $p->class("$rc\::UI::$1\::$2");
 	$self->add_class($pc, <<ENDS);
 use base '$cc';
-
-package $pc\::Root;
-use base '$cc\::Root';
 ENDS
 	$c->save;
 }

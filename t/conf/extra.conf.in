@@ -40,6 +40,19 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
   PerlHandler T::SWIT->swit_update_handler
 </Location>
 
+<Location /test/ht_error/r>
+  SetHandler perl-script
+  PerlSetVar SWITIncludePath @ServerRoot@
+  PerlSetVar SWITTemplate templates/ht_error.tt
+  PerlHandler T::HTError->swit_render_handler
+</Location>
+
+<Location /test/ht_error/u>
+  SetHandler perl-script
+  PerlHandler T::HTError->swit_update_handler
+</Location>
+
+
 <Location /test/ht_page/r>
   SetHandler perl-script
   PerlSetVar SWITIncludePath @ServerRoot@

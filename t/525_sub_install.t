@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 18;
+use Test::More tests => 23;
 use YAML;
 use Data::Dumper;
 use File::Slurp;
@@ -41,6 +41,12 @@ $res = join('', `perl Makefile.PL && make 2>&1`);
 is($?, 0) or diag($res);
 unlike($res, qr/950/);
 
+$tree = YAML::LoadFile('conf/swit.yaml');
+push @{ $tree->{skip_install} }, qw(lib/G.pm);
+YAML::DumpFile('conf/swit.yaml', $tree);
+
+write_file("blib/lib/G.pm", "ddd\n");
+
 my $hc = read_file('blib/conf/httpd.conf');
 like($hc, qr#Location /ttt/bb#);
 like($hc, qr#BB->some_handler#);
@@ -48,6 +54,11 @@ like($hc, qr#BB->some_handler#);
 $res = $mt->run_make_install;
 my $inst_path = $mt->install_dir . "/TTT";
 ok(-f "$inst_path/Maker.pm");
+is(-f $mt->install_dir . "/G.pm", undef);
+is(`find $td/inst -name httpd.conf`, "");
+unlike($mt->install_dir, qr/\/lib/);
+is(`find $td/inst -name templates`, "");
+like($mt->install_dir, qr/perl.*\d$/);
 
 chdir $td;
 $mt->make_swit_project(root_class => 'MU');

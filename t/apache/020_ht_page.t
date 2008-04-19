@@ -4,6 +4,7 @@ use warnings FATAL => 'all';
 use Test::More tests => 23;
 use File::Temp qw(tempdir);
 use File::Slurp;
+use Apache::SWIT::Session;
 
 BEGIN { use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup;
@@ -18,7 +19,7 @@ my $td = tempdir("/tmp/swit_ht_page_XXXXXXX", CLEANUP => 1);
 Apache::SWIT::Test->make_aliases(another_page => 'T::HTPage',
 		"and/another" => 'T::HTPage');
 
-my $t = Apache::SWIT::Test->new;
+my $t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => { 
 		hello => 'world', HT_SEALED_hid => 'secret', v1 => undef, });
 my $res = $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
@@ -40,7 +41,7 @@ is_deeply(\@x, [ '/test/basic_handler' ]);
 is($ur, "$td/up.txt\nHello\nworld\n");
 
 $ENV{SWIT_HAS_APACHE} = 1;
-$t = Apache::SWIT::Test->new;
+$t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
 $t->ok_ht_another_page_r(base_url => '/test/ht_page/r', ht => { 
 		hello => 'world', HT_SEALED_hid => 'secret' });
 like($t->mech->content, qr/got more/);

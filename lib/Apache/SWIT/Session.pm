@@ -23,6 +23,8 @@ sub begin {
 	return $self;
 }
 
+sub request { return shift()->{_request}; }
+
 sub end {
 	my $self = shift;
 	$self->write_stash;

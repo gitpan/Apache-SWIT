@@ -7,6 +7,7 @@ use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
+use Apache::SWIT::Session;
 
 BEGIN { 
 	unlink "/tmp/swit_startup_test";
@@ -32,7 +33,7 @@ like($sls[0], qr/T::SWIT .*blib.*do_swit_startups/);
 unlike(join("", @sls), qr/T .*Test\.pm/);
 unlink("/tmp/swit_startup_test");
 
-my $t = Apache::SWIT::Test->new;
+my $t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
 isa_ok($t, 'Apache::SWIT::Test');
 is($t->mech, undef);
 

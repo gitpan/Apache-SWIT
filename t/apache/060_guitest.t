@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Apache::SWIT::Test::Utils;
 use Encode;
 
@@ -15,6 +15,7 @@ is($ENV{SWIT_HAS_APACHE}, 1);
 
 
 my $t = Apache::SWIT::Test->new_guitest;
+is($ENV{MOZ_NO_REMOTE}, 1); # or else there are coredumps sometimes
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	val => ''
 });

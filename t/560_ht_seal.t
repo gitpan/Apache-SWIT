@@ -31,13 +31,14 @@ write_file('t/dual/030_load.t', <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 
 BEGIN {
         use_ok('T::Test');
 };
 
 my $t = T::Test->new;
+is($t->session->request->uri, '/ttt/');
 
 package M;
 use base 'WWW::Mechanize';

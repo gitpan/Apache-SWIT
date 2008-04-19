@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.32;
+our $VERSION = 0.33;
 
 sub swit_startup {}
 
@@ -61,6 +61,7 @@ C<text/html; charset=utf-8>.
 sub swit_send_http_header {
 	my ($class, $r, $ct) = @_;
 	$r->pnotes('SWITSession')->end;
+	$r->pnotes('SWITSession', undef);
 	$r->content_type($ct || "text/html; charset=utf-8");
 }
 
@@ -82,6 +83,11 @@ sub _raw_respond {
 	if ($s eq 'INTERNAL') {
 		$r->internal_redirect($r->uri . "/../" . $to->[1]);
 		return Apache2::Const::OK();
+	} elsif ($s eq 'SUBREQUEST') {
+		my $new_r = $r->lookup_uri($r->uri . "/../" . $to->[1]);
+		$new_r->pnotes("PrevRequestOpaque", $to->[2]);
+		$class->swit_send_http_header($r);
+		return $new_r->run;
 	}
 	$r->headers_out->add(Location => $to) unless ref($to);
 	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
@@ -118,24 +124,27 @@ sub swit_update_handler($$) {
 	return $class->_raw_respond($ar, $to);
 }
 
-sub swit_new_template {
+sub swit_template_config {
 	my ($class, $r) = @_;
-	return Template->new({ ABSOLUTE => 1, INCLUDE_PATH =>
-		$r->dir_config('SWITIncludePath') });
+	return { ABSOLUTE => 1
+			, INCLUDE_PATH => $r->dir_config('SWITIncludePath')
+			, VARIABLES => { request => $r } };
 }
 
 sub swit_render_handler($$) {
 	my ($class, $r) = @_;
 	$r->pnotes('SWITTemplate', $r->dir_config('SWITTemplate'));
-	my $vars = $class->swit_render(Apache2::Request->new($r));
-	return $class->_raw_respond($r, $vars) if (ref($vars) ne 'HASH');
+	my $ar = Apache2::Request->new($r);
+	my $vars = $class->swit_render($ar);
+	return $class->_raw_respond($ar, $vars) if (ref($vars) ne 'HASH');
 
-	my $t = $class->swit_new_template($r) or confess "No new template";
+	my $t = Template->new($class->swit_template_config($r))
+			or confess "Unable to create template object";
 	my $file = $r->pnotes('SWITTemplate') or confess "No template file";
-	$class->swit_send_http_header($r);
 	my $out;
 	$t->process($file, $vars, \$out)
 		or $class->swit_die("No result for $file\: " . $t->error, $r);
+	$class->swit_send_http_header($r);
 	$r->print($out);
 	return Apache2::Const::OK();
 }

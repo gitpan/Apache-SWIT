@@ -57,7 +57,7 @@ is_deeply([ grep { m#UI/TheTable# } keys %$mf ], []);
 
 my $ttab = read_file('t/dual/011_the_table.t');
 unlike($ttab, qr/UI::TheTable/);
-like($ttab, qr/The::Table/);
+unlike($ttab, qr/The::Table/);
 unlike($ttab, qr/_thetable_/);
 like($ttab, qr/_the_table_/);
 

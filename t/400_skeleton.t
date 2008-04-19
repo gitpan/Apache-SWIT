@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 54;
+use Test::More tests => 58;
 use Data::Dumper;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -46,27 +46,22 @@ is($dut->root_class_v, 'Aaa::Bbb');
 my $gtv = $dut->get_template_vars;
 is_deeply($gtv, { map { ($_ => $dut->$_) } qw(
 	form_test_v info_test_v
-	empty_cols_v db_class_v
+	empty_cols_v
 	cols_99_v cols_333_v
 	cols_99_list_v cols_333_list_v
-	col1_v root_class_v table_class_v
-	list_name_v list_test_v
+	col1_v list_name_v list_test_v
 ) }) or diag(Dumper($gtv));
 
 is($dut->get_output, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 16;
 
-BEGIN {
-	use_ok('T::Test');
-	use_ok('Aaa::Bbb::UI::TheTab::List');
-	use_ok('Aaa::Bbb::UI::TheTab::Form');
-	use_ok('Aaa::Bbb::UI::TheTab::Info');
-};
+BEGIN { use_ok('T::Test'); };
 
 my $t = T::Test->new;
+$t->reset_db;
 $t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
 
 $t->ok_follow_link(text => 'Add entries');
@@ -126,17 +121,16 @@ $t->ht_thetab_form_u(button => [ delete_button => 'Delete' ], ht => {
 });
 
 $t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
-
-$t->reset_db_table_from_class("Aaa::Bbb::DB::TheTab");
 ENDS
 
 $dut->columns([ 'one' ]);
 is($dut->cols_99_list_v, '');
 
 Apache::SWIT::Maker::Skeleton::ApacheTest->new->write_output;
-is(read_file('t/apache_test.pl'), <<ENDM);
+is(read_file('t/apache_test.pl'), <<'ENDM');
 use T::TempDB;
 do "t/apache_test_run.pl";
+unlink($_) for glob('t/logs/kids_are_clean.*');
 ENDM
 like(read_file('MANIFEST'), qr/apache_test/);
 
@@ -147,16 +141,35 @@ append_file('MANIFEST', "\nt/dual/012_test.t\n");
 is($dut->output_file, "t/dual/022_the_tab.t");
 
 Apache::SWIT::Maker::Config->instance->create_new_page('Aaa::Bbb::Go');
-is_deeply(Apache::SWIT::Maker::Config->instance->pages, {
-go => {
+my $go_ent = {
 	entry_points => {
 		u => { handler => 'swit_update_handler' },
 		r => {
                 	handler => 'swit_render_handler',
 			template => 'templates/go.tt'
 		}
-	}, class => 'Aaa::Bbb::Go' }
-}) or diag(Dumper(Apache::SWIT::Maker::Config->instance->pages));
+	}, class => 'Aaa::Bbb::Go' };
+
+my $cinst = Apache::SWIT::Maker::Config->instance;
+is_deeply($cinst->pages, { go => $go_ent }) or diag(Dumper($cinst->pages));
+
+my $fooep = { class => 'Moo', handler => 'boo' };
+$cinst->pages->{foo} = $fooep;
+my (@urls, @pns, @pes, @eps);
+Apache::SWIT::Maker::Config->instance->for_each_url(sub {
+	my ($url, $pname, $page_entry, $entry_point) = @_;
+	push @urls, $url;
+	push @pns, $pname;
+	push @pes, $page_entry;
+	push @eps, $entry_point;
+});
+is_deeply([ sort @urls ], [ qw(/aaa/bbb/foo /aaa/bbb/go/r /aaa/bbb/go/u) ])
+	or diag(Dumper(\@urls));
+is_deeply([ sort @pns ], [ qw(foo go go) ]) or diag(Dumper(\@pns));
+is_deeply([ sort @pes ], [ $fooep, $go_ent, $go_ent ])
+	or diag(Dumper([ sort @pes ]));
+is_deeply([ sort @eps ], [ $fooep, $go_ent->{entry_points}->{r}
+	, $go_ent->{entry_points}->{u} ]) or diag(Dumper([ sort @eps ]));
 
 # We should not save becouse transaction can fail
 ok(! -f 'conf/swit_app.yaml');

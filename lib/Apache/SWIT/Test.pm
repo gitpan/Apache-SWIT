@@ -1,9 +1,13 @@
 use strict;
 use warnings FATAL => 'all';
 
+package Apache2::Request;
+sub new { return $_[1]; }
+
 package Apache::SWIT::Test;
 use base 'Class::Accessor', 'Class::Data::Inheritable';
 use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Test::Utils;
 use HTML::Tested::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
@@ -37,8 +41,8 @@ sub _Do_Startup {
 
 =cut
 sub do_startup {
-	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/startup.pl");
-	_Do_Startup($ENV{SWIT_BLIB_DIR} . "/conf/do_swit_startups.pl");
+	_Do_Startup("blib/conf/startup.pl");
+	_Do_Startup("blib/conf/do_swit_startups.pl");
 }
 
 sub new {
@@ -50,12 +54,17 @@ sub new {
 	if ($args->{session_class}) {
 		$args->{session} = $args->{session_class}->new;
 	}
-	return $class->SUPER::new($args);
+	my $self = $class->SUPER::new($args);
+	$self->root_location("") unless $self->root_location;
+	$self->session->{_request} = HTML::Tested::Test::Request->new({
+		uri => $self->root_location . "/" }) if $self->session;
+	return $self;
 }
 
 sub new_guitest {
 	my $self = shift()->new(@_);
 	if ($self->mech) {
+		$ENV{MOZ_NO_REMOTE} = 1;
 		{
 			local $SIG{__WARN__} = sub {};
 			eval "require X11::GUITest";
@@ -72,20 +81,30 @@ sub new_guitest {
 	return $self;
 }
 
+sub _setup_session {
+	my ($self, $r) = @_;
+	$r->pnotes('SWITSession', $self->session);
+	$self->session->{_request} = $r;
+}
+
 sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
 	$r->set_params($args{param}) if $args{param};
-	$r->pnotes('SWITSession', $self->session);
+	$self->_setup_session($r);
+	$r->uri($self->_find_url_to_go(%args) || $self->root_location . "/");
 	return $handler_class->swit_render($r);
 }
 
 sub _do_swit_update {
 	my ($self, $handler_class, $r) = @_;
-	$r->pnotes('SWITSession', $self->session);
+	$self->_setup_session($r);
 	my @res = $handler_class->swit_update($r);
 	my $new_r = HTML::Tested::Test::Request->new;
-	$new_r->parse_url($res[0]);
+	$new_r->pnotes("PrevRequestOpaque", $res[0]->[2])
+			if (ref($res[0]) && $res[0]->[0] eq 'SUBREQUEST');
+	my $uri = ref($res[0]) ? $res[0]->[1] : $res[0];
+	$new_r->parse_url($uri) if $uri;
 	$self->fake_request($new_r);
 	return @res;
 }
@@ -107,19 +126,25 @@ sub _direct_update {
 
 sub mech_get_base {
 	my ($self, $loc) = @_;
+	$loc = $self->root_location . "/$loc" unless ($loc =~ /^\//);
 	my $url = "http://" . Apache::TestRequest::hostport() . $loc;
 	return $self->mech->get($url);
 }
 
-sub _mech_render {
-	my ($self, $handler_class, %args) = @_;
-	my $goto = $args{base_url};
+sub _find_url_to_go {
+	my ($self, %args) = @_;
+	my $res = $args{base_url};
 	if ($args{make_url}) {
 		my $rl = $self->root_location;
 		confess "Please set root_location" unless defined($rl);
-		$goto = "$rl/" . $args{url_to_make};
+		$res = "$rl/" . $args{url_to_make};
 	}
-	goto OUT if !$goto;
+	return $res;
+}
+
+sub _mech_render {
+	my ($self, $handler_class, %args) = @_;
+	my $goto = $self->_find_url_to_go(%args) or goto OUT;
 	my $p = $args{param} or goto GET_IT;
 	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
 	$r->set_params($args{param}) if $args{param};
@@ -127,6 +152,8 @@ sub _mech_render {
 GET_IT:
 	$self->mech_get_base($goto);
 OUT:
+	$self->session->request->uri($goto || $self->root_location)
+		if $self->session;
 	return $self->mech->content;
 }
 
@@ -137,6 +164,11 @@ sub _filter_out_readonly {
 			. $self->mech->content;
 	delete $args->{fields}->{$_} for map { $_->name } grep { $_->readonly }
 		$form->inputs;
+	
+	return if delete $args->{no_submit_check};
+	my @sub = grep { $_->type eq 'submit' } $form->inputs;
+	confess $self->mech->content . "No submit input type found. "
+		. "Use no_submit_check if needed\n" unless @sub;
 }
 
 sub _mech_update {
@@ -152,8 +184,10 @@ sub _mech_update {
 sub _direct_ht_render {
 	my ($self, $handler_class, %args) = @_;
 	my $res = $self->_direct_render($handler_class, %args);
-	return HTML::Tested::Test->check_stash(
+	my @cs = HTML::Tested::Test->check_stash(
 			$handler_class->ht_root_class, $res, $args{ht});
+	push @cs, $res if @cs;
+	return @cs;
 }
 
 sub _mech_ht_render {
@@ -180,13 +214,13 @@ sub _mech_ht_update {
 	$args{fields} = $r->_param;
 	delete $args{ht};
 
-	goto OUT unless $r->upload;
-
 	if (my $form_number = $args{'form_number'}) {
 		$self->mech->form_number($form_number) or confess "No number";
 	} elsif (my $form_name = $args{'form_name'}) {
 		$self->mech->form_name($form_name) or confess "No form_name";
 	}
+	goto OUT unless $r->upload;
+
 	my $form = $self->mech->current_form or confess "No form found!";
 	confess "Form method is not POST" if $form->method ne "POST";
 	confess "Form enctype is not multipart/form-data"
@@ -231,8 +265,11 @@ sub make_aliases {
 		my $r_func = "ht_$n\_r";
 		$r_func =~ s/\//_/g;
 		*{ "$class\::ok_$r_func" } = sub {
-			my $res = is_deeply([ shift()->$r_func(@_) ], []);
-			carp('#') unless $res;
+			my $self = shift;
+			my @tre = $self->$r_func(@_);
+			my $res = is(shift @tre, undef);
+			carp('#' . ($self->mech ? "" : " " . Dumper(\@tre)))
+				unless $res;
 			return $res;
 		};
 	}
@@ -260,7 +297,6 @@ sub ok_get {
 	my ($self, $uri, $status) = @_;
 	$status ||= 200;
 	$self->with_or_without_mech_do(1, sub {
-		$uri = $self->root_location . "/$uri" unless ($uri =~ /^\//);
 		$self->mech_get_base($uri);
 		is($self->mech->status, $status)
 			or carp("# Unable to get: $uri");
@@ -287,10 +323,19 @@ SKIP: {
 };
 }
 
-sub reset_db_table_from_class {
-	my ($self, $dbc) = @_;
-	$dbc->retrieve_all->delete_all;
-	$dbc->db_Main->do("alter sequence ". $dbc->sequence ." restart with 1");
+sub reset_db {
+	my $self = shift;
+	my $md = ASTU_Module_Dir();
+	return if unlink("$md/t/logs/db_is_clean");
+
+	my $db = $ENV{APACHE_SWIT_DB_NAME} or confess "# No db is given";
+	conv_silent_system("psql -d $db < $md/t/conf/schema.sql");
+	Apache::SWIT::DB::Connection->instance->db_handle->{CachedKids} = {};
+
+	my $glof = ASTU_Module_Dir() .'/t/logs/kids_are_clean.*';
+	if ($self->mech) {
+		unlink($_) for glob($glof);
+	}
 }
 
 1;

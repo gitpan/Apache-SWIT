@@ -5,6 +5,7 @@
 [% form %]
 [% the_upload %]
 [% mime_upload %]
+<input type="submit" />
 </form>
 </body>
 </html>

@@ -34,7 +34,13 @@ sub swit_update {
 
 sub ct_handler($$) {
 	my ($class, $r) = @_;
+	# check that session has our request
+	my $rs = $r->pnotes('SWITSession')->request;
+	return Apache2::Const::FORBIDDEN if $r->uri ne $rs->uri;
 	$class->swit_send_http_header($r, "text/plain");
+
+	# check that we have no session anymore
+	return Apache2::Const::FORBIDDEN if $r->uri ne $rs->uri;
 	return Apache2::Const::OK;
 }
 

@@ -11,6 +11,7 @@ sub template { return <<'ENDS' };
 <body>
 [% form %]
 [% first %]
+<input type="submit" />
 </form>
 </body>
 </html>

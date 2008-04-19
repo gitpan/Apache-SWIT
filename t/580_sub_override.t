@@ -25,10 +25,13 @@ my $res = `./scripts/swit_app.pl add_ht_page P1`;
 ok(-f 'lib/TTT/UI/P1.pm');
 ok(-f 'templates/p1.tt');
 
-$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 12');
-append_file("t/dual/001_load.t", '
+$mt->replace_in_file('t/dual/001_load.t', '=> 11', '=> 14');
+append_file("t/dual/001_load.t", <<'ENDS');
 $t->ok_ht_p1_r(make_url => 1, ht => { first => ""});
-');
+$t->ok_get('p1/r');
+# to test g modifier do it twice
+$t->ok_get('p1/r');
+ENDS
 
 $res = `perl Makefile.PL 2>&1`;
 $res = $mt->run_make_install;
@@ -72,7 +75,7 @@ $res = `perl Makefile.PL && $p5var make test_direct 2>&1`;
 unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/success/);
 
-$mt->replace_in_file('t/dual/thesub/001_load.t', '=> 12', '=> 13');
+$mt->replace_in_file('t/dual/thesub/001_load.t', '=> 14', '=> 15');
 $mt->replace_in_file('t/dual/thesub/001_load.t', 'Index'
 		, "Index'); use_ok('MU::UI::TTT::P1");
 

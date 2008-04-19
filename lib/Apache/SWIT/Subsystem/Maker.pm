@@ -3,40 +3,12 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Subsystem::Maker;
 use base 'Apache::SWIT::Maker';
-use Data::Dumper;
-use Apache::SWIT::Maker::GeneratorsQueue;
-use Apache::SWIT::Maker::Manifest;
 use Apache::SWIT::Subsystem::Makefile;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Maker::Manifest;
 
 sub makefile_class { return 'Apache::SWIT::Subsystem::Makefile'; }
-
-sub make_this_subsystem_dumps {
-	my $self = shift;
-	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
-	my $orig_tree = Apache::SWIT::Maker::Config->instance;
-	undef $Apache::SWIT::Maker::Config::_instance;
-	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
-		$orig_tree->{pages}->{$n} = $gq->run('dump_page_entry', $v);
-	}
-	my @dual_tests = map { s#t/dual/##; $_ } swmani_dual_tests();
-	my %tests = map {
-		my $t = read_file("t/dual/$_");
-		($_, $t)
-	} @dual_tests;
-	$orig_tree->{dumped_tests} = \%tests;
-	return (original_tree => $orig_tree);
-}
-
-sub write_installation_content_pm {
-	my $self = shift;
-	my %dumps = $self->make_this_subsystem_dumps;
-	$self->file_writer->write_blib_lib_installationcontent_pm({
-		dumps => [ map {
-			{ name => $_, 'dump' => Dumper($dumps{$_}) }
-	} keys %dumps ] })
-}
 
 sub write_950_install_t {
 	my $self = shift;
@@ -68,7 +40,9 @@ ENDT
 # InstallationContent inherits it
 sub write_maker_pm {
 	my $self = shift;
-	$self->write_pm_file(Apache::SWIT::Maker::Config->instance->root_class . "::Maker", <<ENDM);
+	my $c = Apache::SWIT::Maker::Config->instance->root_class . "::Maker";
+	swmani_write_file("lib/" . conv_class_to_file($c)
+		, conv_module_contents($c, <<ENDM));
 use base 'Apache::SWIT::Subsystem::Maker';
 ENDM
 }
@@ -103,13 +77,19 @@ sub install_subsystem {
 			generator_classes => $orig_tree->{generators} });
 	my $tree = Apache::SWIT::Maker::Config->instance;
 	while (my ($n, $v) = each %{ $orig_tree->{pages} }) {
-		$tree->{pages}->{"$lcm/$n"} = 
-			$gq->run('install_page_entry', $v, $module);
+		my $ep = $v->{entry_points} or next;
+		$ep->{r}->{template} = "templates/$lcm/" . $ep->{r}->{template};
+		my $fstr = delete $v->{file};
+		swmani_write_file($ep->{r}->{template}, $fstr);
+		$tree->{pages}->{"$lcm/$n"} = $v;
 	}
 	$tree->save;
 	my $tests = $self->this_subsystem_original_tree->{dumped_tests};
 	while (my ($n, $t) = each %$tests) {
-		$t =~ s/ht_([^\(\)]+_[ru])/ht_$lcm\_$1/g;
+		for my $p (keys %{ $orig_tree->{pages} }) {
+			$t =~ s/$p\_/$lcm\_$p\_/g;
+			$t =~ s#$p\b#$lcm/$p#g;
+		}
 		swmani_write_file("t/dual/$lcm/$n", $t);
 	}
 }

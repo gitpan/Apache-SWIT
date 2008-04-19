@@ -40,6 +40,7 @@ lib/Apache/SWIT/HTPage.pm
 lib/Apache/SWIT/DB/Connection.pm
 lib/Apache/SWIT/DB/Base.pm
 lib/Apache/SWIT/Test.pm
+lib/Apache/SWIT/Test/ResetKids.pm
 lib/Apache/SWIT/Session.pm
 lib/Apache/SWIT/Test/ModuleTester.pm
 lib/Apache/SWIT/Test/Apache.pm
@@ -91,6 +92,8 @@ t/T/DBPage.pm
 t/T/Res.pm
 t/T/Empty.pm
 t/T/HTPage.pm
+t/T/HTError.pm
+t/templates/ht_error.tt
 t/T/Session.pm
 t/T/SessPage.pm
 t/templates/more.tt

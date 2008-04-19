@@ -1,12 +1,15 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 49;
+use Test::More tests => 50;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
 use YAML;
 use File::Slurp;
+use Apache::SWIT::Maker::Conversions;
+use Apache::SWIT::Maker::Manifest;
+
 Test::TempDatabase->become_postgres_user;
 use Apache::SWIT::Test::Utils;
 use HTML::Tested::Value::Form;
@@ -33,7 +36,8 @@ is(read_file('lib/TTT.pm'), $tttpm);
 like(read_file('Makefile.PL'),
 	       	qr/Apache::SWIT::Subsystem::Makefile/);
 
-Apache::SWIT::Subsystem::Maker->new->write_pm_file('TTT::DB::Random', <<ENDF);
+swmani_write_file("lib/" . conv_class_to_file("TTT::DB::Random")
+		, conv_module_contents("TTT::DB::Random", <<ENDF));
 sub number { return 494; }
 ENDF
 
@@ -104,6 +108,7 @@ append_file('t/dual/001_load.t', <<ENDS);
 # 		user_list => [ { ht_id => 1, name => 'admin' } ] });
 # \$t->ok_ht_userform_r(make_url => 1, ht => {
 #		                        username => '', password => '', });
+# HT_SEALED_ht_id => '1', name => 'admin', _role_name => 'admin'
 ENDS
 
 my $m_str2 = read_file('MANIFEST');
@@ -137,7 +142,9 @@ is(-f 'lib/MU/TheSub.pm', undef);
 use_ok('HTML::Tested', qw(HT HTV));
 
 isnt(-f "t/dual/thesub/001_load.t", undef) or ASTU_Wait($td);
-like(read_file("t/dual/thesub/001_load.t"), qr/ht_id/);
+my $s001 = read_file("t/dual/thesub/001_load.t");
+like($s001, qr/ht_id/);
+like($s001, qr/HT_SEALED_ht_id/);
 
 undef $Apache::SWIT::Maker::Config::_instance;
 $tree = Apache::SWIT::Maker::Config->instance;

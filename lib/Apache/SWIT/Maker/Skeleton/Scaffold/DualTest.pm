@@ -46,19 +46,15 @@ sub template_prefix { return <<'ENDS'; }
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 16;
 
-BEGIN {
-	use_ok('T::Test');
-	use_ok('[% root_class_v %]::UI::[% table_class_v %]::List');
-	use_ok('[% root_class_v %]::UI::[% table_class_v %]::Form');
-	use_ok('[% root_class_v %]::UI::[% table_class_v %]::Info');
-};
+BEGIN { use_ok('T::Test'); };
 ENDS
 
 sub template { return shift()->template_prefix . <<'ENDS'; }
 
 my $t = T::Test->new;
+$t->reset_db;
 $t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [% list_name_v %] => [] });
 
 $t->ok_follow_link(text => 'Add entries');
@@ -102,8 +98,6 @@ $t->ht_[% form_test_v %]_u(button => [ delete_button => 'Delete' ], ht => {
 });
 
 $t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [%list_name_v%] => [] });
-
-$t->reset_db_table_from_class("[% db_class_v %]");
 ENDS
 
 1;

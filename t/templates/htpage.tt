@@ -8,9 +8,11 @@ hello [% hello %]
 file: [% file %]
 upload: [% up %]
 [% hid %]
+<input type="submit" />
 </form>
 <form name="aa" method="post">
 [% inv_up %]
+<input type="submit" />
 </form>
 </body>
 </html>

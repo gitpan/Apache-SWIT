@@ -10,6 +10,7 @@ __PACKAGE__->add_file({ name => 'scripts/swit_app.pl'
 #!/usr/bin/perl -w
 use strict;
 use [% class %];
+use lib 'lib';
 [% class %]->new->do_swit_app_cmd(@ARGV);
 EM
 
@@ -52,10 +53,7 @@ use warnings FATAL => 'all';
 package T::Test;
 use base 'Apache::SWIT::Test';
 
-BEGIN {
-	$ENV{SWIT_BLIB_DIR} = '[% blib_dir %]';
-	__PACKAGE__->do_startup;
-};
+BEGIN { __PACKAGE__->do_startup; };
 
 use [% session_class %];
 
@@ -89,7 +87,7 @@ EM
 
 __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
 		, <<'EM');
-- targets: [ config ]
+- targets: [ pure_all ]
   dependencies: 
     - t/conf/httpd.conf
     - blib/conf/httpd.conf

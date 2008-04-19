@@ -36,7 +36,7 @@ use Apache::SWIT::DB::Connection;
 use HTML::Tested::List;
 
 eval "use " . HTV() . "::$_" for qw(Marked Form Hidden Submit EditBox Link
-					Upload);
+					Upload DropDown PasswordBox CheckBox);
 
 HTML::Tested::Seal->instance(read_file($INC[0] . '/../conf/seal.key'));
 

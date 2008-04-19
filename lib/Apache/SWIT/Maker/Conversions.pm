@@ -9,10 +9,31 @@ use Carp;
 our @EXPORT = qw(conv_table_to_class conv_make_full_class
 		conv_next_dual_test conv_class_to_app_name
 		conv_forced_write_file conv_eval_use conv_file_to_class
+		conv_module_contents conv_class_to_file
 		conv_class_to_entry_point conv_silent_system);
 
+sub conv_class_to_file {
+	my $c = shift;
+	$c =~ s/::/\//g;
+	return $c . ".pm";
+}
+
+sub conv_module_contents {
+	my ($module_class, $str) = @_;
+	return <<ENDM;
+use strict;
+use warnings FATAL => 'all';
+
+package $module_class;
+$str
+
+1;
+ENDM
+}
+
 sub conv_silent_system {
-	system("$_[0] 2>&1 1>/dev/null") and die "Unable to do $_[0]";
+	my $res = `$_[0] 2>&1`;
+	$? and die "Unable to do $_[0]:\n$res";
 }
 
 sub _capitalize {

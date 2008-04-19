@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 20;
+use Test::More tests => 21;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
@@ -24,11 +24,16 @@ ok(-f $s_up);
 like(read_file($s_up), qr/Seal/);
 
 my $t = Apache::SWIT::Test->new;
+$t->root_location('/test');
+
 like($0, qr/001_basic/);
 ok($t->mech);
 $t->mech_get_base("/test/basic_handler");
 like($t->mech->content, qr/hhhh/) or ASTU_Wait();
 like($t->mech->content, qr/blib/);
+
+$t->mech_get_base('basic_handler');
+like($t->mech->content, qr/hhhh/) or ASTU_Wait();
 
 $t->mech_get_base("/test/swit/r");
 like($t->mech->content, qr/hello world/);

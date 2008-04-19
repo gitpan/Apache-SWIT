@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 63;
+use Test::More tests => 64;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -115,6 +115,7 @@ ok(! -f 't/T/Test.pm');
 ok(! -d 't/htdocs');
 ok(! -d 't/logs');
 ok(! -f 'blib/conf/httpd.conf');
+is(-f 't/conf/schema.sql', undef);
 is_deeply([ glob('t/conf/*') ], [ 't/conf/extra.conf.in' ]);
 
 undef $Apache::SWIT::Maker::Config::_instance;

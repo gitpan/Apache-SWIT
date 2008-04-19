@@ -85,7 +85,7 @@ YAML::DumpFile('conf/swit.yaml', $tree);
 $res = `perl Makefile.PL && make test_dual 2>&1`;
 like($res, qr/030_load/);
 like($res, qr/success/) or ASTU_Wait();
-unlike($res, qr/Fail/);
+unlike($res, qr/Fail/) or ASTU_Wait;
 unlike($res, qr/010_db/);
 isnt(-f "A", undef) or diag($res);
 isnt(-f "D", undef);

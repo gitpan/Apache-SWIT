@@ -1,10 +1,11 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 45;
+use Test::More tests => 49;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
 use Test::TempDatabase;
+use YAML;
 
 BEGIN { use_ok('Apache::SWIT::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
@@ -63,6 +64,12 @@ like($lines, qr/APACHE_SWIT_DB_NAME/);
 ok(-f "t/conf/schema.sql");
 
 append_file("t/conf/schema.sql", "--moo\ncreate table btt (a text);\n");
+write_file("blib/lib/G.pm", "ddd\n");
+write_file("blib/v.txt", "aaa\n");
+
+my $tree = YAML::LoadFile('conf/swit.yaml');
+push @{ $tree->{skip_install} }, qw(lib/G.pm v.txt);
+YAML::DumpFile('conf/swit.yaml', $tree);
 
 $lines = `make install SITEPREFIX=$td/inst APACHE_SWIT_DB_NAME=inst510_db 2>&1`;
 is($?, 0) or ASTU_Wait($lines);
@@ -70,6 +77,10 @@ unlike($lines, qr/uninitialized value/);
 isnt(-d "$td/inst/share/ttt", undef);
 is(-d "$td/inst/share/perl", undef);
 like(read_file('t/conf/schema.sql'), qr/moo/);
+is(-f "$td/inst/share/ttt/lib/G.pm", undef);
+is(-f "$td/inst/share/ttt/v.txt", undef);
+is(read_file("blib/lib/G.pm"), "ddd\n");
+is(read_file("blib/v.txt"), "aaa\n");
 
 like(`psql -l`, qr/inst510_db/);
 append_file("lib/TTT/DB/Schema.pm", <<'ENDS');

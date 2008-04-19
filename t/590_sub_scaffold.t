@@ -58,7 +58,7 @@ $res = `make realclean && perl Makefile.PL && make 2>&1`;
 is($?, 0) or ASTU_Wait($res);
 
 is(-f 'blib/lib/TTT/PageClasses.pm', undef);
-like(read_file('t/dual/011_the_table.t'), qr/Form/);
+unlike(read_file('t/dual/011_the_table.t'), qr/Form/);
 
 $res = `make test_direct APACHE_TEST_FILES=t/dual/011_the_table.t 2>&1`;
 is($?, 0) or ASTU_Wait($res);

@@ -89,7 +89,7 @@ isnt(-f 'lib/TTT/UI/TheTable/D.pm', undef);
 
 my $dpm = read_file('lib/TTT/UI/TheTable/D.pm');
 like($dpm, qr/TheTable::D;/) or exit 1;
-like($dpm, qr/TheTable::D::Root;/) or exit 1;
+unlike($dpm, qr/TheTable::D::Root;/) or exit 1;
 like($dpm, qr/bind\('TTT::UI::TheTable::D'\)/) or exit 1;
 like($dpm, qr/ok_ht_thetable_d_r/) or exit 1;
 like($dpm, qr/standalone: TTT::UI::TheTable::D/) or exit 1;

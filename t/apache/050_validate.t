@@ -2,6 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use Test::More tests => 7;
+use Apache::SWIT::Session;
 
 BEGIN { use_ok('Apache::SWIT::Test');
 	Apache::SWIT::Test->do_startup;
@@ -13,7 +14,7 @@ unlink "/tmp/apache_swit_validate_failure";
 $ENV{SWIT_HAS_APACHE} = 0;
 Apache::SWIT::Test->make_aliases(validate_fail => 'T::ValidateFailure');
 
-my $t = Apache::SWIT::Test->new;
+my $t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
 eval { $t->ht_validate_fail_u(ht => {}); };
 like($@, qr/ht_validate failed/); 
 like($@, qr/Request/);
