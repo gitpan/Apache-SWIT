@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 21;
+use Test::More tests => 29;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -89,6 +89,40 @@ is($?, 0) or ASTU_Wait($res);
 like($res, qr/200_o/);
 like($res, qr/start: ok/);
 unlike($res, qr/111_m/);
+
+$res = `./scripts/swit_app.pl hdhdhd 2>&1`;
+isnt($?, 0) or ASTU_Wait($res);
+
+$res = `./scripts/swit_app.pl freeze_schema 2>&1`;
+is($?, 0) or ASTU_Wait($res);
+isnt(-f 'conf/frozen.sql', undef);
+like(read_file('MANIFEST'), qr/frozen/);
+my $fro = read_file('conf/frozen.sql');
+like($fro, qr/the_table/);
+unlike($fro, qr/OWNER TO/);
+
+ok(unlink('t/conf/schema.sql'));
+my $sch = read_file('lib/TTT/DB/Schema.pm');
+$sch =~ s/the_table/NOT_CALLED/;
+write_file('lib/TTT/DB/Schema.pm', $sch);
+append_file('lib/TTT/DB/Schema.pm', <<'ENDS');
+__PACKAGE__->add_version(sub {
+	my $dbh = shift;
+$dbh->do("create table another_tab (id serial primary key, anocol text)");
+});
+ENDS
+write_file('t/050_ano.t', <<'ENDM');
+use strict;
+use warnings FATAL => 'all';
+
+use Test::More tests => 1;
+use T::TempDB;
+
+my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
+is_deeply($dbh->selectcol_arrayref("select count(*) from another_tab"), [ 0 ]);
+ENDM
+$res = `make test 2>&1`;
+is($?, 0) or ASTU_Wait($res);
 
 append_file("t/mig/db.sql", "boom\n");
 $res = `make test_mig 2>&1`;

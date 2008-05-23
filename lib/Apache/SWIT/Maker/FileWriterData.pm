@@ -11,7 +11,7 @@ __PACKAGE__->add_file({ name => 'scripts/swit_app.pl'
 use strict;
 use [% class %];
 use lib 'lib';
-[% class %]->new->do_swit_app_cmd(@ARGV);
+[% class %]->new->do_swit_app_cmd(@ARGV) or exit 1;
 EM
 
 __PACKAGE__->add_file({ name => 'tt_file', manifest => 1

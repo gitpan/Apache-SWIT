@@ -29,13 +29,13 @@ ok(-f 'lib/TTT/UI/TheTable/Info.pm');
 ok(-f 't/dual/011_the_table.t');
 
 $res = `./scripts/swit_app.pl 2>&1`;
-is($?, 0) or diag($res);
+isnt($?, 0) or diag($res);
 like($res, qr/\bmv\b/);
 like($res, qr/\bscaffold\b.*generates/);
 like($res, qr/\brun_server\b/);
 
 my $hlp_res = `./scripts/swit_app.pl help 2>&1`;
-is($?, 0);
+isnt($?, 0);
 is($hlp_res, $res);
 
 $res = `./scripts/swit_app.pl mv lib/TTT/UI/TheTable lib/TTT/UI/The/Table 2>&1`;

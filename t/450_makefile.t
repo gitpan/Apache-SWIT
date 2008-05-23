@@ -5,6 +5,8 @@ use Test::More tests => 48;
 use Apache::SWIT::Test::ModuleTester;
 use File::Slurp;
 use ExtUtils::Manifest qw(maniadd);
+use Test::TempDatabase;
+Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Maker::Makefile');
 	use_ok('Apache::SWIT::Maker::Manifest');

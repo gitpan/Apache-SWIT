@@ -10,7 +10,7 @@ sub template { return <<'ENDS' };
 <html>
 <body>
 [% form %]
-[% first %]
+First: [% first %] <br />
 <input type="submit" />
 </form>
 </body>

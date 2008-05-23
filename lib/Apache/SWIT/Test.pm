@@ -16,6 +16,7 @@ use Data::Dumper;
 use File::Slurp;
 use Apache::TestRequest;
 use WWW::Mechanize;
+use Encode;
 
 BEGIN {
 	no strict 'refs';
@@ -181,11 +182,31 @@ sub _mech_update {
 	return $self->mech->content;
 }
 
+sub _decode_utf8_arr {
+	my $arr = shift;
+	return $arr if ref($arr) ne 'ARRAY'; # DateTime for example
+	for (my $i = 0; $i < @$arr; $i++) {
+		my $r = ref($arr->[$i]);
+		$arr->[$i] = $r ? $r eq 'ARRAY' ? _decode_utf8_arr($arr->[$i])
+						: _decode_utf8($arr->[$i])
+				: Encode::decode_utf8($arr->[$i]);
+
+	}
+	return $arr;
+}
+
+sub _decode_utf8 {
+	my $arg = shift;
+	($arg->{$_} = ref($arg->{$_}) ? _decode_utf8_arr($arg->{$_})
+			: Encode::decode_utf8($arg->{$_})) for (keys %$arg);
+	return $arg;
+}
+
 sub _direct_ht_render {
 	my ($self, $handler_class, %args) = @_;
 	my $res = $self->_direct_render($handler_class, %args);
-	my @cs = HTML::Tested::Test->check_stash(
-			$handler_class->ht_root_class, $res, $args{ht});
+	my @cs = HTML::Tested::Test->check_stash($handler_class->ht_root_class
+		, $res, _decode_utf8($args{ht}));
 	push @cs, $res if @cs;
 	return @cs;
 }

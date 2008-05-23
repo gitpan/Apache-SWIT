@@ -10,6 +10,7 @@ our @EXPORT = qw(ASTU_Wait ASTU_Read_Error_Log ASTU_Read_Access_Log
 
 sub ASTU_Wait {
 	my $dir = shift || "";
+	print STDERR "# " . Carp::longmess();
 	if (!defined($ENV{ASTU_WAIT})) {
 		print STDERR "# ASTU_WAIT: no \$ENV{ASTU_WAIT} is given $dir\n";
 		goto OUT;

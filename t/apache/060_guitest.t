@@ -27,7 +27,10 @@ my $b = 'баба';
 $t->content_like(qr/$b/);
 
 my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
+{
+use utf8;
 is_deeply($dbh->selectcol_arrayref("select val from dbp"), [ 'баба' ]);
+};
 
 ASTU_Reset_Table("dbp");
 

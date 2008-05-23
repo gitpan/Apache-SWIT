@@ -6,6 +6,7 @@ use base 'Apache::TestRunPerl';
 use File::Basename qw(dirname);
 use Cwd qw(abs_path);
 use Test::TempDatabase;
+use File::Slurp;
 
 sub Check_For_Run_Server {
 	my $argv = shift;
@@ -37,6 +38,20 @@ sub run_tests {
 			. Apache::TestRequest::hostport ."\n";
 	print STDERR "# Press Enter to finish ...\n";
 	readline(\*STDIN);
+}
+
+sub configure {
+	shift()->SUPER::configure(@_);
+	return unless $ENV{APACHE_SWIT_PROFILE};
+	my $cf = read_file('t/conf/httpd.conf');
+	$cf =~ s/PerlSwitches/#/g;
+	write_file('t/conf/httpd.conf', "$cf\n" . <<ENDS);
+<Perl>
+        require Apache::DB;
+        Apache::DB->init;
+</Perl>
+PerlModule Apache::DProf
+ENDS
 }
 
 1;

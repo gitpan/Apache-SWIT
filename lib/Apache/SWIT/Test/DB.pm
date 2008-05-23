@@ -24,10 +24,13 @@ sub setup {
 
 	my $stop = $ENV{APACHE_SWIT_LOAD_DB} ? "echo \\\\set ON_ERROR_STOP;"
 			: "";
-	my $ssql = "t/conf/schema.sql";
-	$ENV{APACHE_SWIT_LOAD_DB} = $ssql
-		if (-f $ssql && !$nd && !$ENV{APACHE_SWIT_LOAD_DB});
+	goto LOAD if ($nd || $ENV{APACHE_SWIT_LOAD_DB});
 
+	my $ssql = "t/conf/schema.sql";
+	my $fro = "conf/frozen.sql";
+	$ENV{APACHE_SWIT_LOAD_DB} = -f $ssql ? $ssql : -f $fro ? $fro : '';
+
+LOAD:
 	# -f option doesn't always work for large objects
 	conv_silent_system("($stop cat $ENV{APACHE_SWIT_LOAD_DB})"
 			. " | psql --single-transaction"

@@ -285,7 +285,8 @@ ENDS
 }
 
 sub regenerate_seal_key {
-	my $seed = $$ . int(rand(65530)) . time;
+	my $seed = -f 'conf/seal.key' ? read_file('conf/seal.key')
+			: $$ . int(rand(65530)) . time;
 	mkpath_write_file('blib/conf/seal.key', $seed);
 }
 
@@ -414,6 +415,14 @@ sub run_server {
 	system("make test_apache");
 }
 
+sub freeze_schema {
+	my $self = shift;
+	push @INC, "t", "lib";
+	conv_eval_use('T::TempDB');
+	system("pg_dump -O -c $ENV{APACHE_SWIT_DB_NAME} > conf/frozen.sql");
+	append_file('MANIFEST', "\nconf/frozen.sql\n");
+}
+
 sub add_migration {
 	my ($self, $name, $sql) = @_;
 	mkpath("t/$name");
@@ -498,6 +507,7 @@ add_class => [ '<class> - adds new class.', 1 ]
 , scaffold => [ '<table_name> - generates classes and templates supporting
 		<table_name> CRUD operation.', 1 ]
 , add_migration => [ '<name> <sql> - create migration test target', 1 ]
+, freeze_schema => [ 'freezes schema' ]
 , dump_db => [ 'dumps temporary database into t/conf/schema.sql' ]
 ); }
 
@@ -545,6 +555,7 @@ sub do_swit_app_cmd {
 	}
 	rmtree($backup_dir);
 	die "Rolled back. Original exception is $err" if $err;
+	return 1;
 }
 
 1;

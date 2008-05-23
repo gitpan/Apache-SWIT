@@ -8,7 +8,7 @@ use Carp;
 
 __PACKAGE__->mk_classdata('Instance');
 __PACKAGE__->mk_classdata('DBIArgs', { PrintError => 0
-			, AutoCommit => 1
+			, AutoCommit => 1, pg_enable_utf8 => 1
 			, HandleError => sub { confess($_[0]); }
 			, RootClass => 'DBIx::ContextualFetch', });
 

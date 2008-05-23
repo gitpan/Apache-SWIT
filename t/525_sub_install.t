@@ -6,6 +6,8 @@ use YAML;
 use Data::Dumper;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
+use Test::TempDatabase;
+Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
