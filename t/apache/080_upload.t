@@ -6,16 +6,16 @@ use Data::Dumper;
 use File::Temp qw(tempdir);
 use File::Slurp;
 
-BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup;
+BEGIN { use_ok('T::Test');
+	;
 	use_ok('T::Upload');
 	use_ok('T::Empty');
 };
 
-Apache::SWIT::Test->make_aliases(upload => 'T::Upload', empty => 'T::Empty');
+T::Test->make_aliases(upload => 'T::Upload', empty => 'T::Empty');
 
 my $td = tempdir('/tmp/lo_test_XXXXXXXX', CLEANUP => 1);
-my $t = Apache::SWIT::Test->new;
+my $t = T::Test->new;
 $t->ok_ht_upload_r(base_url => '/test/upload/r', ht => { the_upload => ''
 			, HT_SEALED_loid =>  '' });
 my @res = $t->ht_upload_u(ht => { the_upload => '/etc/passwd' });

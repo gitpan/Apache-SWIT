@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 45;
+use Test::More tests => 46;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -11,8 +11,8 @@ use Apache::SWIT::Session;
 
 BEGIN { 
 	unlink "/tmp/swit_startup_test";
-	use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup;
+	use_ok('T::Test');
+	;
 }
 
 $ENV{SWIT_HAS_APACHE} = 0;
@@ -23,7 +23,7 @@ my @sls = read_file("/tmp/swit_startup_test");
 is(@sls, 1) or diag(join("", @sls));
 like($sls[0], qr/T::SWIT .*blib.*do_swit_startups/);
 
-Apache::SWIT::Test->make_aliases(the_page => 'T::SWIT', res => 'T::Res');
+T::Test->make_aliases(the_page => 'T::SWIT', res => 'T::Res');
 can_ok('T::SWIT', 'can') or exit 1;
 can_ok('T::Res', 'can');
 
@@ -33,8 +33,8 @@ like($sls[0], qr/T::SWIT .*blib.*do_swit_startups/);
 unlike(join("", @sls), qr/T .*Test\.pm/);
 unlink("/tmp/swit_startup_test");
 
-my $t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
-isa_ok($t, 'Apache::SWIT::Test');
+my $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
+isa_ok($t, 'T::Test');
 is($t->mech, undef);
 
 my @res = $t->the_page_r(base_url => '/test/swit');
@@ -61,7 +61,7 @@ is_deeply(\@res, [ { res => 'hhhh' } ])
 	or diag(Dumper(\@res));
 
 $ENV{SWIT_HAS_APACHE} = 1;
-$t = Apache::SWIT::Test->new;
+$t = T::Test->new;
 isa_ok($t->mech, 'WWW::Mechanize');
 @res = $t->the_page_r(base_url => '/test/swit/r');
 is_deeply(\@res, [ <<ENDS ]);
@@ -107,9 +107,12 @@ is($t->mech->status, 200) or ASTU_Wait;
 $t->mech->post($t->mech->uri, { file => "$td/RESPOND" }
 	, 'Accept-Encoding', 'gzip,deflate');
 is($t->mech->status, 200) or ASTU_Wait;
-unlike($t->mech->content, qr/RES/);
 
-Apache::SWIT::Test->make_aliases("another/page" => 'T::SWIT');
+my $resp = $t->mech->response->as_string;
+unlike($resp, qr/RESPONSE/);
+like($resp, qr/Content-Encoding: gzip/);
+
+T::Test->make_aliases("another/page" => 'T::SWIT');
 $t->root_location('/test');
 @res = $t->another_page_r(make_url => 1);
 is_deeply(\@res, [ <<ENDS ]);

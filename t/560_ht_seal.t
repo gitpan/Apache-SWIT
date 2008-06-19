@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 25;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -102,5 +102,54 @@ isnt(@outs, 0);
 my $dres = `dprofpp $outs[0] 2>&1`;
 is($?, 0) or ASTU_Wait($dres);
 like($dres, qr/Total Elapsed Time/);
+
+`rm -rf t/logs/dprof`;
+
+my $hiddens = join("\n", map { "<input type=\"hidden\" name=\"n$_\""
+	. " value=\"v$_\" />" } (1 .. 100));
+write_file("templates/index.tt", <<ENDS);
+<html>                                            
+<body>
+[% form %]
+First: [% first %] <br />
+<input type="submit" />
+$hiddens
+</form>
+</body>
+</html>
+ENDS
+
+write_file('t/dual/040_prof.t', <<'ENDS');
+use strict;
+use warnings FATAL => 'all';
+use File::Slurp;
+
+use Test::More tests => 3;
+
+BEGIN { use_ok('T::Test'); };
+
+my $t = T::Test->new;
+$t->ok_ht_index_r(make_url => 1, param => { HT_SEALED_first => 12 }
+		, ht => { HT_SEALED_first => 12 });
+$t->ht_index_u;
+is($t->mech->status, 200);
+ENDS
+
+$pros = 'APACHE_SWIT_PROFILE=1 make test_apache '
+		. 'APACHE_TEST_FILES=t/dual/040_prof.t 2>&1';
+$res = `$pros`;
+is($?, 0) or ASTU_Wait($res);
+isnt(-d 't/logs/dprof', undef) or ASTU_Wait(read_file('t/conf/httpd.conf'));
+
+@outs = `find t/logs/dprof -type f`;
+isnt(@outs, 0);
+
+$dres = "";
+$dres .= `dprofpp $_ 2>&1` for @outs;
+is($?, 0) or ASTU_Wait($dres);
+like($dres, qr/Total Elapsed Time/);
+
+# number of calls to param should be low
+unlike($dres, qr/\d\d\s+[\d\.]+\s+[\d\.]+\s+\S+param/);
 
 chdir '/';

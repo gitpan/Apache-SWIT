@@ -7,9 +7,8 @@ use File::Basename qw(dirname);
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
 
-BEGIN { use_ok('Apache::SWIT::Test'); }
+BEGIN { use_ok('T::Test'); }
 
-Apache::SWIT::Test->do_startup;
 is(HTV(), 'HTML::Tested::Value');
 is(HT(), 'HTML::Tested');
 is(HTJ(), 'HTML::Tested::JavaScript');
@@ -23,7 +22,7 @@ my $s_up = "$INC[0]/../conf/startup.pl";
 ok(-f $s_up);
 like(read_file($s_up), qr/Seal/);
 
-my $t = Apache::SWIT::Test->new;
+my $t = T::Test->new;
 $t->root_location('/test');
 
 like($0, qr/001_basic/);

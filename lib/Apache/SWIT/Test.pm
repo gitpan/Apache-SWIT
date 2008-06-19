@@ -1,6 +1,14 @@
 use strict;
 use warnings FATAL => 'all';
 
+package Apache::SWIT::Test::Mechanize;
+use base 'WWW::Mechanize';
+
+sub reload {
+	my $self = shift;
+	$self->get($self->uri);
+}
+
 package Apache2::Request;
 sub new { return $_[1]; }
 
@@ -15,7 +23,6 @@ use Carp;
 use Data::Dumper;
 use File::Slurp;
 use Apache::TestRequest;
-use WWW::Mechanize;
 use Encode;
 
 BEGIN {
@@ -50,11 +57,9 @@ sub new {
 	my ($class, $args) = @_;
 	$args ||= {};
 	if ($ENV{SWIT_HAS_APACHE}) {
-		$args->{mech} = WWW::Mechanize->new;
+		$args->{mech} = Apache::SWIT::Test::Mechanize->new;
 	}
-	if ($args->{session_class}) {
-		$args->{session} = $args->{session_class}->new;
-	}
+	$args->{session} = $args->{session_class}->new;
 	my $self = $class->SUPER::new($args);
 	$self->root_location("") unless $self->root_location;
 	$self->session->{_request} = HTML::Tested::Test::Request->new({

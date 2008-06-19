@@ -4,8 +4,8 @@ use warnings FATAL => 'all';
 use Test::More tests => 7;
 use Apache::SWIT::Session;
 
-BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup;
+BEGIN { use_ok('T::Test');
+	;
 	use_ok('T::TransFailure');
 };
 
@@ -18,9 +18,9 @@ create table t2 (b smallint primary key references trans(a)
 ENDS
 
 $ENV{SWIT_HAS_APACHE} = 0;
-Apache::SWIT::Test->make_aliases(trans_fail => 'T::TransFailure');
+T::Test->make_aliases(trans_fail => 'T::TransFailure');
 
-my $t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
+my $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 eval { $t->ht_trans_fail_u(ht => {}); };
 like($@, qr/check constraint/); 
 like($@, qr/fail\/u/); 

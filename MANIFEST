@@ -83,6 +83,7 @@ t/apache/070_unicode.t
 t/apache/080_upload.t
 t/apache/090_redirect.t
 t/T/Redirect.pm
+t/T/Test.pm
 t/T/Upload.pm
 t/T/Basic.pm
 t/T/SWIT.pm

@@ -5,16 +5,16 @@ use Test::More tests => 11;
 use Apache::SWIT::Test::Utils;
 use Encode;
 
-BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup;
+BEGIN { use_ok('T::Test');
+	;
 	use_ok('T::DBPage');
 }
 
-Apache::SWIT::Test->make_aliases(db_page => 'T::DBPage');
+T::Test->make_aliases(db_page => 'T::DBPage');
 is($ENV{SWIT_HAS_APACHE}, 1);
 
 
-my $t = Apache::SWIT::Test->new_guitest;
+my $t = T::Test->new_guitest;
 is($ENV{MOZ_NO_REMOTE}, 1); # or else there are coredumps sometimes
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	val => ''

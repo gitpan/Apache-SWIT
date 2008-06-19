@@ -7,16 +7,16 @@ use Apache::SWIT::Session;
 use Carp;
 use HTML::Tested::Test::DateTime;
 
-BEGIN { use_ok('Apache::SWIT::Test');
-	Apache::SWIT::Test->do_startup;
+BEGIN { use_ok('T::Test');
+	;
 	use_ok('T::DBPage');
 	$SIG{__WARN__} = sub { diag(Carp::longmess(@_)); };
 }
 
-Apache::SWIT::Test->make_aliases(db_page => 'T::DBPage');
+T::Test->make_aliases(db_page => 'T::DBPage');
 is($ENV{SWIT_HAS_APACHE}, 1);
 
-my $t = Apache::SWIT::Test->new;
+my $t = T::Test->new;
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	HT_SEALED_id => '', val => '',
 });
@@ -41,7 +41,7 @@ is($c, $arr->[0]);
 ASTU_Reset_Table("dbp");
 
 $ENV{SWIT_HAS_APACHE} = 0;
-$t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
+$t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 
 $t->ht_db_page_u(ht => { val => 'дед' });
 $t->ok_ht_db_page_r(ht => {
@@ -53,7 +53,7 @@ $t->ok_ht_db_page_r(ht => {
 ASTU_Reset_Table("dbp");
 
 $ENV{SWIT_HAS_APACHE} = 1;
-$t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
+$t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	HT_SEALED_id => '', val => '',

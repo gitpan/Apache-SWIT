@@ -18,7 +18,7 @@ sub ht_make_root_class {
 sub swit_render {
 	my ($class, $r) = @_;
 	my $stash = {};
-	my %pars = map { ($_, $r->param($_)) } $r->param;
+	my %pars = %{ $r->param || {} };
 	my $tested = $class->ht_root_class->ht_load_from_params(%pars);
 	my $root;
 	eval { $root = $class->ht_swit_render($r, $tested); };
@@ -68,7 +68,7 @@ sub ht_swit_validate {
 
 sub swit_update {
 	my ($class, $r) = @_;
-	my %args = map { ($_, $r->param($_)) } $r->param;
+	my %args = %{ $r->param || {} };
 	if ($r->body_status !~ 'End of file') {
 		$args{ $r->upload($_)->name } = $r->upload($_) for $r->upload;
 	}

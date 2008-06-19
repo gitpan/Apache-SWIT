@@ -4,15 +4,15 @@ use warnings FATAL => 'all';
 use Test::More tests => 15;
 use Apache::SWIT::Test::Utils;
 
-BEGIN { use_ok('Apache::SWIT::Test');
+BEGIN { use_ok('T::Test');
 	use_ok('Apache::SWIT::Session');
-	Apache::SWIT::Test->do_startup;
+	;
 	use_ok('T::Redirect');
 };
 
-Apache::SWIT::Test->make_aliases(redirect => 'T::Redirect');
+T::Test->make_aliases(redirect => 'T::Redirect');
 
-my $t = Apache::SWIT::Test->new;
+my $t = T::Test->new;
 $t->root_location('/test');
 $t->redirect_r(make_url => 1);
 like($t->mech->uri, qr#/test/swit/r#);
@@ -26,7 +26,7 @@ $t->redirect_r(make_url => 1, param => { internal => "../cthan" });
 is($t->mech->ct, "text/plain");
 is($t->mech->status, 200);
 
-Apache::SWIT::Test->make_aliases(ht_error => 'T::HTError');
+T::Test->make_aliases(ht_error => 'T::HTError');
 
 $t->ok_ht_ht_error_r(make_url => 1, ht => { name => "buh", error => ""
 		, password => "" });
@@ -43,7 +43,7 @@ $t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
 		, password => "" });
 
 $ENV{SWIT_HAS_APACHE} = 0;
-$t = Apache::SWIT::Test->new({ session_class => 'Apache::SWIT::Session' });
+$t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 $t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
 $t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
 		, password => "" });
