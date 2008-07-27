@@ -16,7 +16,7 @@ package Apache::SWIT::Test;
 use base 'Class::Accessor', 'Class::Data::Inheritable';
 use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Test::Utils;
-use HTML::Tested::Test::Request;
+use Apache::SWIT::Test::Request;
 use HTML::Tested::Test;
 use Test::More;
 use Carp;
@@ -62,7 +62,7 @@ sub new {
 	$args->{session} = $args->{session_class}->new;
 	my $self = $class->SUPER::new($args);
 	$self->root_location("") unless $self->root_location;
-	$self->session->{_request} = HTML::Tested::Test::Request->new({
+	$self->session->{_request} = Apache::SWIT::Test::Request->new({
 		uri => $self->root_location . "/" }) if $self->session;
 	return $self;
 }
@@ -95,18 +95,20 @@ sub _setup_session {
 
 sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
-	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
+	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
 	$r->set_params($args{param}) if $args{param};
 	$self->_setup_session($r);
 	$r->uri($self->_find_url_to_go(%args) || $self->root_location . "/");
-	return $handler_class->swit_render($r);
+	my $res = $handler_class->swit_render($r);
+	$r->run_cleanups;
+	return $res;
 }
 
 sub _do_swit_update {
 	my ($self, $handler_class, $r) = @_;
 	$self->_setup_session($r);
 	my @res = $handler_class->swit_update($r);
-	my $new_r = HTML::Tested::Test::Request->new;
+	my $new_r = Apache::SWIT::Test::Request->new;
 	$new_r->pnotes("PrevRequestOpaque", $res[0]->[2])
 			if (ref($res[0]) && $res[0]->[0] eq 'SUBREQUEST');
 	my $uri = ref($res[0]) ? $res[0]->[1] : $res[0];
@@ -117,7 +119,7 @@ sub _do_swit_update {
 
 sub _make_test_request {
 	my ($self, $args) = @_;
-	my $r = HTML::Tested::Test::Request->new({
+	my $r = Apache::SWIT::Test::Request->new({
 			_param => $args->{fields} });
 	my $b = delete $args->{button};
 	$r->param($b->[0], $b->[1]) if ($b);
@@ -127,7 +129,9 @@ sub _make_test_request {
 sub _direct_update {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->_make_test_request(\%args);
-	return $self->_do_swit_update($handler_class, $r);
+	my @res = $self->_do_swit_update($handler_class, $r);
+	$r->run_cleanups;
+	return @res;
 }
 
 sub mech_get_base {
@@ -152,7 +156,7 @@ sub _mech_render {
 	my ($self, $handler_class, %args) = @_;
 	my $goto = $self->_find_url_to_go(%args) or goto OUT;
 	my $p = $args{param} or goto GET_IT;
-	my $r = $self->fake_request || HTML::Tested::Test::Request->new;
+	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
 	$r->set_params($args{param}) if $args{param};
 	$goto .= "?" . join("&", map { "$_=" . $r->param($_) } $r->param);
 GET_IT:
@@ -233,8 +237,7 @@ sub _direct_ht_update {
 
 sub _mech_ht_update {
 	my ($self, $handler_class, %args) = @_;
-	my $r = HTML::Tested::Test::Request->new({
-			_param => $args{fields} });
+	my $r = Apache::SWIT::Test::Request->new({ _param => $args{fields} });
 	HTML::Tested::Test->convert_tree_to_param(
 			$handler_class->ht_root_class, $r, $args{ht});
 	$args{fields} = $r->_param;
@@ -248,16 +251,21 @@ sub _mech_ht_update {
 	goto OUT unless $r->upload;
 
 	my $form = $self->mech->current_form or confess "No form found!";
-	confess "Form method is not POST" if $form->method ne "POST";
+	confess "Form method is not POST" if uc($form->method) ne "POST";
 	confess "Form enctype is not multipart/form-data"
 	           if $form->enctype ne "multipart/form-data";
 
 	for my $u (map { $r->upload($_) } $r->upload) {
 		my $i = $self->mech->current_form->find_input($u->name)
 			or die "Unable to find input for " . $u->name;
-		my $c = read_file($u->fh);
-		$i->content($c);
-		$i->filename($u->filename);
+		if ($i->can('content')) {
+			my $c = read_file($u->fh);
+			$i->content($c);
+			$i->filename($u->filename);
+		} else {
+			# Mozilla::Mechanize::Input
+			$i->{input}->SetValue($u->filename);
+		}
 	}
 OUT:
 	return $self->_mech_update($handler_class, %args);

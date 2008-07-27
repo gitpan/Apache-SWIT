@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.35;
+our $VERSION = 0.36;
 
 sub swit_startup {}
 
@@ -147,6 +147,15 @@ sub swit_render_handler($$) {
 	$class->swit_send_http_header($r);
 	$r->print($out);
 	return Apache2::Const::OK();
+}
+
+sub swit_schedule {
+	my ($class, $r, $worker, @msgs) = @_;
+	my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
+	$worker->enqueue($dbh, $_) for @msgs;
+	$r->pool->cleanup_register(sub {
+		$worker->new->run($dbh);
+	});
 }
 
 1;

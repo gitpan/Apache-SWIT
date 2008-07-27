@@ -6,7 +6,6 @@ use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('T::Test');
 	use_ok('Apache::SWIT::Session');
-	;
 	use_ok('T::Redirect');
 };
 

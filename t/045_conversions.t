@@ -1,14 +1,18 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 33;
+use Test::More tests => 36;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Test::TempDatabase;
 
 BEGIN { use_ok('Apache::SWIT::Maker::Conversions');
 	use_ok('Apache::SWIT::Maker::Manifest');
+	use_ok('Apache::SWIT::Test::Request');
 }
+
+is(Apache::SWIT::Test::Request->get_server_port, 80);
+is(Apache::SWIT::Test::Request->get_server_name, 'some.host');
 
 Test::TempDatabase->become_postgres_user;
 

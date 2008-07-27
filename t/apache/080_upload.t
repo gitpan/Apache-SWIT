@@ -7,7 +7,6 @@ use File::Temp qw(tempdir);
 use File::Slurp;
 
 BEGIN { use_ok('T::Test');
-	;
 	use_ok('T::Upload');
 	use_ok('T::Empty');
 };

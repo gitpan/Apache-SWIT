@@ -37,6 +37,7 @@ realclean ::
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.12'
 	, 'Package::Alias' => '', 'Apache::DB' => ''
+	, 'Queue::Worker' => ''
     },
 );
 

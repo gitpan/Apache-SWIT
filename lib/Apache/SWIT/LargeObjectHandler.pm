@@ -3,6 +3,7 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::LargeObjectHandler;
 use base qw(Apache::SWIT);
+use HTTP::Date;
 use Carp;
 
 sub swit_render_handler($$) {
@@ -22,6 +23,8 @@ sub swit_render_handler($$) {
 		($ct, $buf) = HTML::Tested::ClassDBI::Upload->
 					strip_mime_header($buf) if (!$ct);
 		confess "No content type found!" unless $ct;
+		$r->headers_out->add('Expires', HTTP::Date::time2str(
+					time + 240*24*60*60));
 		$class->swit_send_http_header($r, $ct);
 		do {
 			$r->print($buf);

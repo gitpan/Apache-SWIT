@@ -128,6 +128,11 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
   PerlHandler T::Redirect->swit_render_handler
 </Location>
 
+<Location /test/work/r>
+  SetHandler perl-script
+  PerlHandler T::WorkPage->swit_render_handler
+</Location>
+
 <Location /test/download/r>
   SetHandler perl-script
   PerlHandler Apache::SWIT::LargeObjectHandler->swit_render_handler

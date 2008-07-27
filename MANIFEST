@@ -3,7 +3,9 @@ LICENSE
 README
 scripts/swit_init
 lib/Apache/SWIT.pm
+t/T/WorkPage.pm
 lib/Apache/SWIT/Maker.pm
+lib/Apache/SWIT/Test/Request.pm
 lib/Apache/SWIT/LargeObjectHandler.pm
 lib/Apache/SWIT/Maker/Config.pm
 lib/Apache/SWIT/Maker/Skeleton.pm
@@ -82,6 +84,7 @@ t/apache/060_guitest.t
 t/apache/070_unicode.t
 t/apache/080_upload.t
 t/apache/090_redirect.t
+t/apache/100_worker.t
 t/T/Redirect.pm
 t/T/Test.pm
 t/T/Upload.pm
