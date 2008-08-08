@@ -88,7 +88,7 @@ sub install_subsystem {
 	while (my ($n, $t) = each %$tests) {
 		for my $p (keys %{ $orig_tree->{pages} }) {
 			$t =~ s/$p\_/$lcm\_$p\_/g;
-			$t =~ s#$p\b#$lcm/$p#g;
+			$t =~ s#([^/])$p\b#$1$lcm/$p#g;
 		}
 		swmani_write_file("t/dual/$lcm/$n", $t);
 	}

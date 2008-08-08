@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.36;
+our $VERSION = 0.37;
 
 sub swit_startup {}
 
@@ -156,6 +156,13 @@ sub swit_schedule {
 	$r->pool->cleanup_register(sub {
 		$worker->new->run($dbh);
 	});
+}
+
+sub swit_hostport {
+	my ($class, $r) = @_;
+	my $res = $r->get_server_name;
+	$res .= ":" . $r->get_server_port if $r->get_server_port != 80;
+	return $res;
 }
 
 1;

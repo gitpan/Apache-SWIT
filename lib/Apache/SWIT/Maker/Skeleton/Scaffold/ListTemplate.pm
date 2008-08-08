@@ -12,7 +12,7 @@ sub template { return <<'ENDS'; }
 [% <% list_name_v %>_table %]
 </form>
 <br />
-<a href="../form/r">Add entries</a>
+<a href="../form/r">Add <% table_class_v %></a>
 </body>
 </html>
 ENDS

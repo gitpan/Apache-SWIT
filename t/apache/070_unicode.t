@@ -43,8 +43,8 @@ ASTU_Reset_Table("dbp");
 $ENV{SWIT_HAS_APACHE} = 0;
 $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 
-$t->ht_db_page_u(ht => { val => 'дед' });
-$t->ok_ht_db_page_r(ht => {
+$t->ht_db_page_u(ht => { HT_SEALED_id => 1, val => 'дед' });
+$t->ok_ht_db_page_r(param => { HT_SEALED_id => 1 }, ht => {
 	HT_SEALED_id => '1', val => 'дед',
 	, arr => [ { val => 'дед' } ]
 	, sel => [ [ 1, 'дед' ], [ 2, 'baba', 1 ] ]

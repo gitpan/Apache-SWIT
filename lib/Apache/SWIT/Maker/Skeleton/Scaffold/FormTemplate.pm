@@ -11,11 +11,11 @@ sub template { return <<'ENDS'; }
 <h2>Add/Remove/Edit <% table_class_v %></h2>
 [% form %]<% FOREACH fields_v %>
 <% title %>: [% <% field %> %] <br /><% END %>
-[% ht_id %]
+[% <% table_v %>_id %]
 [% submit_button %]
 [% delete_button %]
 <br />
-<a href="../list/r">List all entries</a>
+<a href="../list/r">List <% table_class_v %></a>
 </form>
 </body>
 </html>

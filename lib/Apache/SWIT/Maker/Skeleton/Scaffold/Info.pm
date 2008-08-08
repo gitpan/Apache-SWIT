@@ -16,9 +16,7 @@ __PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
 [% FOREACH fields_v %]
 __PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, [% field %] => cdbi_bind => '');[% END %]
-__PACKAGE__->ht_add_widget(::HTV."::Link", 'edit_link'
-		, href_format => '../form/r?ht_id=%s'
-		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
+__PACKAGE__->ht_add_widget(::HTV, [% table_v %]_id => cdbi_bind => 'Primary');
 __PACKAGE__->bind_to_class_dbi('[% root_class_v %]::DB::[% table_class_v %]');
 
 package [% class_v %];

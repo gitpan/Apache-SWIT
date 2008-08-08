@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 46;
+use Test::More tests => 49;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -36,6 +36,8 @@ unlink("/tmp/swit_startup_test");
 my $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 isa_ok($t, 'T::Test');
 is($t->mech, undef);
+isnt($t->session->request, undef);
+is($t->session->request->pnotes('SWITSession'), $t->session);
 
 my @res = $t->the_page_r(base_url => '/test/swit');
 is_deeply(\@res, [ { hello => 'world' } ]);
@@ -57,6 +59,9 @@ $t->ok_get('/test/www/hello.html');
 $t->content_like(qr/HELLO, HTML/);
 
 @res = $t->res_r;
+is_deeply(\@res, [ { res => undef } ]);
+
+@res = $t->res_r(param => { res => 'hhhh' });
 is_deeply(\@res, [ { res => 'hhhh' } ])
 	or diag(Dumper(\@res));
 

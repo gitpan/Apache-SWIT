@@ -11,7 +11,9 @@ sub template { return <<'ENDS'; }
 [% form %]<% FOREACH fields_v %>
 <% title %>: [% <% field %> %] <br /><% END %>
 </form>
-[% edit_link %]
+<a href="../form/r?<% table_v %>_id=[% <% table_v %>_id %]">
+Edit <% table_class_v %></a>
+<a href="../list/r">List <% table_class_v %></a>
 </body>
 </html>
 ENDS

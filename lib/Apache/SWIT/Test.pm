@@ -36,7 +36,7 @@ BEGIN {
 	};
 }
 
-__PACKAGE__->mk_accessors(qw(mech fake_request session));
+__PACKAGE__->mk_accessors(qw(mech session redirect_request));
 __PACKAGE__->mk_classdata('root_location');
 
 sub _Do_Startup {
@@ -62,8 +62,8 @@ sub new {
 	$args->{session} = $args->{session_class}->new;
 	my $self = $class->SUPER::new($args);
 	$self->root_location("") unless $self->root_location;
-	$self->session->{_request} = Apache::SWIT::Test::Request->new({
-		uri => $self->root_location . "/" }) if $self->session;
+	$self->_setup_session(Apache::SWIT::Test::Request->new({
+		uri => $self->root_location . "/" }));
 	return $self;
 }
 
@@ -95,10 +95,13 @@ sub _setup_session {
 
 sub _direct_render {
 	my ($self, $handler_class, %args) = @_;
-	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
+	my $uri = $self->_find_url_to_go(%args);
+	my $r = ($self->redirect_request && !$uri) ? $self->redirect_request
+			: Apache::SWIT::Test::Request->new;
+	$self->redirect_request(undef);
 	$r->set_params($args{param}) if $args{param};
 	$self->_setup_session($r);
-	$r->uri($self->_find_url_to_go(%args) || $self->root_location . "/");
+	$r->uri($uri || $self->root_location . "/");
 	my $res = $handler_class->swit_render($r);
 	$r->run_cleanups;
 	return $res;
@@ -113,7 +116,7 @@ sub _do_swit_update {
 			if (ref($res[0]) && $res[0]->[0] eq 'SUBREQUEST');
 	my $uri = ref($res[0]) ? $res[0]->[1] : $res[0];
 	$new_r->parse_url($uri) if $uri;
-	$self->fake_request($new_r);
+	$self->redirect_request($new_r);
 	return @res;
 }
 
@@ -156,7 +159,7 @@ sub _mech_render {
 	my ($self, $handler_class, %args) = @_;
 	my $goto = $self->_find_url_to_go(%args) or goto OUT;
 	my $p = $args{param} or goto GET_IT;
-	my $r = $self->fake_request || Apache::SWIT::Test::Request->new;
+	my $r = Apache::SWIT::Test::Request->new;
 	$r->set_params($args{param}) if $args{param};
 	$goto .= "?" . join("&", map { "$_=" . $r->param($_) } $r->param);
 GET_IT:
@@ -230,8 +233,10 @@ sub _mech_ht_render {
 sub _direct_ht_update {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->_make_test_request(\%args);
-	HTML::Tested::Test->convert_tree_to_param(
-			$handler_class->ht_root_class, $r, $args{ht});
+	my $rc = $handler_class->ht_root_class;
+	HTML::Tested::Test->convert_tree_to_param($rc, $r, $args{ht});
+	HTML::Tested::Test->convert_tree_to_param($rc, $r, $args{param})
+		if $args{param};
 	return $self->_do_swit_update($handler_class, $r);
 }
 
@@ -242,6 +247,7 @@ sub _mech_ht_update {
 			$handler_class->ht_root_class, $r, $args{ht});
 	$args{fields} = $r->_param;
 	delete $args{ht};
+	delete $args{param};
 
 	if (my $form_number = $args{'form_number'}) {
 		$self->mech->form_number($form_number) or confess "No number";
@@ -319,6 +325,7 @@ Returns 1 on success, C<undef> on failure. -1 in direct test.
 sub ok_follow_link {
 	my ($self, %arg) = @_;
 	my $res = -1;
+	$self->redirect_request(undef);
 	$self->with_or_without_mech_do(1, sub {
 		$res = isnt($self->mech->follow_link(%arg), undef)
 			or carp('# Unable to follow: ' . Dumper(\%arg)
@@ -329,6 +336,7 @@ sub ok_follow_link {
 
 sub ok_get {
 	my ($self, $uri, $status) = @_;
+	$self->redirect_request(undef);
 	$status ||= 200;
 	$self->with_or_without_mech_do(1, sub {
 		$self->mech_get_base($uri);

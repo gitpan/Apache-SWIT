@@ -11,7 +11,7 @@ sub ht_root_class { return shift() . '::Root'; }
 sub ht_make_root_class {
 	my $rc = shift()->ht_root_class;
 	no strict 'refs';
-	@{ "$rc\::ISA" } = (shift() || 'HTML::Tested');
+	@{ "$rc\::ISA" } = (shift() || 'HTML::Tested') unless @{ "$rc\::ISA" };
 	return $rc;
 }
 
@@ -25,7 +25,7 @@ sub swit_render {
 	$class->swit_die("render failed: $@", $r, $tested) if $@;
 	my $opq = $r->pnotes('PrevRequestOpaque');
 	$tested->ht_merge_params(%$opq) if $opq;
-	$root->ht_render($stash);
+	$root->ht_render($stash, $r);
 	return $stash;
 }
 

@@ -13,7 +13,8 @@ package [% class_v %]::Root;
 use base 'HTML::Tested::ClassDBI';
 use [% db_class_v %];
 
-__PACKAGE__->ht_add_widget(::HTV."::Hidden", 'ht_id', cdbi_bind => 'Primary');
+__PACKAGE__->ht_add_widget(::HTV."::Hidden", '[% table_v %]_id'
+		, cdbi_bind => 'Primary');
 __PACKAGE__->ht_add_widget(::HTV."::Submit", 'submit_button'
 			, default_value => 'Submit');
 __PACKAGE__->ht_add_widget(::HTV."::Submit", 'delete_button'
@@ -36,10 +37,12 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
-	$root->delete_button
-		? $root->cdbi_delete
-		: $root->cdbi_create_or_update;
-	return "r";
+	if ($root->delete_button) {
+		$root->cdbi_delete;
+		return $root->ht_make_query_string("../list/r");
+	}
+	$root->cdbi_create_or_update;
+	return $root->ht_make_query_string("../info/r", "[% table_v %]_id");
 }
 
 1;

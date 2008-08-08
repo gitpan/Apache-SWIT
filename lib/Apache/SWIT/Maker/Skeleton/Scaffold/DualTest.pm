@@ -46,7 +46,7 @@ sub template_prefix { return <<'ENDS'; }
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 BEGIN { use_ok('T::Test'); };
 ENDS
@@ -57,7 +57,7 @@ my $t = T::Test->new;
 $t->reset_db;
 $t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [% list_name_v %] => [] });
 
-$t->ok_follow_link(text => 'Add entries');
+$t->ok_follow_link(text => 'Add [% table_class_v %]');
 
 $t->ok_ht_[% form_test_v %]_r(ht => {
 	[% empty_cols_v %]
@@ -65,39 +65,49 @@ $t->ok_ht_[% form_test_v %]_r(ht => {
 $t->ht_[% form_test_v %]_u(ht => {
 	[% cols_99_v %]
 });
-$t->ok_follow_link(text => 'List all entries');
+$t->ok_ht_[% info_test_v %]_r(param => { HT_SEALED_[% table_v %]_id => 1 }
+		, ht => {
+	[% cols_99_v %], HT_SEALED_[% table_v %]_id => 1,
+});
+
+$t->ok_follow_link(text => 'Edit [% table_class_v %]');
+$t->ok_follow_link(text => 'List [% table_class_v %]');
 
 $t->ok_ht_[% list_test_v %]_r(ht => { [% list_name_v %] => [ {
 	[% cols_99_list_v %] HT_SEALED_[% col1_v %] => [ '99', 1 ],
 } ] });
 $t->ok_follow_link(text => '99');
-$t->ok_ht_[% info_test_v %]_r(param => { HT_SEALED_edit_link => 1 }, ht => {
-	[% cols_99_v %], HT_SEALED_edit_link => [ 1 ],
+$t->ok_ht_[% info_test_v %]_r(param => { HT_SEALED_[% table_v %]_id => 1 }
+		, ht => {
+	[% cols_99_v %], HT_SEALED_[% table_v %]_id => 1,
 });
 
-$t->ok_follow_link(text => 'Edit');
-$t->ok_ht_[% form_test_v %]_r(param => { HT_SEALED_ht_id => 1 }, ht => {
+$t->ok_follow_link(text => 'Edit [% table_class_v %]');
+$t->ok_ht_[% form_test_v %]_r(param => { HT_SEALED_[% table_v %]_id => 1 }
+		, ht => {
 	[% cols_99_v %]
 });
 
 $t->ht_[% form_test_v %]_u(ht => {
-	[% cols_333_v %], HT_SEALED_ht_id => 1,
+	[% cols_333_v %], HT_SEALED_[% table_v %]_id => 1,
 });
-$t->ok_follow_link(text => 'List all entries');
+$t->ok_follow_link(text => 'List [% table_class_v %]');
 $t->ok_ht_[% list_test_v %]_r(ht => { [% list_name_v %] => [ {
 	[% cols_333_list_v %] HT_SEALED_[% col1_v %] => [ '333', 1 ],
 } ] });
 
 $t->ok_follow_link(text => '333');
-$t->ok_follow_link(text => 'Edit');
-$t->ok_ht_[% form_test_v %]_r(param => { HT_SEALED_ht_id => 1 }, ht => {
-	[% cols_333_v %], HT_SEALED_ht_id => 1, delete_button => 'Delete',
+$t->ok_follow_link(text => 'Edit [% table_class_v %]');
+$t->ok_ht_[% form_test_v %]_r(param => { HT_SEALED_[% table_v %]_id => 1 }
+		, ht => {
+	[% cols_333_v %], HT_SEALED_[% table_v %]_id => 1
+		, delete_button => 'Delete',
 });
 $t->ht_[% form_test_v %]_u(button => [ delete_button => 'Delete' ], ht => {
-	[% cols_333_v %], HT_SEALED_ht_id => 1,
+	[% cols_333_v %], HT_SEALED_[% table_v %]_id => 1,
 });
-
-$t->ok_ht_[% list_test_v %]_r(make_url => 1, ht => { [%list_name_v%] => [] });
+$t->ok_ht_[% list_test_v %]_r(ht => { [% list_name_v %] => [] });
+$t->ok_follow_link(text => 'Add [% table_class_v %]');
 ENDS
 
 1;

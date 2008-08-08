@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 15;
+use Test::More tests => 25;
 use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('T::Test');
@@ -43,9 +43,29 @@ $t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
 
 $ENV{SWIT_HAS_APACHE} = 0;
 $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
+is($t->redirect_request, undef);
+
 $t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
+isnt($t->redirect_request, undef);
+is($t->redirect_request->param("error"), "validie");
+
 $t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
 		, password => "" });
+is($t->redirect_request, undef);
 
 $t->ht_ht_error_u(ht => { name => "FORBID", password => "hru" });
-ok 1;
+isnt($t->redirect_request, undef);
+
+$t->ok_follow_link(text => 'doesnt matter');
+is($t->redirect_request, undef);
+
+$t->ht_ht_error_u(ht => { name => "FORBID", password => "hru" });
+isnt($t->redirect_request, undef);
+
+$t->ok_get('www/hello.html', 200);
+is($t->redirect_request, undef);
+
+$t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
+$t->ok_ht_ht_error_r(make_url => 1, ht => { name => "buh", error => ""
+		, password => "" });
+

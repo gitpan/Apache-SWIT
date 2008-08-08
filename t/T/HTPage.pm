@@ -13,6 +13,7 @@ sub ht_swit_render {
 	my ($class, $r, $root) = @_;
 	$root->hello('world');
 	$root->hid($root->hid || 'secret');
+	$root->hostport($class->swit_hostport($r));
 	return $root;
 }
 
@@ -32,6 +33,7 @@ sub swit_startup {
 	$hclass->ht_add_widget(HTV."::Upload", 'up');
 	$hclass->ht_add_widget(HTV."::Upload", 'inv_up');
 	$hclass->ht_add_widget(HTV."::EditBox", 'file');
+	$hclass->ht_add_widget(HTV."::Marked", 'hostport');
 	$hclass->ht_add_widget(HTV."::Hidden", 'hid', is_sealed => 1);
 }
 

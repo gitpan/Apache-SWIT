@@ -23,7 +23,7 @@ package [% class_v %]::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use [% root_class_v %]::DB::[% table_class_v %];
 __PACKAGE__->ht_add_widget(::HTV."::Link", '[% col1_v %]'
-		, href_format => '../info/r?edit_link=%s'
+		, href_format => '../info/r?[% table_v %]_id=%s'
 		, cdbi_bind => [ [% col1_v %] => 'Primary' ]
 		, column_title => '[% link_title_v %]'
 		, 0 => { isnt_sealed => 1 });

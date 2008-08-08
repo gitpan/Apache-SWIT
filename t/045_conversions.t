@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 36;
+use Test::More tests => 40;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Test::TempDatabase;
@@ -10,6 +10,20 @@ BEGIN { use_ok('Apache::SWIT::Maker::Conversions');
 	use_ok('Apache::SWIT::Maker::Manifest');
 	use_ok('Apache::SWIT::Test::Request');
 }
+
+# check that ht_make_root_class does inheritance only once
+package Foo;
+use base 'Apache::SWIT::HTPage';
+
+package main;
+my $rc1 = Foo->ht_make_root_class;
+isnt($rc1->can('ht_add_widget'), undef);
+
+my $rc2 = Foo->ht_make_root_class('Apache::SWIT::Test::Request');
+isnt($rc2->can('ht_add_widget'), undef);
+
+is($rc1, $rc2);
+is($rc2->can('get_server_port'), undef);
 
 is(Apache::SWIT::Test::Request->get_server_port, 80);
 is(Apache::SWIT::Test::Request->get_server_name, 'some.host');

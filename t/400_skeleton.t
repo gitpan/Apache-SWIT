@@ -5,7 +5,7 @@ use Test::More tests => 58;
 use Data::Dumper;
 use File::Slurp;
 use File::Temp qw(tempdir);
-use Carp;
+use Apache::SWIT::Test::Utils;
 
 BEGIN {
 	use_ok('Apache::SWIT::Maker::Skeleton');
@@ -46,17 +46,17 @@ is($dut->root_class_v, 'Aaa::Bbb');
 my $gtv = $dut->get_template_vars;
 is_deeply($gtv, { map { ($_ => $dut->$_) } qw(
 	form_test_v info_test_v
-	empty_cols_v
+	empty_cols_v table_v table_class_v
 	cols_99_v cols_333_v
 	cols_99_list_v cols_333_list_v
 	col1_v list_name_v list_test_v
-) }) or diag(Dumper($gtv));
+) }) or diag(Dumper($gtv)) or exit 1;
 
-is($dut->get_output, <<'ENDS');
+is_with_diff($dut->get_output, <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 BEGIN { use_ok('T::Test'); };
 
@@ -64,7 +64,7 @@ my $t = T::Test->new;
 $t->reset_db;
 $t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
 
-$t->ok_follow_link(text => 'Add entries');
+$t->ok_follow_link(text => 'Add TheTab');
 
 $t->ok_ht_thetab_form_r(ht => {
 	col_a => '',
@@ -76,21 +76,31 @@ $t->ht_thetab_form_u(ht => {
 	col_b => '99',
 	col_c => '99'
 });
-$t->ok_follow_link(text => 'List all entries');
+$t->ok_ht_thetab_info_r(param => { HT_SEALED_the_tab_id => 1 }
+		, ht => {
+	col_a => '99',
+	col_b => '99',
+	col_c => '99', HT_SEALED_the_tab_id => 1,
+});
+
+$t->ok_follow_link(text => 'Edit TheTab');
+$t->ok_follow_link(text => 'List TheTab');
 
 $t->ok_ht_thetab_list_r(ht => { the_tab_list => [ {
 	col_b => '99',
 	col_c => '99', HT_SEALED_col_a => [ '99', 1 ],
 } ] });
 $t->ok_follow_link(text => '99');
-$t->ok_ht_thetab_info_r(param => { HT_SEALED_edit_link => 1 }, ht => {
+$t->ok_ht_thetab_info_r(param => { HT_SEALED_the_tab_id => 1 }
+		, ht => {
 	col_a => '99',
 	col_b => '99',
-	col_c => '99', HT_SEALED_edit_link => [ 1 ],
+	col_c => '99', HT_SEALED_the_tab_id => 1,
 });
 
-$t->ok_follow_link(text => 'Edit');
-$t->ok_ht_thetab_form_r(param => { HT_SEALED_ht_id => 1 }, ht => {
+$t->ok_follow_link(text => 'Edit TheTab');
+$t->ok_ht_thetab_form_r(param => { HT_SEALED_the_tab_id => 1 }
+		, ht => {
 	col_a => '99',
 	col_b => '99',
 	col_c => '99'
@@ -99,28 +109,30 @@ $t->ok_ht_thetab_form_r(param => { HT_SEALED_ht_id => 1 }, ht => {
 $t->ht_thetab_form_u(ht => {
 	col_a => '333',
 	col_b => '333',
-	col_c => '333', HT_SEALED_ht_id => 1,
+	col_c => '333', HT_SEALED_the_tab_id => 1,
 });
-$t->ok_follow_link(text => 'List all entries');
+$t->ok_follow_link(text => 'List TheTab');
 $t->ok_ht_thetab_list_r(ht => { the_tab_list => [ {
 	col_b => '333',
 	col_c => '333', HT_SEALED_col_a => [ '333', 1 ],
 } ] });
 
 $t->ok_follow_link(text => '333');
-$t->ok_follow_link(text => 'Edit');
-$t->ok_ht_thetab_form_r(param => { HT_SEALED_ht_id => 1 }, ht => {
+$t->ok_follow_link(text => 'Edit TheTab');
+$t->ok_ht_thetab_form_r(param => { HT_SEALED_the_tab_id => 1 }
+		, ht => {
 	col_a => '333',
 	col_b => '333',
-	col_c => '333', HT_SEALED_ht_id => 1, delete_button => 'Delete',
+	col_c => '333', HT_SEALED_the_tab_id => 1
+		, delete_button => 'Delete',
 });
 $t->ht_thetab_form_u(button => [ delete_button => 'Delete' ], ht => {
 	col_a => '333',
 	col_b => '333',
-	col_c => '333', HT_SEALED_ht_id => 1,
+	col_c => '333', HT_SEALED_the_tab_id => 1,
 });
-
-$t->ok_ht_thetab_list_r(make_url => 1, ht => { the_tab_list => [] });
+$t->ok_ht_thetab_list_r(ht => { the_tab_list => [] });
+$t->ok_follow_link(text => 'Add TheTab');
 ENDS
 
 $dut->columns([ 'one' ]);
@@ -198,7 +210,7 @@ sub is_with_diff {
 		write_file("$td/a.file", $a);
 		write_file("$td/b.file", $b);
 		diag(`diff -u $td/a.file $td/b.file`);
-		diag(Carp::confess("DDDDDD"));
+		ASTU_Wait($td);
 	};
 }
 
@@ -212,7 +224,7 @@ package Aaa::Bbb::UI::P::Root::Item;
 use base 'HTML::Tested::ClassDBI';
 use Aaa::Bbb::DB::TheTab;
 __PACKAGE__->ht_add_widget(::HTV."::Link", 'col_a'
-		, href_format => '../info/r?edit_link=%s'
+		, href_format => '../info/r?the_tab_id=%s'
 		, cdbi_bind => [ col_a => 'Primary' ]
 		, column_title => 'ColA'
 		, 0 => { isnt_sealed => 1 });
@@ -256,14 +268,15 @@ my $args = { columns => [ qw(col_a col_b col_c) ], table => 'the_tab' };
 my $lt = Apache::SWIT::Maker::Skeleton::Scaffold::ListTemplate->new($args);
 $lt->config_entry($e);
 $lt->write_output;
-is(read_file('templates/p.tt'), <<'ENDS');
+$res = read_file('templates/p.tt');
+is_with_diff($res, <<'ENDS');
 <html>
 <body>
 [% form %]
 [% the_tab_list_table %]
 </form>
 <br />
-<a href="../form/r">Add entries</a>
+<a href="../form/r">Add TheTab</a>
 </body>
 </html>
 ENDS
@@ -292,9 +305,7 @@ __PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, col_b => cdbi_bind => '');
 __PACKAGE__->ht_add_widget(::HTV."::Marked"
 	, col_c => cdbi_bind => '');
-__PACKAGE__->ht_add_widget(::HTV."::Link", 'edit_link'
-		, href_format => '../form/r?ht_id=%s'
-		, caption => 'Edit', cdbi_bind => [ 'Primary' ]);
+__PACKAGE__->ht_add_widget(::HTV, the_tab_id => cdbi_bind => 'Primary');
 __PACKAGE__->bind_to_class_dbi('Aaa::Bbb::DB::TheTab');
 
 package Aaa::Bbb::UI::Info;
@@ -315,7 +326,8 @@ sub ht_swit_update {
 1;
 ENDS
 
-is(read_file('templates/info.tt'), <<ENDS);
+$res = read_file('templates/info.tt');
+is_with_diff($res, <<ENDS);
 <html>
 <body>
 [% form %]
@@ -323,7 +335,9 @@ ColA: [% col_a %] <br />
 ColB: [% col_b %] <br />
 ColC: [% col_c %] <br />
 </form>
-[% edit_link %]
+<a href="../form/r?the_tab_id=[% the_tab_id %]">
+Edit TheTab</a>
+<a href="../list/r">List TheTab</a>
 </body>
 </html>
 ENDS
@@ -341,7 +355,8 @@ package Aaa::Bbb::UI::Form::Root;
 use base 'HTML::Tested::ClassDBI';
 use Aaa::Bbb::DB::TheTab;
 
-__PACKAGE__->ht_add_widget(::HTV."::Hidden", 'ht_id', cdbi_bind => 'Primary');
+__PACKAGE__->ht_add_widget(::HTV."::Hidden", 'the_tab_id'
+		, cdbi_bind => 'Primary');
 __PACKAGE__->ht_add_widget(::HTV."::Submit", 'submit_button'
 			, default_value => 'Submit');
 __PACKAGE__->ht_add_widget(::HTV."::Submit", 'delete_button'
@@ -368,17 +383,20 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
-	$root->delete_button
-		? $root->cdbi_delete
-		: $root->cdbi_create_or_update;
-	return "r";
+	if ($root->delete_button) {
+		$root->cdbi_delete;
+		return $root->ht_make_query_string("../list/r");
+	}
+	$root->cdbi_create_or_update;
+	return $root->ht_make_query_string("../info/r", "the_tab_id");
 }
 
 1;
 ENDS
 
 ok(-f 'templates/form.tt');
-is(read_file('templates/form.tt'), <<'ENDS');
+$res = read_file('templates/form.tt');
+is_with_diff($res, <<'ENDS');
 <html>
 <body>
 <h2>Add/Remove/Edit TheTab</h2>
@@ -386,11 +404,11 @@ is(read_file('templates/form.tt'), <<'ENDS');
 ColA: [% col_a %] <br />
 ColB: [% col_b %] <br />
 ColC: [% col_c %] <br />
-[% ht_id %]
+[% the_tab_id %]
 [% submit_button %]
 [% delete_button %]
 <br />
-<a href="../list/r">List all entries</a>
+<a href="../list/r">List TheTab</a>
 </form>
 </body>
 </html>
