@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 30;
+use Test::More tests => 31;
 use File::Temp qw(tempdir);
 use File::Slurp;
 use Apache::SWIT::Session;
@@ -24,8 +24,12 @@ $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => {
 		hello => 'world', HT_SEALED_hid => 'secret', v1 => undef, });
 my $res = $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { v1 => 'hi', },
-	ht => { hello => 'world', v1 => 'hi', hostport => 'some.host' });
+	ht => { hello => 'world', v1 => 'hi', hostport => 'some.host'
+		, req_uri => '/test/ht_page' });
 is($res, 1);
+
+$t->ok_ht_another_page_r(ht => { req_uri => '/another_page/r',
+		hello => 'world', HT_SEALED_hid => 'secret', v1 => undef, });
 
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { HT_SEALED_hid => 'momo', },

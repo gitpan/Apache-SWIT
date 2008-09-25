@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 25;
+use Test::More tests => 26;
 use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('T::Test');
@@ -11,6 +11,7 @@ BEGIN { use_ok('T::Test');
 
 T::Test->make_aliases(redirect => 'T::Redirect');
 
+$SIG{__DIE__} = sub { diag(Carp::longmess(@_)); };
 my $t = T::Test->new;
 $t->root_location('/test');
 $t->redirect_r(make_url => 1);
@@ -48,6 +49,7 @@ is($t->redirect_request, undef);
 $t->ht_ht_error_u(ht => { name => "bad", password => "hru" });
 isnt($t->redirect_request, undef);
 is($t->redirect_request->param("error"), "validie");
+is($t->redirect_request->param("error_uri"), "/test/ht_error/u");
 
 $t->ok_ht_ht_error_r(ht => { name => "bad", error => "validie"
 		, password => "" });

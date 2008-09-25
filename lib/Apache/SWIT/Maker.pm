@@ -420,7 +420,8 @@ sub freeze_schema {
 	push @INC, "t", "lib";
 	conv_eval_use('T::TempDB');
 	system("pg_dump -O -c $ENV{APACHE_SWIT_DB_NAME} > conf/frozen.sql");
-	append_file('MANIFEST', "\nconf/frozen.sql\n");
+	append_file('MANIFEST', "\nconf/frozen.sql\n")
+		unless read_file('MANIFEST') =~ /conf\/frozen\.sql/;
 }
 
 sub add_migration {

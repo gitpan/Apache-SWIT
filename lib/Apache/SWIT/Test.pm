@@ -63,7 +63,7 @@ sub new {
 	my $self = $class->SUPER::new($args);
 	$self->root_location("") unless $self->root_location;
 	$self->_setup_session(Apache::SWIT::Test::Request->new({
-		uri => $self->root_location . "/" }));
+		uri => $self->root_location . "/" }), url_to_make => "");
 	return $self;
 }
 
@@ -88,9 +88,10 @@ sub new_guitest {
 }
 
 sub _setup_session {
-	my ($self, $r) = @_;
+	my ($self, $r, %a) = @_;
 	$r->pnotes('SWITSession', $self->session);
 	$self->session->{_request} = $r;
+	$r->uri($a{base_url} || $self->root_location . "/" . $a{url_to_make});
 }
 
 sub _direct_render {
@@ -100,16 +101,15 @@ sub _direct_render {
 			: Apache::SWIT::Test::Request->new;
 	$self->redirect_request(undef);
 	$r->set_params($args{param}) if $args{param};
-	$self->_setup_session($r);
-	$r->uri($uri || $self->root_location . "/");
+	$self->_setup_session($r, %args);
 	my $res = $handler_class->swit_render($r);
 	$r->run_cleanups;
 	return $res;
 }
 
 sub _do_swit_update {
-	my ($self, $handler_class, $r) = @_;
-	$self->_setup_session($r);
+	my ($self, $handler_class, $r, %args) = @_;
+	$self->_setup_session($r, %args);
 	my @res = $handler_class->swit_update($r);
 	my $new_r = Apache::SWIT::Test::Request->new;
 	$new_r->pnotes("PrevRequestOpaque", $res[0]->[2])
@@ -132,7 +132,7 @@ sub _make_test_request {
 sub _direct_update {
 	my ($self, $handler_class, %args) = @_;
 	my $r = $self->_make_test_request(\%args);
-	my @res = $self->_do_swit_update($handler_class, $r);
+	my @res = $self->_do_swit_update($handler_class, $r, %args);
 	$r->run_cleanups;
 	return @res;
 }
@@ -175,8 +175,8 @@ sub _filter_out_readonly {
 	return if ref($self->mech) eq 'Mozilla::Mechanize::GUITester';
 	my $form = $self->mech->current_form or confess "No form found in\n"
 			. $self->mech->content;
-	delete $args->{fields}->{$_} for map { $_->name } grep { $_->readonly }
-		$form->inputs;
+	delete $args->{fields}->{$_} for grep { $_ } map { $_->name }
+		grep { $_->readonly } $form->inputs;
 	
 	return if delete $args->{no_submit_check};
 	my @sub = grep { $_->type eq 'submit' } $form->inputs;
@@ -237,7 +237,7 @@ sub _direct_ht_update {
 	HTML::Tested::Test->convert_tree_to_param($rc, $r, $args{ht});
 	HTML::Tested::Test->convert_tree_to_param($rc, $r, $args{param})
 		if $args{param};
-	return $self->_do_swit_update($handler_class, $r);
+	return $self->_do_swit_update($handler_class, $r, %args);
 }
 
 sub _mech_ht_update {
@@ -368,9 +368,9 @@ SKIP: {
 sub reset_db {
 	my $self = shift;
 	my $md = ASTU_Module_Dir();
-	return if unlink("$md/t/logs/db_is_clean");
-
 	my $db = $ENV{APACHE_SWIT_DB_NAME} or confess "# No db is given";
+	return if unlink("/tmp/db_is_clean.$db.$<");
+
 	conv_silent_system("psql -d $db < $md/t/conf/schema.sql");
 	Apache::SWIT::DB::Connection->instance->db_handle->{CachedKids} = {};
 

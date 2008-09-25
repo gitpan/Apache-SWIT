@@ -29,7 +29,7 @@ sub ht_swit_render {
 sub ht_swit_validate_die {
 	my ($class, $r, $root, $args, $errs) = @_;
 	delete $args->{password};
-	return "r?error=validie";
+	return "r?error=validie&error_uri=" . $r->uri;
 }
 
 sub ht_swit_validate {

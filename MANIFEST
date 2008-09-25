@@ -4,10 +4,13 @@ README
 scripts/swit_init
 lib/Apache/SWIT.pm
 t/T/WorkPage.pm
+t/T/Safe.pm
 lib/Apache/SWIT/Maker.pm
 lib/Apache/SWIT/Test/Request.pm
 lib/Apache/SWIT/LargeObjectHandler.pm
+t/apache/110_safe.t
 t/T/HTInherit.pm
+t/templates/safe.tt
 lib/Apache/SWIT/Maker/Config.pm
 lib/Apache/SWIT/Maker/Skeleton.pm
 lib/Apache/SWIT/Maker/Skeleton/Scaffold.pm

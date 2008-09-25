@@ -12,6 +12,7 @@ use HTML::Tested qw(HTV);
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
 	$root->hello('world');
+	$root->req_uri($r->uri);
 	$root->hid($root->hid || 'secret');
 	$root->hostport($class->swit_hostport($r));
 	return $root;
@@ -29,6 +30,7 @@ sub ht_swit_update {
 sub swit_startup {
 	my $hclass = shift()->ht_root_class;
 	$hclass->ht_add_widget(HTV, 'hello');
+	$hclass->ht_add_widget(HTV, 'req_uri');
 	$hclass->ht_add_widget(HTV, 'v1');
 	$hclass->ht_add_widget(HTV."::Upload", 'up');
 	$hclass->ht_add_widget(HTV."::Upload", 'inv_up');

@@ -11,6 +11,8 @@ upload: [% up %]
 host: [% hostport %]
 [% inhe_val%]
 <input type="submit" />
+<!-- Test.pm should handle readonly fields with no name -->
+<input type="hidden" />
 </form>
 <form name="aa" method="post">
 [% inv_up %]

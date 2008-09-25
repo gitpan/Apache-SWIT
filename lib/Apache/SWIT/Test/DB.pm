@@ -5,7 +5,7 @@ package Apache::SWIT::Test::DB;
 use Test::TempDatabase;
 use Apache::SWIT::DB::Connection;
 use Apache::SWIT::Maker::Conversions;
-use Apache::SWIT::Maker::Manifest;
+use File::Slurp;
 
 our $Test_DB;
 
@@ -38,7 +38,7 @@ LOAD:
 		if ($ENV{APACHE_SWIT_LOAD_DB});
 	$sc->new($Test_DB->handle)->run_updates;
 	Apache::SWIT::DB::Connection->instance($Test_DB->handle);
-	mkpath_write_file('t/logs/db_is_clean', "\n");
+	write_file("/tmp/db_is_clean.$ENV{APACHE_SWIT_DB_NAME}.$<", "\n");
 }
 
 END { $Test_DB->destroy; }

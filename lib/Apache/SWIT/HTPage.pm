@@ -80,3 +80,34 @@ sub swit_update {
 }
 
 1;
+
+package Apache::SWIT::HTPage::Safe;
+use base 'Apache::SWIT::HTPage';
+
+sub swit_render {
+	my ($class, $r) = @_;
+	my $stash = $class->SUPER::swit_render($r);
+	my $es = $r->param('swit_errors');
+	$stash->{swit_errors} = { map { split(':') } split(',', $es) } if $es;
+	return $stash;
+}
+
+sub _encode_errors {
+	my ($class, $errs) = @_;
+	return "r?swit_errors=" . join(",", map {
+			$_->[0] . ":" . $_->[1] } @$errs);
+}
+
+sub ht_swit_validate_die {
+	my ($class, $r, $root, $args, $errs) = @_;
+	return $class->_encode_errors($errs);
+}
+
+sub ht_swit_update_die {
+	my ($class, $msg, $r, $root, $args) = @_;
+	my $t = $root->CDBI_Class->table;
+	$msg =~ /unique constraint "$t\_(\w+)_key"/;
+	shift()->SUPER::ht_swit_update_die(@_) unless $1;
+	return $class->_encode_errors([ [ $1, 'unique' ] ]);
+}
+

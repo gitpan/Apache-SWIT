@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 64;
+use Test::More tests => 66;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -40,6 +40,7 @@ $t->with_or_without_mech_do(1, sub {
 });
 ENDM
 
+ok(unlink("/tmp/db_is_clean.ttt_test_db.$<"));
 my @tmp_contents = glob('/tmp/*');
 `perl Makefile.PL`;
 my $tres = join('', `make test 2>&1`);
@@ -52,6 +53,7 @@ unlike($tres, qr/Please use/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
 ok(-f 'blib/conf/httpd.conf');
+ok(unlink("/tmp/db_is_clean.ttt_test_db.$<"));
 is_deeply([ glob("/tmp/*") ], \@tmp_contents);
 
 is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);

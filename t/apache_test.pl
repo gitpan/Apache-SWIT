@@ -35,6 +35,10 @@ Apache::SWIT::Test::Apache->swit_run(sub {
 	$dbh->do("create table dbp (id serial primary key, val text not null)");
 	$dbh->do("create table upt (id serial primary key
 			, loid oid unique not null)");
+	$dbh->do(<<ENDS);
+	create table safet (id serial primary key, name text unique not null
+		, email text unique not null);
+ENDS
 });
 unlink("/tmp/swit_startup_test");
 END { $test_db->destroy if $test_db; }

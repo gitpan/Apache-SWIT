@@ -28,6 +28,7 @@ sub swit_update {
 		return [ Apache2::Const::OK, undef, 'text/plain' ];
 	} else {
 		write_file($f, $r->param('but') || '');
+		write_file("$f.uri", $r->uri);
 	}
 	return '/test/res/r?res=hhhh';
 }

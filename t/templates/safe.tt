@@ -1,0 +1,21 @@
+<html>
+<body>
+<form method="post" action="u" enctype="multipart/form-data">
+[% name %]
+[% SWITCH swit_errors.name %]
+[% CASE 'defined' %]
+Name cannot be empty
+[% CASE 'unique' %]
+This name exists already
+[% END %]
+[% email %]
+[% SWITCH swit_errors.email %]
+[% CASE 'defined' %]
+Email cannot be empty
+[% CASE 'regexp' %]
+Email is invalid
+[% END %]
+<input type="submit" />
+</form>
+</body>
+<html>

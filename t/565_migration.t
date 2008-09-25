@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 29;
+use Test::More tests => 32;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -100,6 +100,11 @@ like(read_file('MANIFEST'), qr/frozen/);
 my $fro = read_file('conf/frozen.sql');
 like($fro, qr/the_table/);
 unlike($fro, qr/OWNER TO/);
+
+$res = `./scripts/swit_app.pl freeze_schema 2>&1`;
+is($?, 0) or ASTU_Wait($res);
+like(read_file('MANIFEST'), qr/frozen/);
+unlike(read_file('MANIFEST'), qr/frozen.*frozen/ms);
 
 ok(unlink('t/conf/schema.sql'));
 my $sch = read_file('lib/TTT/DB/Schema.pm');

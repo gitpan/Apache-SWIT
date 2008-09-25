@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 49;
+use Test::More tests => 50;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -44,6 +44,7 @@ is_deeply(\@res, [ { hello => 'world' } ]);
 
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
 is(read_file("$td/uuu"), '');
+is(read_file("$td/uuu.uri"), '/the_page/u');
 is(unlink("$td/uuu"), 1);
 is_deeply(\@res, [ '/test/res/r?res=hhhh' ]);
 
