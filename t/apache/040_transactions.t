@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Apache::SWIT::Session;
 
 BEGIN { use_ok('T::Test');
@@ -28,3 +28,5 @@ is_deeply($dbh->selectall_arrayref("select * from trans"), []);
 # check that swit_die works on commit
 eval { $t->ht_trans_fail_u(ht => { fail_on_commit => 1 }); };
 like($@, qr/fail_on_commit/); 
+
+ok($t->ht_trans_fail_u(ht => { rollback => 1 }));

@@ -5,7 +5,6 @@ use Test::More tests => 7;
 use Apache::SWIT::Session;
 
 BEGIN { use_ok('T::Test');
-	;
 	use_ok('T::ValidateFailure');
 };
 

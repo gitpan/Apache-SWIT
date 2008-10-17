@@ -19,12 +19,18 @@ sub swit_render {
 	my ($class, $r) = @_;
 	my $stash = {};
 	my %pars = %{ $r->param || {} };
+
+	my $supr = $r->prev->pnotes('PrevRequestSuppress') if $r->prev;
+	if ($supr) {
+		delete $pars{$_} for @$supr;
+	}
+
 	my $tested = $class->ht_root_class->ht_load_from_params(%pars);
 	my $root;
 	eval { $root = $class->ht_swit_render($r, $tested); };
 	$class->swit_die("render failed: $@", $r, $tested) if $@;
-	my $opq = $r->pnotes('PrevRequestOpaque');
-	$tested->ht_merge_params(%$opq) if $opq;
+
+	$root->ht_merge_params(%pars) if $supr;
 	$root->ht_render($stash, $r);
 	return $stash;
 }
@@ -32,6 +38,11 @@ sub swit_render {
 sub ht_swit_update_die {
 	my ($class, $err, $r, $tested, $args) = @_;
 	$class->swit_die("Update exception: $err", $r, $tested);
+}
+
+sub ht_swit_die {
+	my ($class, $func, @args) = @_;
+	return $class->swit_failure($class->$func(@args));
 }
 
 sub ht_swit_transactional_update {
@@ -51,19 +62,12 @@ ROLLBACK:
 	eval { $dbh->rollback };
 	$err .= "\nRollback exception: $@" if $@;
 EXCEPTION:
-	$res = $class->ht_swit_update_die($err, $r, $tested, $args);
-	return [ 'SUBREQUEST', $res, $args ];
+	return $class->ht_swit_die('ht_swit_update_die', $err, $r, $tested);
 }
 
 sub ht_swit_validate_die {
-	my ($class, $r, $root, $args, $errs) = @_;
+	my ($class, $errs, $r, $root) = @_;
 	$class->swit_die("ht_validate failed", $r, $root, $errs);
-}
-
-sub ht_swit_validate {
-	my ($class, $r, $root, $args) = @_;
-	my @errs = $root->ht_validate or return;
-	return $class->ht_swit_validate_die($r, $root, $args, \@errs);
 }
 
 sub swit_update {
@@ -74,8 +78,9 @@ sub swit_update {
 	}
 		
 	my $tested = $class->ht_root_class->ht_load_from_params(%args);
-	my $res = $class->ht_swit_validate($r, $tested, \%args);
-	return [ 'SUBREQUEST', $res, \%args ] if ($res);
+	my @errs = $tested->ht_validate;
+	return $class->ht_swit_die('ht_swit_validate_die', \@errs, $r, $tested)
+			if @errs;
 	return $class->ht_swit_transactional_update($r, $tested, \%args);
 }
 
@@ -99,12 +104,12 @@ sub _encode_errors {
 }
 
 sub ht_swit_validate_die {
-	my ($class, $r, $root, $args, $errs) = @_;
+	my ($class, $errs, $r, $root) = @_;
 	return $class->_encode_errors($errs);
 }
 
 sub ht_swit_update_die {
-	my ($class, $msg, $r, $root, $args) = @_;
+	my ($class, $msg, $r, $root) = @_;
 	my $t = $root->CDBI_Class->table;
 	$msg =~ /unique constraint "$t\_(\w+)_key"/;
 	shift()->SUPER::ht_swit_update_die(@_) unless $1;

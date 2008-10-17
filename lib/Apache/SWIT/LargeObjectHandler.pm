@@ -12,7 +12,7 @@ sub swit_render_handler($$) {
 	my $enc_loid = $r->param("loid") or confess "No loid was given";
 	my $ct = $r->param("ct");
 	my $loid = HTML::Tested::Seal->instance->decrypt($enc_loid)
-			or confess "Unable to decrypt loid";
+			or confess "Unable to decrypt loid: $enc_loid";
 	my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
 	$dbh->begin_work;
 	my $lo_fd = $dbh->func($loid, $dbh->{'pg_INV_READ'}, 'lo_open');

@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.38;
+our $VERSION = 0.39;
 
 sub swit_startup {}
 
@@ -81,13 +81,12 @@ sub _raw_respond {
 	my ($class, $r, $to) = @_;
 	my $s = ref($to) ? $to->[0] : Apache2::Const::REDIRECT();
 	if ($s eq 'INTERNAL') {
+		if ($to->[2]) {
+			my @a = map { $r->upload($_)->name } $r->upload;
+			$r->pnotes("PrevRequestSuppress", [ @a, @{$to->[2]} ]);
+		}
 		$r->internal_redirect($r->uri . "/../" . $to->[1]);
 		return Apache2::Const::OK();
-	} elsif ($s eq 'SUBREQUEST') {
-		my $new_r = $r->lookup_uri($r->uri . "/../" . $to->[1]);
-		$new_r->pnotes("PrevRequestOpaque", $to->[2]);
-		$class->swit_send_http_header($r);
-		return $new_r->run;
 	}
 	$r->headers_out->add(Location => $to) unless ref($to);
 	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
@@ -163,6 +162,11 @@ sub swit_hostport {
 	my $res = $r->get_server_name;
 	$res .= ":" . $r->get_server_port if $r->get_server_port != 80;
 	return $res;
+}
+
+sub swit_failure {
+	my ($class, @res) = @_;
+	return [ 'INTERNAL', shift @res, \@res ];
 }
 
 1;

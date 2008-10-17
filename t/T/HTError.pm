@@ -4,7 +4,8 @@ use warnings FATAL => 'all';
 package T::HTError::Root;
 
 sub ht_validate {
- 	return shift()->name eq 'bad' ? ('bad') : ();
+	my $n = shift()->name;
+ 	return  $n eq 'bad' || $n eq 'foo' ? ('bad') : ();
 }
 
 package T::HTError;
@@ -27,30 +28,23 @@ sub ht_swit_render {
 }
 
 sub ht_swit_validate_die {
-	my ($class, $r, $root, $args, $errs) = @_;
-	delete $args->{password};
-	return "r?error=validie&error_uri=" . $r->uri;
-}
-
-sub ht_swit_validate {
-	my ($class, $r, $root, $args) = @_;
-	if ($root->name eq 'foo') {
-		delete $args->{password};
-		return "r?error=validate";
-	}
-	return $class->SUPER::ht_swit_validate($r, $root, $args);
+	my ($class, $errs, $r, $root) = @_;
+	my $res = $root->name eq 'foo' ? "r?error=validate"
+			: "r?error=validie&error_uri=" . $r->uri;
+	return ($res, 'password');
 }
 
 sub ht_swit_update_die {
-	my ($class, $msg, $r, $root, $args) = @_;
+	my ($class, $msg, $r, $root) = @_;
 	return $class->SUPER::swit_die(@_) unless $msg =~ /Hoho/;
-	delete $args->{password};
-	return "r?error=updateho";
+	return ("r?error=updateho", "password");
 }
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
 	return [ Apache2::Const::FORBIDDEN() ] if $root->name eq 'FORBID';
+	return $class->swit_failure('r?error=failure', 'password')
+		if $root->name eq 'fail';
 	die "Hoho";
 	return "r";
 }

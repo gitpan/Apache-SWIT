@@ -5,6 +5,7 @@ package Apache::SWIT::Test::Request;
 use base 'HTML::Tested::Test::Request';
 
 sub pool { return shift; }
+sub prev { return shift; }
 
 sub cleanup_register {
 	my ($self, $func) = @_;

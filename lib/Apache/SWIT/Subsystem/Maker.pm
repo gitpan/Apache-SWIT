@@ -19,6 +19,10 @@ use Apache::SWIT::Test::ModuleTester;
 use Apache::SWIT::Test::Utils;
 use File::Slurp;
 
+# this is needed for root install of subsystem modules
+use Test::TempDatabase;
+Test::TempDatabase->become_postgres_user;
+
 my \$mt = Apache::SWIT::Test::ModuleTester->new({ root_class => '$rc' });
 \$mt->run_make_install;
 

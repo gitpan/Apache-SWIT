@@ -27,6 +27,7 @@ __PACKAGE__->ht_add_widget('T::Upload::Image', mime_upload =>
 __PACKAGE__->ht_add_widget(::HTV, loid => is_sealed => 1 => cdbi_bind => ''
 				, cdbi_readonly => 1, skip_undef => 1);
 __PACKAGE__->ht_add_widget(::HTV."::Form", form => default_value => 'u');
+__PACKAGE__->ht_add_widget(::HTV."::EditBox", "val");
 __PACKAGE__->bind_to_class_dbi("T::Upload::DB");
 
 sub ht_validate { return (); }
@@ -42,6 +43,8 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
+	return $class->swit_failure('r') if $root->val;
+
 	$root->cdbi_create_or_update;
 	return $root->ht_make_query_string("r", "id");
 }

@@ -10,4 +10,9 @@ sub swit_render {
 	return "../swit/r";
 }
 
+sub swit_update {
+	my ($class, $r) = @_;
+	return "../ht_page/r";
+}
+
 1;

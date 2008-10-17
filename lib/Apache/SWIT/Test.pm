@@ -112,10 +112,16 @@ sub _do_swit_update {
 	$self->_setup_session($r, %args);
 	my @res = $handler_class->swit_update($r);
 	my $new_r = Apache::SWIT::Test::Request->new;
-	$new_r->pnotes("PrevRequestOpaque", $res[0]->[2])
-			if (ref($res[0]) && $res[0]->[0] eq 'SUBREQUEST');
+	$new_r->pnotes("PrevRequestSuppress", $res[0]->[2])
+			if (ref($res[0]) && $res[0]->[2]);
 	my $uri = ref($res[0]) ? $res[0]->[1] : $res[0];
 	$new_r->parse_url($uri) if $uri;
+
+	if (ref($res[0])) {
+		my $p = $r->param;
+		$new_r->param($_, $p->{$_}) for keys %$p;
+	}
+
 	$self->redirect_request($new_r);
 	return @res;
 }
