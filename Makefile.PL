@@ -29,7 +29,7 @@ realclean ::
     ABSTRACT     => 'mod_perl server with integrated testing',
     EXE_FILES    => [ 'scripts/swit_init' ],
     PREREQ_PM    => { 'Test::Simple' => 0.44, 'Apache::Test' => '',
-	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.44',
+	'WWW::Mechanize' => '', 'Template' => '', 'HTML::Tested' => '0.46',
 	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.21',
 	'Apache2::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache2::Cookie' => '', 'DBIx::VersionedSchema' => '0.03',

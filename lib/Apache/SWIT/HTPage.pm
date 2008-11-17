@@ -92,15 +92,16 @@ use base 'Apache::SWIT::HTPage';
 sub swit_render {
 	my ($class, $r) = @_;
 	my $stash = $class->SUPER::swit_render($r);
-	my $es = $r->param('swit_errors');
-	$stash->{swit_errors} = { map { split(':') } split(',', $es) } if $es;
+	my $es = $r->param('swit_errors') or goto OUT;
+	$class->ht_root_class->ht_error_render($stash, 'swit_errors', $es);
+OUT:
 	return $stash;
 }
 
 sub _encode_errors {
 	my ($class, $errs) = @_;
-	return "r?swit_errors=" . join(",", map {
-			$_->[0] . ":" . $_->[1] } @$errs);
+	my $es = $class->ht_root_class->ht_encode_errors(@$errs);
+	return "r?swit_errors=$es";
 }
 
 sub ht_swit_validate_die {

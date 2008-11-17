@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 21;
 use Apache::SWIT::Session;
 use Apache::SWIT::Test::Utils;
 
@@ -14,7 +14,8 @@ my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
 T::Test->root_location('/test');
 T::Test->make_aliases(safe => 'T::Safe');
 my $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
-$t->ok_ht_safe_r(make_url => 1, ht => { name => '', email => '' });
+$t->ok_ht_safe_r(make_url => 1, ht => { name => '', email => ''
+	, sl => [ { o => '1' }, { o => '2' } ] });
 like($t->mech->content, qr/html>\n$/) or exit 1;
 
 $t->ht_safe_u(ht => { name => 'foo', email => 'boo' });
@@ -44,3 +45,9 @@ $t->ht_safe_u(ht => { name => 'fooa', email => 'ema b' });
 $t->ok_ht_safe_r(ht => { name => 'fooa', email => 'ema b' });
 is_deeply($dbh->selectcol_arrayref("select count(*) from safet"), [ 1 ]);
 like($t->mech->content, qr/Email is invalid/) or ASTU_Wait;
+
+$t->ht_safe_u(ht => { name => 'hee', email => 'e@example.com', sl => [ {
+	o => 10 }, { o => 'a' } ] });
+$t->ok_ht_safe_r(ht => { name => 'hee', email => 'e@example.com', sl => [ {
+	o => 10 }, { o => 'a' } ] });
+like($t->mech->content, qr/o integer/);

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 23;
+use Test::More tests => 25;
 use YAML;
 use Data::Dumper;
 use File::Slurp;
@@ -42,6 +42,9 @@ is($ind->{entry_points}->{r}->{foo}, 'boo');
 $res = join('', `perl Makefile.PL && make 2>&1`);
 is($?, 0) or diag($res);
 unlike($res, qr/950/);
+isnt(-f 'blib/lib/TTT/InstallationContent.pm', undef);
+
+my $icmt = (stat 'blib/lib/TTT/InstallationContent.pm')[9];
 
 $tree = YAML::LoadFile('conf/swit.yaml');
 push @{ $tree->{skip_install} }, qw(lib/G.pm);
@@ -53,7 +56,10 @@ my $hc = read_file('blib/conf/httpd.conf');
 like($hc, qr#Location /ttt/bb#);
 like($hc, qr#BB->some_handler#);
 
+sleep 1;
 $res = $mt->run_make_install;
+is((stat 'blib/lib/TTT/InstallationContent.pm')[9], $icmt);
+
 my $inst_path = $mt->install_dir . "/TTT";
 ok(-f "$inst_path/Maker.pm");
 is(-f $mt->install_dir . "/G.pm", undef);

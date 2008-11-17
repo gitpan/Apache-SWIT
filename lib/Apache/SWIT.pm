@@ -47,7 +47,7 @@ use Template;
 use Carp;
 use Data::Dumper;
 
-our $VERSION = 0.39;
+our $VERSION = 0.40;
 
 sub swit_startup {}
 

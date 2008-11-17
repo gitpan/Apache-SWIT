@@ -15,6 +15,15 @@ Email cannot be empty
 [% CASE 'regexp' %]
 Email is invalid
 [% END %]
+
+<hr />
+[% FOREACH l IN sl %]
+[% l.o %]
+[% IF l.swit_errors.o %]
+o integer
+[% END %]
+[% END %]
+
 <input type="submit" />
 </form>
 </body>

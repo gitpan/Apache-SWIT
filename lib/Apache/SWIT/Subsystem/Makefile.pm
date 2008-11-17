@@ -8,6 +8,14 @@ use Apache::SWIT::Maker::Manifest;
 use File::Slurp;
 use Data::Dumper;
 
+sub write_makefile {
+	shift()->SUPER::write_makefile(@_);
+	my $mf = read_file('Makefile');
+	my $df = join(" ", swmani_dual_tests());
+	$mf =~ s/%IC_TEST_FILES%/$df/;
+	write_file('Makefile', $mf);
+}
+
 sub make_this_subsystem_dumps {
 	my $self = shift;
 	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
@@ -25,14 +33,18 @@ sub make_this_subsystem_dumps {
 	return (original_tree => $orig_tree);
 }
 
-sub do_install {
-	my ($class, $from, $to) = @_;
+sub write_ic {
+	my $class = shift;
 	my %dumps = $class->make_this_subsystem_dumps;
 	Apache::SWIT::Maker::FileWriterData->new
 			->write_blib_lib_installationcontent_pm({
 		dumps => [ map {
 			{ name => $_, 'dump' => Dumper($dumps{$_}) }
 	} keys %dumps ] });
+}
+
+sub do_install {
+	my ($class, $from, $to) = @_;
 	$class->install_files("$from/lib", $to);
 }
 

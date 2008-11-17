@@ -51,11 +51,27 @@ use base 'Apache::SWIT::Subsystem::Maker';
 ENDM
 }
 
+sub available_commands {
+	my %res = shift()->SUPER::available_commands(@_);
+	$res{installation_content} = [ 'Write InstallationContent.pm' ];
+	return %res;
+}
+
 sub write_initial_files {
 	my $self = shift;
 	$self->SUPER::write_initial_files(@_);
 	$self->write_950_install_t;
 	$self->write_maker_pm;
+
+	my $mr = YAML::LoadFile('conf/makefile_rules.yaml');
+	my $rc = Apache::SWIT::Maker::Config->instance->root_class;
+	my $icf = "blib/lib/".conv_class_to_file($rc."::InstallationContent");
+	push @{ $mr->[0]->{dependencies} }, $icf;
+	push @$mr, { targets => [ $icf ], dependencies => [ 'conf/swit.yaml'
+			, '%IC_TEST_FILES%' ]
+		, actions => [ './scripts/swit_app.pl installation_content' ]
+	};
+	YAML::DumpFile('conf/makefile_rules.yaml', $mr);
 }
 
 sub add_class {
@@ -113,6 +129,10 @@ sub get_installation_content {
 sub this_subsystem_original_tree { 
 	return shift()->get_installation_content(
 				'this_subsystem_original_tree');
+}
+
+sub installation_content {
+	shift()->makefile_class->write_ic;
 }
 
 1;
