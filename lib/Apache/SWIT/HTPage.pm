@@ -112,8 +112,8 @@ sub ht_swit_validate_die {
 sub ht_swit_update_die {
 	my ($class, $msg, $r, $root) = @_;
 	my $t = $root->CDBI_Class->table;
-	$msg =~ /unique constraint "$t\_(\w+)_key"/;
-	shift()->SUPER::ht_swit_update_die(@_) unless $1;
-	return $class->_encode_errors([ [ $1, 'unique' ] ]);
+	return ($msg =~ /unique constraint "$t\_(\w+)_key"/)
+			? $class->_encode_errors([ [ $1, 'unique' ] ])
+			: shift()->SUPER::ht_swit_update_die(@_);
 }
 

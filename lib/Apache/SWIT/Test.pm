@@ -112,8 +112,12 @@ sub _do_swit_update {
 	$self->_setup_session($r, %args);
 	my @res = $handler_class->swit_update($r);
 	my $new_r = Apache::SWIT::Test::Request->new;
-	$new_r->pnotes("PrevRequestSuppress", $res[0]->[2])
-			if (ref($res[0]) && $res[0]->[2]);
+	if (ref($res[0]) && $res[0]->[2]) {
+		$new_r->pnotes("PrevRequestSuppress", $res[0]->[2]);
+		confess "# Found errors " . $res[0]->[1]
+			if $res[0]->[1] =~ /swit_errors/ && !$args{error_ok};
+	}
+			
 	my $uri = ref($res[0]) ? $res[0]->[1] : $res[0];
 	$new_r->parse_url($uri) if $uri;
 

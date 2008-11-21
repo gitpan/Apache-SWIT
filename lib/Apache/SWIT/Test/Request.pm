@@ -4,6 +4,7 @@ use warnings FATAL => 'all';
 package Apache::SWIT::Test::Request;
 use base 'HTML::Tested::Test::Request';
 
+sub unparsed_uri { return shift()->uri; }
 sub pool { return shift; }
 sub prev { return shift; }
 

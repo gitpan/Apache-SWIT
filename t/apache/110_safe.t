@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 21;
+use Test::More tests => 26;
 use Apache::SWIT::Session;
 use Apache::SWIT::Test::Utils;
 
@@ -51,3 +51,22 @@ $t->ht_safe_u(ht => { name => 'hee', email => 'e@example.com', sl => [ {
 $t->ok_ht_safe_r(ht => { name => 'hee', email => 'e@example.com', sl => [ {
 	o => 10 }, { o => 'a' } ] });
 like($t->mech->content, qr/o integer/);
+
+$ENV{SWIT_HAS_APACHE} = 0;
+$t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
+is($t->mech, undef);
+
+# check that we die on validation error
+eval { $t->ht_safe_u(ht => { name => 'die' }); };
+like($@, qr/Found errors/);
+
+my @res = $t->ht_safe_u(ht => { name => 'die' }, error_ok => 1);
+like($res[0]->[1], qr/swit_errors.*email/);
+
+my $a = 'abc';
+$a =~ /a(.)c/;
+ok($1); # to catch die exception we need to have $1 defined
+
+# check that we still die when exception is unknown
+eval { $t->ht_safe_u(ht => { name => 'die', email => 'foo' }); };
+like($@, qr/BUGBUGBUG/);

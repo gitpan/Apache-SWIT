@@ -30,6 +30,7 @@ sub ht_swit_render {
 
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
+	die "BUGBUGBUG" if ($root->name && $root->name eq 'die');
 	$root->cdbi_create;
 	return "r";
 }
