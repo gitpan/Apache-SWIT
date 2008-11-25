@@ -8,7 +8,6 @@ use Carp;
 use HTML::Tested::Test::DateTime;
 
 BEGIN { use_ok('T::Test');
-	;
 	use_ok('T::DBPage');
 	$SIG{__WARN__} = sub { diag(Carp::longmess(@_)); };
 }

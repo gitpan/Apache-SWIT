@@ -175,13 +175,26 @@ Apache::SWIT::Maker::Config->instance->for_each_url(sub {
 	push @pes, $page_entry;
 	push @eps, $entry_point;
 });
-is_deeply([ sort @urls ], [ qw(/aaa/bbb/foo /aaa/bbb/go/r /aaa/bbb/go/u) ])
+
+sub so {
+	return [ sort { Dumper($a) cmp Dumper($b) } @{ shift() } ];
+}
+
+sub sh {
+	return [ sort { $a->{handler} cmp $b->{handler} } @{ shift() } ];
+}
+
+is_deeply(so(\@urls), so([ qw(/aaa/bbb/foo /aaa/bbb/go/r /aaa/bbb/go/u) ]))
 	or diag(Dumper(\@urls));
-is_deeply([ sort @pns ], [ qw(foo go go) ]) or diag(Dumper(\@pns));
-is_deeply([ sort @pes ], [ $fooep, $go_ent, $go_ent ])
+is_deeply(so(\@pns), so([ qw(foo go go) ])) or diag(Dumper(\@pns));
+
+is_deeply(so(\@pes), so([ $fooep, $go_ent, $go_ent ]))
 	or diag(Dumper([ sort @pes ]));
-is_deeply([ sort @eps ], [ $fooep, $go_ent->{entry_points}->{r}
-	, $go_ent->{entry_points}->{u} ]) or diag(Dumper([ sort @eps ]));
+
+my $b = sh([ $fooep, $go_ent->{entry_points}->{r}
+	, $go_ent->{entry_points}->{u} ]);
+my $a = sh(\@eps);
+is_deeply($a, $b) or diag(Dumper($a) . Dumper($b));
 
 # We should not save becouse transaction can fail
 ok(! -f 'conf/swit_app.yaml');

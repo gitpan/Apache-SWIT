@@ -71,14 +71,17 @@ sub new_guitest {
 	my $self = shift()->new(@_);
 	if ($self->mech) {
 		$ENV{MOZ_NO_REMOTE} = 1;
+		use IO::CaptureOutput qw(capture);
 		{
 			local $SIG{__WARN__} = sub {};
 			eval "require X11::GUITest";
 			die "Unable to use X11::GUITest: $@" if $@;
 			X11::GUITest::InitGUITest();
 		}
-		eval "use Mozilla::Mechanize::GUITester";
-		die "Unable to use Mozilla::Mechanize::GUITester: $@" if $@;
+		capture(sub {
+			eval "use Mozilla::Mechanize::GUITester";
+		});
+		confess "Unable to use Mozilla::Mechanize::GUITester: $@" if $@;
 		my $m = Mozilla::Mechanize::GUITester->new(quiet => 1
 				, visible => 0);
 		$self->mech($m);

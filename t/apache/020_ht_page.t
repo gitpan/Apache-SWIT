@@ -21,7 +21,9 @@ T::Test->make_aliases(another_page => 'T::HTPage',
 
 my $t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
 $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => { 
-		hello => 'world', HT_SEALED_hid => 'secret', v1 => undef, });
+		hello => 'world', HT_SEALED_hid => 'secret'
+		, v1 => undef, }) or ASTU_Wait;
+
 my $res = $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { v1 => 'hi', },
 	ht => { hello => 'world', v1 => 'hi', hostport => 'some.host'

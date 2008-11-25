@@ -5,7 +5,6 @@ use Test::More tests => 14;
 use Data::Dumper;
 
 BEGIN { use_ok('T::Test');
-	;
 	use_ok('T::Session');
 	use_ok('T::SessPage');
 }
@@ -28,7 +27,7 @@ $t->ok_ht_sess_page_r(base_url => '/test/sess_page/r', ht => { persbox => '' });
 like($t->mech->cookie_jar->as_string, qr/foo/);
 
 $t->ht_sess_page_u(ht => { persbox => 'life' });
-$t->ok_ht_sess_page_r(ht => { persbox => 'life' });
+$t->ok_ht_sess_page_r(ht => { persbox => 'life' }) or exit 1;
 
 # check that session is accessible from template
 like($t->mech->content, qr/request life/);

@@ -305,7 +305,7 @@ sub regenerate_httpd_conf {
 <IfModule !mod_deflate.c>
 	LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
 </IfModule>
-AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript
+AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript application/javascript
 
 PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
 

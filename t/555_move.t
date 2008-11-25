@@ -94,3 +94,4 @@ $res = `make test_direct 2>&1`;
 is($?, 0);
 like($res, qr/success/);
 
+chdir('/');

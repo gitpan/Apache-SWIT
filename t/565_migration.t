@@ -133,3 +133,5 @@ append_file("t/mig/db.sql", "boom\n");
 $res = `make test_mig 2>&1`;
 isnt($?, 0) or ASTU_Wait($res);
 like($res, qr/Unable to do/);
+
+chdir '/';

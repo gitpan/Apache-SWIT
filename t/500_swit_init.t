@@ -137,12 +137,13 @@ like(read_file('lib/TTT/UI/First/Page.pm'), qr/sub swit_startup/);
 {
 	use Package::Alias 'Apache2::Const::OK' => sub { 200; }
 		, 'Apache2::Const::REDIRECT' => sub { 302; };
-	eval { require("lib/TTT/UI/First/Page.pm") };
 }
-like($@, qr/HTV/) or ASTU_Wait($mt->root_dir);
 
 use_ok('HTML::Tested', qw(HT HTV));
-ok(require("lib/TTT/UI/First/Page.pm"));
+push @INC, 'lib';
+
+use_ok('TTT::UI::First::Page');
+is($@, '') or ASTU_Wait($mt->root_dir);
 
 my $at = read_file('t/apache_test.pl');
 open($fh, ">t/apache_test.pl");
