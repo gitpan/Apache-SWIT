@@ -46,8 +46,9 @@ package Apache::SWIT;
 use Template;
 use Carp;
 use Data::Dumper;
+use File::Slurp;
 
-our $VERSION = 0.42;
+our $VERSION = 0.43;
 
 sub swit_startup {}
 
@@ -67,24 +68,25 @@ sub swit_send_http_header {
 
 =head2 $class->swit_die($msg, $r, @data_to_dump)
 
-Dies with C<$msg> using Carp::confess and dumps request C<$r> and
-C<@data_to_dump> with Data::Dumper.
+Dies with first line of C<$msg> using Carp::croak and dumps request C<$r> and
+C<@data_to_dump> with Data::Dumper into /tmp/swit_<time>.err file.
 
 =cut
 sub swit_die {
 	my ($class, $msg, $r, @more) = @_;
-	confess "$msg with request:\n" . $r->as_string . "and more:\n"
-			. join("\n", map { Dumper($_) } @more);
+	my $err = (split(/\n/, $msg))[0];
+	my $f = "/tmp/swit_" . time . ".err";
+	write_file($f, "$msg with request:\n" . $r->as_string . "and more:\n"
+			. join("\n", map { Dumper($_) } @more));
+	croak "In $f $err";
 }
 
 sub _raw_respond {
 	my ($class, $r, $to) = @_;
 	my $s = ref($to) ? $to->[0] : Apache2::Const::REDIRECT();
 	if ($s eq 'INTERNAL') {
-		if ($to->[2]) {
-			my @a = map { $r->upload($_)->name } $r->upload;
-			$r->pnotes("PrevRequestSuppress", [ @a, @{$to->[2]} ]);
-		}
+		$r->pnotes("PrevRequestSuppress", $to->[2]) if $to->[2];
+		$r->headers_in->unset("Content-Length");
 		$r->internal_redirect($r->uri . "/../" . $to->[1]);
 		return Apache2::Const::OK();
 	}
@@ -92,6 +94,19 @@ sub _raw_respond {
 	$class->swit_send_http_header($r, ref($to) ? $to->[2] : undef);
 	$r->print($to->[1]) if (ref($to) && defined($to->[1]));
 	return $s;
+}
+
+=head2 swit_post_max
+
+Maximal size of POST request. Default is 1M. Overload it to return something
+else.
+
+=cut
+sub swit_post_max { return '1000000'; }
+
+sub swit_invalid_request {
+	my ($class, $r, $err) = @_;
+	die "Invalid request: $err";
 }
 
 =head2 $class->swit_update_handler($class, $r)
@@ -117,10 +132,14 @@ Of C<$to> parameters only $to->[0] is mandatory.
 
 =cut
 sub swit_update_handler($$) {
-	my($class, $r) = @_;
-	my $ar = Apache2::Request->new($r);
-	my $to = $class->swit_update($ar);
-	return $class->_raw_respond($ar, $to);
+	my ($class, $r) = @_;
+	my $ar;
+	# Sometimes request fails - cannot find a testcase though...
+	eval { $ar = Apache2::Request->new($r
+			, POST_MAX => $class->swit_post_max); };
+	my $to = $@ ? $class->swit_invalid_request($r, $@)
+				: $class->swit_update($ar);
+	return $class->_raw_respond($r, $to);
 }
 
 sub swit_template_config {

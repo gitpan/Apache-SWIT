@@ -5,6 +5,7 @@ scripts/swit_init
 lib/Apache/SWIT.pm
 t/T/WorkPage.pm
 t/T/Safe.pm
+t/T/Invalid.pm
 lib/Apache/SWIT/Maker.pm
 lib/Apache/SWIT/Test/Request.pm
 lib/Apache/SWIT/LargeObjectHandler.pm
@@ -43,6 +44,7 @@ lib/Apache/SWIT/Subsystem/Maker.pm
 lib/Apache/SWIT/Subsystem/Makefile.pm
 lib/Apache/SWIT/Subsystem/Generator.pm
 lib/Apache/SWIT/HTPage.pm
+lib/Apache/SWIT/HTPage/Safe.pm
 lib/Apache/SWIT/DB/Connection.pm
 lib/Apache/SWIT/DB/Base.pm
 lib/Apache/SWIT/Test.pm

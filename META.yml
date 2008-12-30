@@ -1,10 +1,13 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Apache-SWIT
-version:      0.42
-version_from: lib/Apache/SWIT.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Apache-SWIT
+version:             0.43
+abstract:            mod_perl server with integrated testing
+license:             ~
+author:              
+    - Boris Sukholitko (boriss@gmail.com)
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
     Apache2::Cookie:               
     Apache2::Request:              
     Apache::DB:                    
@@ -16,7 +19,7 @@ requires:
     DBIx::VersionedSchema:         0.03
     ExtUtils::ModuleMaker:         
     File::Slurp:                   
-    HTML::Tested:                  0.46
+    HTML::Tested:                  0.48
     HTML::Tested::ClassDBI:        0.21
     HTML::Tested::JavaScript:      0.13
     IO::CaptureOutput:             
@@ -28,6 +31,6 @@ requires:
     Test::TempDatabase:            0.13
     WWW::Mechanize:                
     YAML:                          
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30_01
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

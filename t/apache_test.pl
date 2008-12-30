@@ -36,8 +36,10 @@ Apache::SWIT::Test::Apache->swit_run(sub {
 	$dbh->do("create table upt (id serial primary key
 			, loid oid unique not null)");
 	$dbh->do(<<ENDS);
-	create table safet (id serial primary key, name text unique not null
-		, email text unique not null);
+create table safet (id serial primary key, name text unique not null
+	, email text unique not null, k1 smallint, k2 smallint, k3 smallint
+	, constraint mugcons unique (k3, k2)
+	, constraint strange_uq unique (k1, k2));
 ENDS
 });
 unlink("/tmp/swit_startup_test");

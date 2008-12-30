@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 18;
+use Test::More tests => 20;
 use Data::Dumper;
 use File::Temp qw(tempdir);
 use File::Slurp;
@@ -52,4 +52,9 @@ $t->ok_ht_upload_r(base_url => '/test/upload/r', ht => { the_upload => ''
 			, HT_SEALED_loid =>  '' });
 $t->ht_upload_u(ht => { the_upload => '/etc/passwd', val => 'failv' });
 $t->ok_ht_upload_r(ht => { the_upload => '', val => 'failv'
+			, HT_SEALED_loid =>  '' });
+
+$t->ok_ht_upload_r(base_url => '/test/upload/r', ht => { the_upload => '' });
+$t->ht_upload_u(ht => { the_upload => '/bin/ls' });
+$t->ok_ht_upload_r(ht => { the_upload => '', val => 'too_big'
 			, HT_SEALED_loid =>  '' });

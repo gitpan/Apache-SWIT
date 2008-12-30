@@ -41,9 +41,13 @@ sub ht_swit_render {
 	return $root;
 }
 
+sub swit_post_max { return '20000'; }
+
 sub ht_swit_update {
 	my ($class, $r, $root) = @_;
-	return $class->swit_failure('r') if $root->val;
+	my $m = $r->body_status =~ /maximum/;
+	my $to = $m ? "r?val=too_big" : "r";
+	return $class->swit_failure($to, 'the_upload') if ($m || $root->val);
 
 	$root->cdbi_create_or_update;
 	return $root->ht_make_query_string("r", "id");

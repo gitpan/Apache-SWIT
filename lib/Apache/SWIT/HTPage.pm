@@ -73,7 +73,7 @@ sub ht_swit_validate_die {
 sub swit_update {
 	my ($class, $r) = @_;
 	my %args = %{ $r->param || {} };
-	if ($r->body_status !~ 'End of file') {
+	if ($r->body_status eq 'Success') {
 		$args{ $r->upload($_)->name } = $r->upload($_) for $r->upload;
 	}
 		
@@ -85,35 +85,3 @@ sub swit_update {
 }
 
 1;
-
-package Apache::SWIT::HTPage::Safe;
-use base 'Apache::SWIT::HTPage';
-
-sub swit_render {
-	my ($class, $r) = @_;
-	my $stash = $class->SUPER::swit_render($r);
-	my $es = $r->param('swit_errors') or goto OUT;
-	$class->ht_root_class->ht_error_render($stash, 'swit_errors', $es);
-OUT:
-	return $stash;
-}
-
-sub _encode_errors {
-	my ($class, $errs) = @_;
-	my $es = $class->ht_root_class->ht_encode_errors(@$errs);
-	return "r?swit_errors=$es";
-}
-
-sub ht_swit_validate_die {
-	my ($class, $errs, $r, $root) = @_;
-	return $class->_encode_errors($errs);
-}
-
-sub ht_swit_update_die {
-	my ($class, $msg, $r, $root) = @_;
-	my $t = $root->CDBI_Class->table;
-	return ($msg =~ /unique constraint "$t\_(\w+)_key"/)
-			? $class->_encode_errors([ [ $1, 'unique' ] ])
-			: shift()->SUPER::ht_swit_update_die(@_);
-}
-

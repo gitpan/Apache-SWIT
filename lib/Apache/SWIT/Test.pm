@@ -24,6 +24,7 @@ use Data::Dumper;
 use File::Slurp;
 use Apache::TestRequest;
 use Encode;
+use Apache::SWIT;
 
 BEGIN {
 	no strict 'refs';
@@ -33,6 +34,11 @@ BEGIN {
 		my $res = shift()->$init_sub(@_);
 		$res->utf8_mode(1);
 		return $res;
+	};
+	*{ "Apache::SWIT::swit_die" } = sub {
+		my ($class, $msg, $r, @more) = @_;
+		confess "$msg with request:\n" . $r->as_string . "and more:\n"
+					. join("\n", map { Dumper($_) } @more);
 	};
 }
 
@@ -103,7 +109,12 @@ sub _direct_render {
 	my $r = ($self->redirect_request && !$uri) ? $self->redirect_request
 			: Apache::SWIT::Test::Request->new;
 	$self->redirect_request(undef);
+
+	my $cp = $r->_param || {};
 	$r->set_params($args{param}) if $args{param};
+	$cp->{$_} = $r->param($_) for keys %{ $r->_param || {} };
+	$r->_param($cp);
+
 	$self->_setup_session($r, %args);
 	my $res = $handler_class->swit_render($r);
 	$r->run_cleanups;
@@ -200,6 +211,7 @@ sub _filter_out_readonly {
 sub _mech_update {
 	my ($self, $handler_class, %args) = @_;
 	delete $args{url_to_make};
+	delete $args{error_ok};
 	my $b = delete $args{button};
 	$args{button} = $b->[0] if $b;
 	$self->_filter_out_readonly(\%args);

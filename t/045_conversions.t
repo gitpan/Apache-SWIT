@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 42;
+use Test::More tests => 43;
 use File::Slurp;
 use File::Temp qw(tempdir);
 use Test::TempDatabase;
@@ -21,6 +21,9 @@ isnt($rc1->can('ht_add_widget'), undef);
 
 my $rc2 = Foo->ht_make_root_class('Apache::SWIT::Test::Request');
 isnt($rc2->can('ht_add_widget'), undef);
+
+eval { Apache::SWIT::Test::Request->log_error('foobar') };
+like($@, qr/foobar/);
 
 is($rc1, $rc2);
 is($rc2->can('get_server_port'), undef);

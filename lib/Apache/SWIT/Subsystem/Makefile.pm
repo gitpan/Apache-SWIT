@@ -5,6 +5,7 @@ package Apache::SWIT::Subsystem::Makefile;
 use base 'Apache::SWIT::Maker::Makefile';
 use Apache::SWIT::Maker::GeneratorsQueue;
 use Apache::SWIT::Maker::Manifest;
+use Apache::SWIT::Maker::Config;
 use File::Slurp;
 use Data::Dumper;
 
@@ -12,6 +13,10 @@ sub write_makefile {
 	shift()->SUPER::write_makefile(@_);
 	my $mf = read_file('Makefile');
 	my $df = join(" ", swmani_dual_tests());
+	Apache::SWIT::Maker::Config->instance->for_each_url(sub {
+		my ($uri, $n, $v, $ev) = @_;
+		$df .= " " . $ev->{template} if $ev->{template};
+	});
 	$mf =~ s/%IC_TEST_FILES%/$df/;
 	write_file('Makefile', $mf);
 }
