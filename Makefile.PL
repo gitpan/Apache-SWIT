@@ -38,6 +38,7 @@ realclean ::
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.13'
 	, 'Package::Alias' => '', 'Apache::DB' => ''
 	, 'Queue::Worker' => '', 'IO::CaptureOutput' => ''
+	, 'DBD::Pg' => 2.11
     },
 );
 

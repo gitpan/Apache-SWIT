@@ -3,14 +3,14 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::DB::Connection;
 use base 'Class::Data::Inheritable', 'Class::Accessor';
-use DBIx::ContextualFetch;
+use Apache::SWIT::DB::ST;
 use Carp;
 
 __PACKAGE__->mk_classdata('Instance');
 __PACKAGE__->mk_classdata('DBIArgs', { PrintError => 0
 			, AutoCommit => 1, pg_enable_utf8 => 1
 			, HandleError => sub { confess($_[0]); }
-			, RootClass => 'DBIx::ContextualFetch', });
+			, RootClass => 'Apache::SWIT::DB::ST', });
 
 __PACKAGE__->mk_accessors(qw(db_handle pid));
 

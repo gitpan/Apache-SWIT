@@ -47,6 +47,7 @@ lib/Apache/SWIT/HTPage.pm
 lib/Apache/SWIT/HTPage/Safe.pm
 lib/Apache/SWIT/DB/Connection.pm
 lib/Apache/SWIT/DB/Base.pm
+lib/Apache/SWIT/DB/ST.pm
 lib/Apache/SWIT/Test.pm
 lib/Apache/SWIT/Test/ResetKids.pm
 lib/Apache/SWIT/Session.pm

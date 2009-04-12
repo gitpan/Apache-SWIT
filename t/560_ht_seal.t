@@ -46,7 +46,7 @@ is($t->session->request->uri, '/ttt/');
 $t->ok_ht_index_r(make_url => 1, param => { HT_SEALED_first => 12 }
 		, ht => { HT_SEALED_first => 12 });
 $t->with_or_without_mech_do(2, sub {
-	$t->mech->content =~ /First: [^0-9]+(\w+)/;
+	$t->mech->content =~ /First:.*--> (\w+)/;
 	my $curf = $1;
 	is(HTML::Tested::Seal->instance->decrypt($curf), 12);
 	if (-f 'curf') {
@@ -80,7 +80,7 @@ if ($t->mech) {
 ENDS
 
 $res = `make test_apache 2>&1`;
-unlike($res, qr/Failed/); # or readline(\*STDIN);
+unlike($res, qr/Failed/) or ASTU_Wait;
 like($res, qr/success/);
 like($res, qr/CSS/);
 like($res, qr/MGET/);

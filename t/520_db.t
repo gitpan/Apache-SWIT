@@ -6,6 +6,7 @@ use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Maker::Manifest;
+use Apache::SWIT::Test::Utils;
 
 Test::TempDatabase->become_postgres_user;
 
@@ -145,7 +146,7 @@ ENDM
 
 $tres = join('', `make test_dual APACHE_TEST_FILES=t/dual/801_subm.t 2>&1`);
 like($tres, qr/success/);
-unlike($tres, qr/Fail/);
+unlike($tres, qr/Fail/) or ASTU_Wait;
 unlike($tres, qr/submit_form/);
 
 chdir '/'
