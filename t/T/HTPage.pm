@@ -11,6 +11,8 @@ use HTML::Tested qw(HTV);
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
+	return '/test/www/hello.html' if $r->param('redir');
+	return [ INTERNAL => '../www/hello.html' ] if $r->param('internal');
 	$root->hello('world');
 	$root->req_uri($r->uri);
 	$root->hid($root->hid || 'secret');

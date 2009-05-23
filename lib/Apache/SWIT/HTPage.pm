@@ -29,6 +29,7 @@ sub swit_render {
 	my $root;
 	eval { $root = $class->ht_swit_render($r, $tested); };
 	$class->swit_die("render failed: $@", $r, $tested) if $@;
+	return $root if (!ref($root) || ref($root) eq 'ARRAY');
 
 	$root->ht_merge_params(%pars) if $supr;
 	$root->ht_render($stash, $r);

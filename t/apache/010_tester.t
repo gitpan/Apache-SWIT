@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 50;
+use Test::More tests => 58;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -137,8 +137,26 @@ ENDS
 # works
 is($t->ok_follow_link(text => 'This'), 1);
 $t->ok_get('/test/www/hello.html');
+
+my $_hc = $t->mech->content;
+my $_uri = $t->mech->uri;
+
 $t->content_like(qr/HELLO, HTML/);
 $t->ok_get('/test/www/nothing.html', 404);
 
+$t->ok_get($_uri);
+is($t->mech->content, $_hc);
+
 # relative to root location
 $t->ok_get('www/hello.html', 200);
+
+$t->mech->max_redirect(0);
+$t->ok_get("/test/swit/u?file=$td/uuu", 302);
+$t->mech->max_redirect(7);
+
+$t->ok_get("/test/ht_page/r?redir=1");
+is($t->mech->content, $_hc);
+
+$t->ok_get("/test/ht_page/r?internal=1");
+is($t->mech->content, $_hc);
+like($t->mech->uri, qr#/test/ht_page/r\?internal=1#);

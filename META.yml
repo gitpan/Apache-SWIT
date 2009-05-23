@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Apache-SWIT
-version:             0.44
+version:             0.45
 abstract:            mod_perl server with integrated testing
 license:             ~
 author:              

@@ -3,10 +3,22 @@ use warnings FATAL => 'all';
 
 package Apache::SWIT::Test::Mechanize;
 use base 'WWW::Mechanize';
+use Encode::Guess;
 
 sub reload {
 	my $self = shift;
 	$self->get($self->uri);
+}
+
+sub update_html {
+	my ($self, $html) = @_;
+	return $self->SUPER::update_html(utf8::is_utf8($html)
+			? Encode::encode_utf8($html) : $html);
+}
+
+sub redirect_ok {
+	my $self = shift;
+	return $self->max_redirect ? $self->SUPER::redirect_ok(@_) : undef;
 }
 
 package Apache2::Request;
@@ -163,6 +175,7 @@ sub _direct_update {
 
 sub mech_get_base {
 	my ($self, $loc) = @_;
+	return $self->mech->get($loc) if $loc =~ /^http:\/\//;
 	$loc = $self->root_location . "/$loc" unless ($loc =~ /^\//);
 	my $url = "http://" . Apache::TestRequest::hostport() . $loc;
 	return $self->mech->get($url);
