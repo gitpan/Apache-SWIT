@@ -20,6 +20,7 @@ unless ($<) {
 my $d = abs_path(dirname($0));
 Apache::SWIT::Test::Apache->swit_run(sub {
 	mkpath("$d/../blib/conf");
+	symlink("$d/templates", "$d/../blib/templates");
 	write_file("$d/../blib/conf/seal.key", "boo boo boo");
 	write_file("$d/../blib/conf/startup.pl"
 		, Apache::SWIT::Maker::Skeleton::Startup->new->get_output);
@@ -40,6 +41,8 @@ create table safet (id serial primary key, name text unique not null
 	, email text unique not null, k1 smallint, k2 smallint, k3 smallint
 	, constraint mugcons unique (k3, k2)
 	, constraint strange_uq unique (k1, k2));
+
+create table another_t (id serial primary key, name text unique not null);
 ENDS
 });
 unlink("/tmp/swit_startup_test");

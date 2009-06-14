@@ -9,10 +9,10 @@ sub swit_startup {
 	shift()->ht_make_root_class->ht_add_widget(HTV."::EditBox", 'persbox');
 }
 
-sub swit_template_config {
-	my $res = shift()->SUPER::swit_template_config(@_);
-	$res->{VARIABLES}->{moo} = 'moo is foo';
-	return $res;
+sub swit_process_template {
+	my ($class, $r, $file, $vars) = @_;
+	$vars->{moo} = 'moo is foo';
+	return shift()->SUPER::swit_process_template(@_);
 }
 
 sub ht_swit_render {

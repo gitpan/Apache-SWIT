@@ -8,8 +8,7 @@ use File::Slurp;
 sub location_section_contents {
 	my ($self, $res, $n, $v) = @_;
 	my $t = $v->{template} or return "";
-	return "\tPerlSetVar SWITIncludePath \@ServerRoot\@\t\n"
-		. "PerlSetVar SWITTemplate $t\n";
+	return "\tPerlSetVar SWITTemplate $t\n";
 }
 
 sub httpd_conf_start {

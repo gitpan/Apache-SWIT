@@ -16,6 +16,7 @@ BEGIN {
 	unshift @INC, abs_path(dirname(__FILE__) . "/../lib");
 }
 
+use Template;
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::RequestUtil ();
@@ -34,11 +35,16 @@ use HTML::Tested qw(HT HTV);
 use HTML::Tested::JavaScript qw(HTJ);
 use Apache::SWIT::DB::Connection;
 use HTML::Tested::List;
+use Apache::SWIT;
 
 eval "use " . HTV() . "::$_" for qw(Marked Form Hidden Submit EditBox Link
 					Upload DropDown PasswordBox CheckBox);
 
 HTML::Tested::Seal->instance(read_file($INC[0] . '/../conf/seal.key'));
+
+$Apache::SWIT::TEMPLATE = Template->new({ ABSOLUTE => 1
+		, INCLUDE_PATH => ($INC[0] . "/..") })
+	or die "Unable to create template object";
 
 1;
 ENDM

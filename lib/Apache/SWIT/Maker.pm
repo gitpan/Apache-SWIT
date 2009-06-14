@@ -139,6 +139,7 @@ LogLevel notice
 	Include "/etc/apache2/mods-enabled/mime.conf"
 </IfModule>
 Include ../blib/conf/httpd.conf
+CustomLog logs/access_log switlog
 <Location />
 	PerlInitHandler Apache::SWIT::Test::ResetKids->access_handler
 </Location>
@@ -148,12 +149,16 @@ ENDM
 sub write_httpd_conf_in {
 	my $self = shift;
 	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
-	my $app_name = Apache::SWIT::Maker::Config->instance->app_name;
+	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	swmani_write_file('conf/httpd.conf.in', <<ENDM);
 RewriteEngine on
 RewriteRule ^/\$ $rl/index/r [R]
 Alias $rl/www \@ServerRoot\@/public_html 
 Alias /html-tested-javascript /usr/local/share/libhtml-tested-javascript-perl
+# Format is:
+# Remote IP, time, request, status, duration, referer, user agent
+# PID, Cookie, total bytes in request, total bytes in response
+LogFormat "%a %t \\"%r\\" %>s %D \\"%{Referer}i\\" \\"%{User-Agent}i\\" %P %{$an}C %I %O" switlog
 ENDM
 }
 

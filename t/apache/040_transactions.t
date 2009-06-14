@@ -1,8 +1,10 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 8;
+use Test::More tests => 20;
 use Apache::SWIT::Session;
+use Apache::SWIT::Test::Utils;
+use Data::Dumper;
 
 BEGIN { use_ok('T::Test');
 	use_ok('T::TransFailure');
@@ -30,3 +32,35 @@ eval { $t->ht_trans_fail_u(ht => { fail_on_commit => 1 }); };
 like($@, qr/fail_on_commit/); 
 
 ok($t->ht_trans_fail_u(ht => { rollback => 1 }));
+ok(-f 't/templates/2mb.tt');
+cmp_ok(-s 't/templates/2mb.tt', '>', 2 * 1024 * 64);
+
+my @ap_pids = ASTU_Apache_Pids();
+cmp_ok(@ap_pids, '>=', 2);
+
+my @mem = ASTU_Mem_Stats(@ap_pids);
+is(@mem, @ap_pids);
+
+$ENV{SWIT_HAS_APACHE} = 1;
+$t = T::Test->new({ session_class => 'Apache::SWIT::Session' });
+$t->ok_get('/test/huge');
+my $cnt = $t->mech->content;
+like($cnt, qr/xxxxxxx/);
+like($cnt, qr/world/);
+
+is_deeply([ ASTU_Apache_Pids() ], \@ap_pids);
+
+my @mem2 = ASTU_Mem_Stats(@ap_pids);
+is(@mem2, @ap_pids);
+
+my $priv1 = 0;
+$priv1 += $_ for map { $_->[2] } @mem;
+
+my $priv2 = 0;
+$priv2 += $_ for map { $_->[2] } @mem2;
+cmp_ok($priv2 - $priv1, '<', 6000);
+
+like(ASTU_Mem_Report(), qr/$priv2/);
+
+chdir('/');
+is_deeply([ ASTU_Apache_Pids() ], \@ap_pids);

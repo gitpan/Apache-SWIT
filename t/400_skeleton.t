@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 58;
+use Test::More tests => 59;
 use Data::Dumper;
 use File::Slurp;
 use File::Temp qw(tempdir);
@@ -17,6 +17,8 @@ BEGIN {
 	use_ok('Apache::SWIT::Maker::Skeleton::ApacheTestRun');
 	use_ok('Apache::SWIT::Maker');
 };
+
+ok(!ASTU_Mem_Show());
 
 my $dut = Apache::SWIT::Maker::Skeleton::Scaffold::DualTest->new({
 		columns => [ qw(col_a col_b col_c) ], table => 'the_tab' });

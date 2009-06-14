@@ -43,12 +43,11 @@ use strict;
 use warnings FATAL => 'all';
 
 package Apache::SWIT;
-use Template;
 use Carp;
 use Data::Dumper;
 use File::Slurp;
 
-our $VERSION = 0.45;
+our $VERSION = 0.46;
 
 sub swit_startup {}
 
@@ -142,11 +141,14 @@ sub swit_update_handler($$) {
 	return $class->_raw_respond($r, $to);
 }
 
-sub swit_template_config {
-	my ($class, $r) = @_;
-	return { ABSOLUTE => 1
-			, INCLUDE_PATH => $r->dir_config('SWITIncludePath')
-			, VARIABLES => { request => $r } };
+our $TEMPLATE;
+
+sub swit_process_template {
+	my ($class, $r, $file, $vars) = @_;
+	my $out;
+	$TEMPLATE->process($file, $vars, \$out) or $class->swit_die(
+			"No result for $file\: " . $TEMPLATE->error, $r);
+	return $out;
 }
 
 sub swit_render_handler($$) {
@@ -156,12 +158,9 @@ sub swit_render_handler($$) {
 	my $vars = $class->swit_render($ar);
 	return $class->_raw_respond($ar, $vars) if (ref($vars) ne 'HASH');
 
-	my $t = Template->new($class->swit_template_config($r))
-			or confess "Unable to create template object";
 	my $file = $r->pnotes('SWITTemplate') or confess "No template file";
-	my $out;
-	$t->process($file, $vars, \$out)
-		or $class->swit_die("No result for $file\: " . $t->error, $r);
+	$vars->{request} = $r unless exists $vars->{request};
+	my $out = $class->swit_process_template($r, $file, $vars);
 	$class->swit_send_http_header($r);
 	$r->print($out);
 	return Apache2::Const::OK();

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 25;
+use Test::More tests => 29;
 use Test::TempDatabase;
 use Apache::SWIT::Test::Utils;
 Test::TempDatabase->become_postgres_user;
@@ -21,6 +21,7 @@ ok(-f 'LICENSE');
 `perl Makefile.PL && make 2>&1`;
 
 my $psql = `psql -l`;
+$ENV{ASTU_MEM} = 1;
 my @cmd = ("./scripts/swit_app.pl", "run_server"); 
 my ($in, $out, $err);
 my $t = timeout(30);
@@ -34,11 +35,12 @@ if ($@) {
 
 my ($host) = ($out =~ /server ([^\n]+) started/);
 like($err, qr/Press Enter to finish \.\.\./);
+like($err, qr/Apache memory before/);
 isnt($host, undef) or $host = '';
 
 my $ua = LWP::UserAgent->new;
 my $cont = $ua->get("http://$host/ttt/index/r")->content;
-like($cont, qr/first/);
+like($cont, qr/first/) or ASTU_Wait(read_file('t/logs/error_log'));
 like($err, qr#http://$host#);
 
 unlike($out, qr/Leaving/);
@@ -47,6 +49,7 @@ pump $h;
 
 while(pump $h) {}
 like($out, qr/Leaving/);
+like($err, qr/Apache memory after/);
 finish $h or die "cmd returned $?" ;
 
 ($in, $out, $err) = ();
@@ -56,12 +59,15 @@ like($help, qr/run_server.*host.*port/);
 system("make realclean 2>/dev/null 1>/dev/null");
 push @cmd, "goo.ga:11111";
 
+delete $ENV{ASTU_MEM};
 $h = start(\@cmd, \$in, \$out, \$err, $t);
 pump $h until $err =~ /Press Enter to finish \.\.\./;
 ($host) = ($out =~ /server ([^\n]+) started/);
 like($err, qr/Press Enter to finish \.\.\./);
+unlike($err, qr/memory before/);
 is($host, "goo.ga:11111");
 finish $h or die "cmd returned $?" ;
+unlike($err, qr/memory after/);
 
 $mt->insert_into_schema_pm('
 $dbh->do("create table one_col_table (id serial primary key, ocol text)");

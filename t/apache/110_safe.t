@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 57;
+use Test::More tests => 58;
 use Apache::SWIT::Session;
 use Apache::SWIT::Test::Utils;
 
@@ -142,3 +142,6 @@ $t->ok_ht_safe_r(param => { boob => 1 }, ht => { name => 'fook'
 	, email => 'j@example.com', referer => 'hihi.haha'
 	, k1 => 12, k2 => 13, klak => '', scol => '' });
 
+eval { $t->ht_safe_u(ht => { name => 'another_t', email => 'ja@example.com'
+	, k1 => 81, k2 => 83 }); };
+like($@, qr/duplicate key value violates/);

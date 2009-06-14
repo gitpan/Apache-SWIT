@@ -18,4 +18,6 @@ T::DBPage->swit_startup;
 
 use T::HTInherit;
 
+$Apache::SWIT::TEMPLATE->context->template('templates/2mb.tt');
+
 1;

@@ -40,7 +40,7 @@ isnt($t->session->request, undef);
 is($t->session->request->pnotes('SWITSession'), $t->session);
 
 my @res = $t->the_page_r(base_url => '/test/swit');
-is_deeply(\@res, [ { hello => 'world' } ]);
+is_deeply(\@res, [ { hello => 'world', request => 'reqboo' } ]);
 
 @res = $t->the_page_u(fields => { file => "$td/uuu" });
 is(read_file("$td/uuu"), '');
@@ -78,6 +78,7 @@ hello world
 <input type="text" name="file" />
 <input type="submit" name="but" value="Push" />
 <a href="r">This</a>
+reqboo
 </form>
 </body>
 </html>
@@ -129,6 +130,7 @@ hello world
 <input type="text" name="file" />
 <input type="submit" name="but" value="Push" />
 <a href="r">This</a>
+reqboo
 </form>
 </body>
 </html>

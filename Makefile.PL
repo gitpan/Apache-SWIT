@@ -13,12 +13,16 @@ t/conf/httpd.conf :: t/conf/extra.conf.in
 
 APACHE_TEST_FILES = t/apache/*.t
 test :: test_apache
-test_apache :: pure_all
+
+t/templates/2mb.tt :: Makefile
+	perl -e 'print "<html><body>" . ("x" x (2048 * 64)) . " [% hello %] </body></html>"' > t/templates/2mb.tt
+
+test_apache :: pure_all t/templates/2mb.tt
 	$(RM_F) t/logs/access_log  t/logs/error_log
 	ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) -I t/ t/apache_test.pl $(APACHE_TEST_FILES)
 
 realclean ::
-	$(RM_RF) t/htdocs t/logs
+	$(RM_RF) t/htdocs t/logs t/templates/2mb.tt
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	$(RM_RF) blib/conf
@@ -38,7 +42,8 @@ realclean ::
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.13'
 	, 'Package::Alias' => '', 'Apache::DB' => ''
 	, 'Queue::Worker' => '', 'IO::CaptureOutput' => ''
-	, 'DBD::Pg' => 2.11
+	, 'DBD::Pg' => 2.11, 'Linux::Smaps' => ''
+	, 'Devel::NYTProf' => ''
     },
 );
 

@@ -84,7 +84,7 @@ unlike($res, qr/Failed/) or ASTU_Wait;
 like($res, qr/success/);
 like($res, qr/CSS/);
 like($res, qr/MGET/);
-is(-d 't/logs/dprof', undef);
+ok(!glob('t/logs/nytprof*'));
 
 ok(copy("blib/conf/seal.key", "conf/seal.key"));
 $res = `make realclean && perl Makefile.PL 2>&1`;
@@ -94,16 +94,15 @@ my $pros = 'APACHE_SWIT_PROFILE=1 make test_apache '
 		. 'APACHE_TEST_FILES=t/dual/030_load.t 2>&1';
 $res = `$pros`;
 is($?, 0) or ASTU_Wait($res);
-isnt(-d 't/logs/dprof', undef) or ASTU_Wait(read_file('t/conf/httpd.conf'));
+isnt(-f 't/logs/nytprof', undef) or ASTU_Wait(read_file('t/conf/httpd.conf'));
 
-my @outs = `find t/logs/dprof -type f`;
+my @outs = glob('t/logs/nytprof*');
 isnt(@outs, 0);
 
-my $dres = `dprofpp $outs[0] 2>&1`;
+my $dres = `nytprofhtml -f $outs[1] 2>&1`;
 is($?, 0) or ASTU_Wait($dres);
-like($dres, qr/Total Elapsed Time/);
-
-`rm -rf t/logs/dprof`;
+ok(-f './nytprof/index.html') or ASTU_Wait;
+unlink($_) for @outs;
 
 my $hiddens = join("\n", map { "<input type=\"hidden\" name=\"n$_\""
 	. " value=\"v$_\" />" } (1 .. 100));
@@ -139,17 +138,16 @@ $pros = 'APACHE_SWIT_PROFILE=1 make test_apache '
 		. 'APACHE_TEST_FILES=t/dual/040_prof.t 2>&1';
 $res = `$pros`;
 is($?, 0) or ASTU_Wait($res);
-isnt(-d 't/logs/dprof', undef) or ASTU_Wait(read_file('t/conf/httpd.conf'));
+isnt(-f 't/logs/nytprof', undef) or ASTU_Wait(read_file('t/conf/httpd.conf'));
 
-@outs = `find t/logs/dprof -type f`;
+@outs = glob('t/logs/nytprof*');
 isnt(@outs, 0);
 
-$dres = "";
-$dres .= `dprofpp $_ 2>&1` for @outs;
+$dres = `nytprofhtml -f $outs[1] 2>&1`;
 is($?, 0) or ASTU_Wait($dres);
-like($dres, qr/Total Elapsed Time/);
 
-# number of calls to param should be low
-unlike($dres, qr/\d\d\s+[\d\.]+\s+[\d\.]+\s+\S+param/);
+my $ih = read_file('./nytprof/index.html');
+like($ih, qr/DBI::.*>install_driver/) or ASTU_Wait($mt->root_dir);
+unlike($ih, qr/::.*>param/);
 
 chdir '/';

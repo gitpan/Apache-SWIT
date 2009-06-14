@@ -14,9 +14,11 @@ sub swit_startup {
 
 sub swit_render {
 	my ($class, $r) = @_;
-	my $f = dirname($INC{'T/SWIT.pm'}) . "/../templates/test.tt";
-	$r->pnotes('SWITTemplate', $f);
-	return { hello => 'world' };
+	if ($r->uri !~ /huge/) {
+		my $f = dirname($INC{'T/SWIT.pm'}) . "/../templates/test.tt";
+		$r->pnotes('SWITTemplate', $f);
+	}
+	return { hello => 'world', request => 'reqboo' };
 }
 
 sub swit_update {

@@ -103,6 +103,6 @@ my $t011 = read_file("t/dual/011_the_table.t");
 like($t011, qr/ht_thetable_list_r/) or exit 1;
 
 $res = `make test_apache 2>&1`;
-is($?, 0) or do { diag($res); ASTU_Wait($mt->root_dir); };
+is($?, 0) or ASTU_Wait($res . read_file('t/logs/error_log'));
 
 chdir '/';

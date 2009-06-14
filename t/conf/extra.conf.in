@@ -1,4 +1,6 @@
 LogLevel notice
+LogFormat "%a %t \"%r\" %>s %D \"%{Referer}i\" \"%{User-Agent}i\"" switlog
+CustomLog logs/access_log switlog
 <IfModule !apreq_module.c>
 	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
 </IfModule>
@@ -48,7 +50,6 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/ht_error/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/ht_error.tt
   PerlHandler T::HTError->swit_render_handler
 </Location>
@@ -61,14 +62,12 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/inhe_page/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/htpage.tt
   PerlHandler T::HTInherit->swit_render_handler
 </Location>
 
 <Location /test/safe/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/safe.tt
   PerlHandler T::Safe->swit_render_handler
 </Location>
@@ -80,7 +79,6 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/ht_page/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/htpage.tt
   PerlHandler T::HTPage->swit_render_handler
 </Location>
@@ -97,7 +95,6 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/sess_page/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/sess_page.tt
   PerlHandler T::SessPage->swit_render_handler
 </Location>
@@ -109,7 +106,6 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/db_page/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/db_page.tt
   PerlHandler T::DBPage->swit_render_handler
 </Location>
@@ -126,7 +122,6 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/upload/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/upload.tt
   PerlHandler T::Upload->swit_render_handler
 </Location>
@@ -138,10 +133,16 @@ PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db
 
 <Location /test/empty/r>
   SetHandler perl-script
-  PerlSetVar SWITIncludePath @ServerRoot@
   PerlSetVar SWITTemplate templates/empty_up.tt
   PerlHandler T::Empty->swit_render_handler
 </Location>
+
+<Location /test/huge>
+  SetHandler perl-script
+  PerlSetVar SWITTemplate templates/2mb.tt
+  PerlHandler T::SWIT->swit_render_handler
+</Location>
+
 
 <Location /test/empty/u>
   SetHandler perl-script

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 21;
+use Test::More tests => 22;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
@@ -36,6 +36,7 @@ like($t->mech->content, qr/hhhh/) or ASTU_Wait();
 
 $t->mech_get_base("/test/swit/r");
 like($t->mech->content, qr/hello world/);
+like($t->mech->content, qr/reqboo/);
 
 my $td = tempdir("/tmp/swit_basic_XXXXXXX", CLEANUP => 1);
 $t->mech->submit_form(fields => { file => "$td/fff" });

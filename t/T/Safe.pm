@@ -48,6 +48,11 @@ sub ht_swit_update {
 	my ($class, $r, $root) = @_;
 	die "CUSTOM" if ($root->name && $root->name eq 'custodie');
 	$class->die1 if ($root->name && $root->name eq 'die');
+	if ($root->name eq 'another_t') {
+		my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
+		$dbh->do("insert into another_t (name) values ('fff')");
+		$dbh->do("insert into another_t (name) values ('fff')");
+	}
 	$root->cdbi_create;
 	return "r";
 }

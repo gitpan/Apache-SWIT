@@ -36,8 +36,9 @@ sub ht_swit_update_die {
 
 	my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
 	my $idef = $dbh->selectcol_arrayref("select indexdef from pg_indexes"
-		. " where indexname = ?", undef, $uq);
-	confess "No index for $uq" unless ($idef && $idef->[0]);
+		. " where indexname = ? and tablename = ?", undef, $uq
+			, $root->CDBI_Class->table);
+	goto ORIG_ERROR unless ($idef && $idef->[0]);
 
 	my ($iargs) = ($idef->[0] =~ /\((.*)\)$/);
 	confess "No index args for $idef->[0]" unless $iargs;

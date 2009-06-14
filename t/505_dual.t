@@ -1,12 +1,14 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 18;
+use Test::More tests => 26;
 use File::Slurp;
 use Test::TempDatabase;
 use Cwd;
 use YAML;
 use Apache::SWIT::Test::Utils;
+use HTML::Tested::Seal;
+use Data::Dumper;
 
 Test::TempDatabase->become_postgres_user;
 
@@ -82,13 +84,33 @@ $tree->{pages}->{"aga.html"} = { class => 'TTT::UI::Red'
 			, handler => 'swit_render_handler' };
 YAML::DumpFile('conf/swit.yaml', $tree);
 
-$res = `perl Makefile.PL && make test_dual 2>&1`;
+$res = `perl Makefile.PL && APACHE_SWIT_PROFILE=1 make test_dual 2>&1`;
 like($res, qr/030_load/);
 like($res, qr/success/) or ASTU_Wait();
-unlike($res, qr/Fail/) or ASTU_Wait;
+
+my $elog = 't/logs/error_log';
+unlike($res, qr/Fail/) or ASTU_Wait(-f $elog ? read_file($elog) : "");
 unlike($res, qr/010_db/);
-isnt(-f "A", undef) or diag($res);
+isnt(-f "A", undef) or ASTU_Wait($res . (-f $elog ? read_file($elog) : ""));
 isnt(-f "D", undef);
+
+my $alog = read_file('t/logs/access_log');
+like($alog, qr/Mechanize/) or ASTU_Wait;
+unlike($alog, qr/- - /) or ASTU_Wait;
+
+my ($ch_pid, $cookie, $in, $out) =
+	($alog =~ /Mechanize.*"\s+(\d+) (\w+) (\d+) (\d+)/);
+ok($ch_pid) or ASTU_Wait($alog);
+unlike($ch_pid, qr/127/);
+
+ok($cookie) or ASTU_Wait;
+my $seal = HTML::Tested::Seal->instance(read_file('blib/conf/seal.key'));
+ok($seal->decrypt($cookie)) or ASTU_Wait($alog);
+
+cmp_ok($out, '>', $in) or ASTU_Wait;
+
+my @profs = glob("t/logs/nytprof*");
+is(@profs, 2) or ASTU_Wait(Dumper(\@profs) . $td);
 
 my $sws = read_file("$td/swit_startup_test");
 like($sws, qr/do_swit_startups\.pl/);
