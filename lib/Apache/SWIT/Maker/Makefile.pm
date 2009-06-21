@@ -73,7 +73,13 @@ sub _mm_constants {
 
 sub _mm_test {
 	my $res = shift()->MY::SUPER::test(@_);
-	$res =~ s/PERLRUN\)/PERLRUN) -I t\//g;
+	if ($<) {
+		$res =~ s/PERLRUN\)/PERLRUN) -I t\//g;
+	} else {
+		my $cmd = "./scripts/swit_app.pl test_root test";
+		$res =~ s#\$\(FULLPERLRUN\).*#$cmd#;
+		$res =~ s#test_ : .*#test_ :\n\t$cmd\_#;
+	}
 	return $res;
 }
 
@@ -88,7 +94,7 @@ sub test_apache_lines {
 }
 
 sub _mm_postamble {
-	return __PACKAGE__->get_makefile_rules . sprintf(q{
+	my $tests_str = $< ? sprintf(q{
 test_dual :: test_direct test_apache 
 
 test :: test_direct test_apache 
@@ -100,14 +106,23 @@ test_direct :: pure_all
 
 test_apache :: pure_all
 	%s
+}, __PACKAGE__->find_tests_str('dual'), join("\n\t"
+	, __PACKAGE__->test_apache_lines('$(APACHE_TEST_FILES)'))) : q{
+test_dual :: pure_all
+	./scripts/swit_app.pl test_root test_dual
+test_apache :: pure_all
+	./scripts/swit_app.pl test_root test_apache
+test_direct :: pure_all
+	./scripts/swit_app.pl test_root test_direct
+};
 
+	return __PACKAGE__->get_makefile_rules . $tests_str . q{
 realclean ::
 	$(RM_RF) t/htdocs t/logs
 	$(RM_F) t/conf/apache_test_config.pm  t/conf/modperl_inc.pl t/T/Test.pm
 	$(RM_F) t/conf/extra.conf t/conf/httpd.conf t/conf/modperl_startup.pl
 	$(RM_F) blib/conf/httpd.conf t/conf/mime.types t/conf/schema.sql
-}, __PACKAGE__->find_tests_str('dual'), join("\n\t"
-	, __PACKAGE__->test_apache_lines('$(APACHE_TEST_FILES)')));
+};
 }
 
 my @_swit_overrides = qw(test postamble constants install);

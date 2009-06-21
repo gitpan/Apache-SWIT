@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 26;
+use Test::More tests => 27;
 use File::Slurp;
 use Test::TempDatabase;
 use Cwd;
@@ -9,8 +9,6 @@ use YAML;
 use Apache::SWIT::Test::Utils;
 use HTML::Tested::Seal;
 use Data::Dumper;
-
-Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
 
@@ -23,6 +21,7 @@ $mt->run_modulemaker_and_chdir;
 
 is(system("$cwd/scripts/swit_init"), 0);
 isnt(-f "conf/swit.yaml", undef);
+isnt(-f "conf/seal.key", undef) or ASTU_Wait;
 unlike(read_file("lib/TTT/UI/Index.pm"), qr/sub ht_root_class/);
 
 `./scripts/swit_app.pl add_page Red`;
@@ -54,6 +53,7 @@ $t->with_or_without_mech_do(1, sub {
 $t->aga_html_r(make_url => 1);
 $t->content_like(qr/hrum/);
 ENDS
+append_file('MANIFEST', "\nt/dual/030_load.t\n");
 
 like(read_file("lib/TTT/UI/Index.pm"), qr/sub swit_startup/);
 $mt->replace_in_file("lib/TTT/UI/Index.pm", 'sub swit_startup {', <<ENDS);
@@ -76,6 +76,8 @@ sub swit_startup {
 1;
 ENDS
 
+system("touch $td/startup_classes_test && chmod a+rw $td/startup_classes_test");
+system("chmod a+rxw $td");
 my $tree = YAML::LoadFile('conf/swit.yaml');
 isnt($tree, undef);
 $tree->{startup_classes} = [ 'TTT::SC' ];

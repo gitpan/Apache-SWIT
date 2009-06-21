@@ -5,11 +5,6 @@ use Apache::SWIT::Maker::Makefile;
 
 Apache::SWIT::Maker::Makefile->new({ no_swit_overrides => 1, overrides => {
 postamble => sub { return q{
-config :: t/conf/httpd.conf
-	$(NOECHO) $(NOOP)
-			
-t/conf/httpd.conf :: t/conf/extra.conf.in
-	ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) t/apache_test.pl -config
 
 APACHE_TEST_FILES = t/apache/*.t
 test :: test_apache

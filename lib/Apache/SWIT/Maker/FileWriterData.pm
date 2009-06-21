@@ -107,9 +107,9 @@ __PACKAGE__->add_file({ name => 'conf/makefile_rules.yaml', manifest => 1 }
     - PERL_DL_NONLAZY=1 $(FULLPERLRUN) t/apache_test_run.pl -config
 - targets: [ blib/conf/seal.key ]
   dependencies:
-    - Makefile
+    - conf/seal.key
   actions:
-    - ./scripts/swit_app.pl regenerate_seal_key
+    - cp conf/seal.key blib/conf/seal.key
 - targets: [ blib/conf/httpd.conf ]
   dependencies:
     - conf/swit.yaml

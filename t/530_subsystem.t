@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 50;
+use Test::More tests => 51;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use Test::TempDatabase;
@@ -9,8 +9,9 @@ use YAML;
 use File::Slurp;
 use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Maker::Manifest;
+use Cwd qw(abs_path getcwd);
+use File::Basename qw(dirname);
 
-Test::TempDatabase->become_postgres_user;
 use Apache::SWIT::Test::Utils;
 use HTML::Tested::Value::Form;
 use HTML::Tested::Value::Marked;
@@ -20,6 +21,7 @@ BEGIN { use_ok('Apache::SWIT::Subsystem::Maker');
 	use_ok('Apache::SWIT::Test::Apache');
 }
 
+my $dn = abs_path("blib/lib");
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 my $td = $mt->root_dir;
 chdir $td;
@@ -94,12 +96,15 @@ like($res, qr/localhost/);
 like($res, qr/950_install/);
 unlike($res, qr/Please use/);
 
-append_file('conf/startup.pl', '`touch $INC[0]/../touched`; 1;');
+append_file('conf/startup.pl', '`touch $INC[0]/../../touched`; 1;' . "\n");
+`touch conf/startup.pl`;
+sleep 1;
 $res = join('', `make test_apache 2>&1`);
 like($res, qr/success/) or ASTU_Wait($res);
 
-like(read_file('blib/conf/startup.pl'), qr/touch/);
-ok(-f 'blib/touched');
+my $mf = read_file('Makefile');
+like(read_file('blib/conf/startup.pl'), qr/touch/) or ASTU_Wait($mf . $res);
+ok(-f 'touched');
 
 ok(-f 't/dual/001_load.t');
 
@@ -113,6 +118,9 @@ ENDS
 
 my $m_str2 = read_file('MANIFEST');
 is($m_str2, $m_str);
+
+$res = `make`;
+is($?, 0) or ASTU_Wait;
 
 $res = $mt->run_make_install;
 is(-d "$td/inst/share/ttt", undef) or do {
@@ -130,6 +138,7 @@ isnt(-d "$td/inst/share/perl", undef) or do {
 ok(-f $mt->install_dir . "/TTT.pm");
 my $inst_path = $mt->install_dir . "/TTT";
 ok(-f "$inst_path/Maker.pm");
+my $idir = abs_path($mt->install_dir);
 
 chdir $td;
 $mt->make_swit_project(root_class => 'MU');
@@ -143,7 +152,7 @@ use_ok('HTML::Tested', qw(HT HTV));
 
 isnt(-f "t/dual/thesub/001_load.t", undef) or ASTU_Wait($td);
 my $s001 = read_file("t/dual/thesub/001_load.t");
-like($s001, qr/ht_id/);
+like($s001, qr/ht_id/) or ASTU_Wait($mf);
 like($s001, qr/HT_SEALED_ht_id/);
 
 undef $Apache::SWIT::Maker::Config::_instance;
@@ -165,7 +174,13 @@ symlink("$td/TTT/blib/lib/TTT", "blib/lib/TTT") or die "# Unable to symlink";
 append_file('t/dual/001_load.t', <<ENDT);
 \$t->ok_ht_thesub_index_r(make_url => 1, ht => { first => '' });
 ENDT
-$res = join('', `make test 2>&1`);
+$ENV{PERL5LIB} = "$idir\:$dn";
+if (!$<) {
+	for (my $d = $idir; $d ne '/tmp'; $d = dirname($d)) {
+		system("chmod a+rx $d") and die;
+	}
+}
+$res = join('', `echo \$PERL5LIB && make test 2>&1`);
 unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/thesub\/001/);
 

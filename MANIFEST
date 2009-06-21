@@ -12,6 +12,7 @@ lib/Apache/SWIT/LargeObjectHandler.pm
 t/apache/110_safe.t
 t/T/HTInherit.pm
 t/templates/safe.tt
+scripts/test_root.pl
 lib/Apache/SWIT/Maker/Config.pm
 lib/Apache/SWIT/Maker/Skeleton.pm
 lib/Apache/SWIT/Maker/Skeleton/Scaffold.pm

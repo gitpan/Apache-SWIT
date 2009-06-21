@@ -23,7 +23,6 @@ sub swit_run {
 
 	my $not_config = (@ARGV && $ARGV[0] ne '-config');
 	push @ARGV, '-top_dir', $top_dir;
-	my $cf_dir = "$top_dir/t/conf";
 	Check_For_Run_Server(\@ARGV);
 
 	$non_config_func->() if ($non_config_func && $not_config);

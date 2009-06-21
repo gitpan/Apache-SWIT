@@ -13,6 +13,7 @@ use base 'Class::Accessor';
 use File::Path;
 use File::Basename qw(dirname basename);
 use File::Copy;
+use Crypt::CBC;
 use Cwd qw(abs_path getcwd);
 use Apache::SWIT::Maker::GeneratorsQueue;
 use Apache::SWIT::Maker::FileWriterData;
@@ -20,6 +21,7 @@ use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Maker::Config;
 use Apache::SWIT::Maker::Makefile;
 use File::Slurp;
+use Digest::MD5 qw(md5_hex);
 use Apache::SWIT::Maker::Manifest;
 use ExtUtils::Manifest qw(maniread manicopy);
 use File::Temp qw(tempdir);
@@ -146,6 +148,11 @@ CustomLog logs/access_log switlog
 ENDM
 }
 
+sub write_seal_key {
+	swmani_write_file("conf/seal.key"
+		, md5_hex(Crypt::CBC->random_bytes(8)));
+}
+
 sub write_httpd_conf_in {
 	my $self = shift;
 	my $rl = Apache::SWIT::Maker::Config->instance->root_location;
@@ -226,6 +233,7 @@ sub write_initial_files {
 	$self->write_test_db_file;
 	$self->write_t_extra_conf_in;
 	$self->write_httpd_conf_in;
+	$self->write_seal_key;
 	swmani_write_file("public_html/main.css", "# Sample CSS file\n");
 	$self->file_writer->write_t_direct_test_pl;
 
@@ -241,6 +249,8 @@ sub write_initial_files {
 sub dump_db {
 	push @INC, "t", "lib";
 	unlink("t/conf/schema.sql");
+	system("touch t/conf/schema.sql && chmod a+rw t/conf/schema.sql")
+		unless ($<);
 	conv_eval_use('T::TempDB');
 	system("pg_dump -c $ENV{APACHE_SWIT_DB_NAME} > t/conf/schema.sql");
 }
@@ -287,12 +297,6 @@ return <<ENDS
 	SetHandler perl-script
 	PerlHandler $c\->$h
 ENDS
-}
-
-sub regenerate_seal_key {
-	my $seed = -f 'conf/seal.key' ? read_file('conf/seal.key')
-			: $$ . int(rand(65530)) . time;
-	mkpath_write_file('blib/conf/seal.key', $seed);
 }
 
 sub regenerate_httpd_conf {
@@ -507,7 +511,6 @@ add_class => [ '<class> - adds new class.', 1 ]
 		reference it.', 1 ]
 , override => [ '<class> - overrides page class by inheriting from it.' ]
 , regenerate_httpd_conf => [ '- regenerates httpd.conf.' ]
-, regenerate_seal_key => [ '- regenerates new seal key.' ]
 , run_server => [ '<host:port> <db> - runs Apache on optional host:port using
 			db name if given.' ]
 , scaffold => [ '<table_name> - generates classes and templates supporting
@@ -515,6 +518,7 @@ add_class => [ '<class> - adds new class.', 1 ]
 , add_migration => [ '<name> <sql> - create migration test target', 1 ]
 , freeze_schema => [ 'freezes schema' ]
 , dump_db => [ 'dumps temporary database into t/conf/schema.sql' ]
+, test_root => [ 'Runs tests in temporary directory as different user' ]
 ); }
 
 sub swit_app_cmd_params {
@@ -559,9 +563,37 @@ sub do_swit_app_cmd {
 				for (sort keys %$mf);
 		conv_silent_system("perl Makefile.PL");
 	}
-	rmtree($backup_dir);
+	rmtree($backup_dir) if $p->[1];
 	die "Rolled back. Original exception is $err" if $err;
 	return 1;
+}
+
+sub test_root {
+	my ($self, @args) = @_;
+	my $td = tempdir("/tmp/swit_test_root_XXXXXX");
+	my $cwd = abs_path(getcwd());
+	my $mfiles = maniread();
+	manicopy($mfiles, $td);
+	chdir $td;
+	system("chmod a+rwx `find . -type d`") and die;
+	system("chmod a+rw `find . -type f`") and die;
+	eval "use Test::TempDatabase";
+	my $pid = fork();
+	if (!$pid) {
+		Test::TempDatabase->become_postgres_user;
+		system("perl Makefile.PL") and die;
+		system("make") and die;
+		system("make", @args) and die;
+		exit;
+	}
+	waitpid $pid, 0;
+	my @to_copy = map { chomp; $_; } `find . -newer Makefile -type f`;
+	for my $f (grep { !/^\.\/blib/ } @to_copy) {
+		mkpath($cwd . "/" . dirname($f));
+		copy($f, "$cwd/$f") or die $f;
+	}
+	chdir($cwd);
+	rmtree($td);
 }
 
 1;

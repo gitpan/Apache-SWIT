@@ -2,22 +2,35 @@ use lib 'lib';
 use Apache::SWIT::Test::Apache;
 use File::Slurp;
 use File::Basename qw(dirname);
-use File::Path qw(mkpath);
+use File::Path qw(mkpath rmtree);
 use Apache::SWIT::Maker::Skeleton::Startup;
 use Test::TempDatabase;
 use Apache::SWIT::DB::Connection;
 use Cwd qw(abs_path);
+use File::Temp qw(tempdir);
 
 my $test_db;
 unlink("/tmp/swit_startup_test");
+my $d = abs_path(dirname($0));
+my $td;
 unless ($<) {
-	my $chmod = "chmod -R a+rw " . abs_path(dirname($0)) . "/../";
-	print STDERR "# Running as root. Having no other choice but: $chmod\n";
-	`$chmod`;
+	$td = tempdir("/tmp/swit_root_test_XXXXXX");
+	print STDERR "# Running as root in $td\n";
+	system("cp -a $d/../ $td/") and die;
+	chdir $td;
+	system("chmod a+rwx `find . -type d`") and die;
+	system("chmod a+rw `find . -type f`") and die;
+	$d = "$td/t";
+	my $pid = fork();
+	if ($pid) {
+		waitpid $pid, 0;
+		chdir '/';
+		rmtree $td;
+		exit;
+	}
 	Test::TempDatabase->become_postgres_user;
 }
 
-my $d = abs_path(dirname($0));
 Apache::SWIT::Test::Apache->swit_run(sub {
 	mkpath("$d/../blib/conf");
 	symlink("$d/templates", "$d/../blib/templates");

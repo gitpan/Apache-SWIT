@@ -16,7 +16,6 @@ delete $ENV{TEST_FILES};
 delete $ENV{MAKEFLAGS};
 delete $ENV{MAKEOVERRIDES};
 
-Test::TempDatabase->become_postgres_user;
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 chdir $mt->root_dir;
 $mt->make_swit_project;
@@ -40,7 +39,13 @@ $t->with_or_without_mech_do(1, sub {
 });
 ENDM
 
-ok(unlink("/tmp/db_is_clean.ttt_test_db.$<"));
+sub check_db_is_clean {
+	ok($< ? unlink("/tmp/db_is_clean.ttt_test_db.$<")
+		: ! -f "/tmp/db_is_clean.ttt_test_db.$<") or ASTU_Wait;
+}
+
+check_db_is_clean();
+
 my @tmp_contents = glob('/tmp/*');
 `perl Makefile.PL`;
 my $tres = join('', `make test 2>&1`);
@@ -53,10 +58,13 @@ unlike($tres, qr/Please use/);
 like($tres, qr/987_test/);
 ok(-d 't/logs');
 ok(-f 'blib/conf/httpd.conf');
-ok(unlink("/tmp/db_is_clean.ttt_test_db.$<"));
+check_db_is_clean();
 is_deeply([ glob("/tmp/*") ], \@tmp_contents);
 
-is_deeply([ `psql -l | grep ttt_test_db` ], []) or diag($tres);
+sub check_psql {
+	$> ? is_deeply([ `psql -l | grep ttt_test_db` ], []) : ok 1;
+}
+check_psql() or ASTU_Wait($tres);
 
 #diag($td);
 #readline(\*STDIN);
@@ -67,9 +75,9 @@ $tres = join('', `make 2>&1`);
 unlike($tres, qr/configuration/);
 
 # But now config should be regenerated
-`touch t/conf/extra.conf.in`;
+system("sleep 1 && touch t/conf/extra.conf.in") and die;
 $tres = join('', `make 2>&1`);
-like($tres, qr/configuration/);
+like($tres, qr/configuration/) or ASTU_Wait(read_file('Makefile'));
 
 # make test_ doesn't run apache
 $tres = join('', `make test_ 2>&1`);
@@ -152,16 +160,16 @@ print $fh "use HTML::Tested::Value::Form;\n";
 print $fh "use HTML::Tested qw(HT HTV);\nuse TTT::UI::First::Page;\n$at";
 close $fh;
 
-is_deeply([ `psql -l | grep ttt_test_db` ], []);
+check_psql();
 `perl Makefile.PL`;
 $tres = join('', `make test_apache 2>&1`);
 like($tres, qr/All tests successful/) or ASTU_Wait;
 unlike($tres, qr/Fail/) or ASTU_Wait;
-is_deeply([ `psql -l | grep ttt_test_db` ], []);
+check_psql();
 
 $tres = join('', `make disttest 2>&1`);
 unlike($tres, qr/Fail/);
-is_deeply([ `psql -l | grep ttt_test_db` ], []);
+check_psql();
 
 chdir '/';
 rmtree('/tmp/ttt_sessions');
