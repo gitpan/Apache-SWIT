@@ -9,7 +9,7 @@ use Apache::SWIT::Test::Utils;
 use Digest::MD5;
 use ExtUtils::Manifest qw(maniread);
 
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 sub dist_md5 {
 	my $ctx = Digest::MD5->new;

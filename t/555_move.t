@@ -9,7 +9,7 @@ use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Test::Utils;
 use ExtUtils::Manifest;
 
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 chdir $mt->root_dir;

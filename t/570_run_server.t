@@ -4,14 +4,14 @@ use warnings FATAL => 'all';
 use Test::More tests => 29;
 use Test::TempDatabase;
 use Apache::SWIT::Test::Utils;
-Test::TempDatabase->become_postgres_user;
-
 use LWP::UserAgent;
 use IPC::Run qw( start pump finish timeout ) ;
 
 BEGIN { use_ok('Apache::SWIT::Maker');
 	use_ok('Apache::SWIT::Test::ModuleTester');
 }
+
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 my $td = $mt->root_dir;

@@ -9,6 +9,8 @@ use Apache::SWIT::Maker;
 use File::Slurp;
 use Carp;
 use YAML;
+use Linux::Unshare qw(unshare_ns);
+use Test::TempDatabase;
 
 __PACKAGE__->mk_accessors(qw(root_dir root_class install_dir project_class
 			subsystem_name));
@@ -123,6 +125,15 @@ sub install_session_base {
 	my $tree = YAML::LoadFile('conf/swit.yaml');
 	push @{ $tree->{startup_classes} }, $sess_class;
 	YAML::DumpFile('conf/swit.yaml', $tree);
+}
+
+sub Drop_Root {
+	return if $<;
+	unshare_ns() and die;
+	system("mount --bind blib/lib /mnt") and die;
+	$ENV{PERL5LIB} = "/mnt";
+	push @INC, "/mnt";
+	Test::TempDatabase->become_postgres_user;
 }
 
 1;

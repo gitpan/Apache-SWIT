@@ -8,9 +8,9 @@ use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Maker::Manifest;
 use Apache::SWIT::Test::Utils;
 
-Test::TempDatabase->become_postgres_user;
-
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
+
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 chdir $mt->root_dir;

@@ -4,7 +4,7 @@ use warnings FATAL => 'all';
 use Test::More tests => 12;
 use Test::TempDatabase;
 use File::Slurp;
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
 

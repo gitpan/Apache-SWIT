@@ -9,7 +9,7 @@ use Apache::SWIT::Maker::Conversions;
 use Apache::SWIT::Maker::Manifest;
 use YAML;
 
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester'); }
 

@@ -97,7 +97,10 @@ like($res, qr/950_install/);
 unlike($res, qr/Please use/);
 
 append_file('conf/startup.pl', '`touch $INC[0]/../../touched`; 1;' . "\n");
-`touch conf/startup.pl`;
+sleep 1;
+system("echo ### >> conf/startup.pl");
+sleep 1;
+system("touch conf/startup.pl");
 sleep 1;
 $res = join('', `make test_apache 2>&1`);
 like($res, qr/success/) or ASTU_Wait($res);

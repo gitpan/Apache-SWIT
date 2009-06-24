@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Apache-SWIT
-version:             0.47
+version:             0.48
 abstract:            mod_perl server with integrated testing
 license:             ~
 author:              
@@ -27,6 +27,7 @@ requires:
     IO::CaptureOutput:             
     IPC::Run:                      
     Linux::Smaps:                  
+    Linux::Unshare:                
     Package::Alias:                
     Queue::Worker:                 
     Template:                      

@@ -5,7 +5,7 @@ use Test::More tests => 24;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester');
 	use_ok('Apache::SWIT::Subsystem::Maker');

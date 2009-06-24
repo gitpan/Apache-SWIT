@@ -578,11 +578,18 @@ sub test_root {
 	system("chmod a+rwx `find . -type d`") and die;
 	system("chmod a+rw `find . -type f`") and die;
 	eval "use Test::TempDatabase";
+
+	my $dn = __FILE__;
+	for (; basename($dn) ne 'Apache'; $dn = dirname($dn))
+		{} # nothing
+	system("cp -a $dn .") and die;
+
 	my $pid = fork();
 	if (!$pid) {
 		Test::TempDatabase->become_postgres_user;
 		system("perl Makefile.PL") and die;
 		system("make") and die;
+		system("ln -s `pwd`/Apache blib/lib/Apache") and die;
 		system("make", @args) and die;
 		exit;
 	}

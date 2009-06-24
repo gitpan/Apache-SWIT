@@ -6,7 +6,6 @@ use Apache::SWIT::Test::ModuleTester;
 use File::Slurp;
 use ExtUtils::Manifest qw(maniadd);
 use Test::TempDatabase;
-Test::TempDatabase->become_postgres_user;
 
 BEGIN { use_ok('Apache::SWIT::Maker::Makefile');
 	use_ok('Apache::SWIT::Maker::Manifest');
@@ -66,7 +65,7 @@ my $m = read_file('Makefile');
 like($m, qr/gogogo/);
 
 # from test
-like($m, qr/-I t/);
+like($m, $< ? qr/-I t/ : qr/test_root/);
 
 $am = Apache::SWIT::Maker::Makefile->new;
 $am->write_makefile(NAME => 'TTT');

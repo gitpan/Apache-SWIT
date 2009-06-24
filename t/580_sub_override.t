@@ -3,14 +3,13 @@ use warnings FATAL => 'all';
 
 use Test::More tests => 20;
 use File::Slurp;
-use Test::TempDatabase;
 use Apache::SWIT::Test::Utils;
 
 BEGIN { use_ok('Apache::SWIT::Test::ModuleTester');
 	use_ok('Apache::SWIT::Subsystem::Maker');
 }
 
-Test::TempDatabase->become_postgres_user;
+Apache::SWIT::Test::ModuleTester::Drop_Root();
 
 my $mt = Apache::SWIT::Test::ModuleTester->new({ root_class => 'TTT' });
 my $td = $mt->root_dir;
@@ -62,7 +61,7 @@ $res = `./scripts/swit_app.pl override P1`;
 is($?, 0) or diag($res);
 ok(-f 'lib/MU/UI/TTT/P1.pm');
 
-my $p5var = "PERL5LIB=\$PERL5LIB:$td/TTT/blib/lib";
+$ENV{PERL5LIB} .= ":$td/TTT/blib/lib";
 
 write_file('lib/MU/UI/Index.pm', <<'ENDS');
 use strict;
@@ -77,7 +76,7 @@ use base 'TTT::UI::P1';
 1;
 ENDS
 
-$res = `perl Makefile.PL && $p5var make test_direct 2>&1`;
+$res = `perl Makefile.PL && make test_direct 2>&1`;
 unlike($res, qr/Error/) or ASTU_Wait($td);
 like($res, qr/success/);
 
@@ -85,7 +84,7 @@ $mt->replace_in_file('t/dual/thesub/001_load.t', '=> 16', '=> 17');
 $mt->replace_in_file('t/dual/thesub/001_load.t', 'Index'
 		, "Index'); use_ok('MU::UI::TTT::P1");
 
-$res = `$p5var make test 2>&1`;
+$res = `make test 2>&1`;
 like($res, qr/success/);
 unlike($res, qr/Error/);
 
