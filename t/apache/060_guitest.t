@@ -12,8 +12,12 @@ BEGIN { use_ok('T::Test');
 T::Test->make_aliases(db_page => 'T::DBPage', upload => 'T::Upload');
 is($ENV{SWIT_HAS_APACHE}, 1);
 
+my $t;
+eval { $t = T::Test->new_guitest; };
 
-my $t = T::Test->new_guitest;
+SKIP: {
+	skip "Unable to load guitest", 16 unless $t;
+
 is($ENV{MOZ_NO_REMOTE}, 1); # or else there are coredumps sometimes
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	val => ''
@@ -67,3 +71,4 @@ my @al1 = ASTU_Read_Access_Log();
 $t->ok_follow_link(text => 'Get Plain');
 my @al2 = ASTU_Read_Access_Log();
 is_deeply(\@al2, \@al1);
+};

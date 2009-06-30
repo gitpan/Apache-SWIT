@@ -1,3 +1,4 @@
+PerlPassEnv APACHE_SWIT_SERVER_URL
 LogLevel notice
 LogFormat "%a %t \"%r\" %>s %D \"%{Referer}i\" \"%{User-Agent}i\"" switlog
 CustomLog logs/access_log switlog

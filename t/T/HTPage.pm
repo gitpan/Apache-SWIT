@@ -16,7 +16,7 @@ sub ht_swit_render {
 	$root->hello('world');
 	$root->req_uri($r->uri);
 	$root->hid($root->hid || 'secret');
-	$root->hostport($class->swit_hostport($r));
+	$root->hostport($ENV{APACHE_SWIT_SERVER_URL});
 	return $root;
 }
 

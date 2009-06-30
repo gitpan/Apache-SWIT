@@ -35,8 +35,7 @@ sub run_tests {
 	my $res = 0;
 	ASTU_Mem_Show("Apache memory before");
 	if ($ENV{__APACHE_SWIT_RUN_SERVER__}) {
-		print STDERR "# Server url is http://"
-				. Apache::TestRequest::hostport ."\n";
+		print STDERR "# Server url is $ENV{APACHE_SWIT_SERVER_URL}\n";
 		print STDERR "# Press Enter to finish ...\n";
 		readline(\*STDIN);
 	} else {
@@ -48,6 +47,8 @@ sub run_tests {
 
 sub configure {
 	shift()->SUPER::configure(@_);
+	$ENV{APACHE_SWIT_SERVER_URL} = "http://" . Apache::TestRequest::hostport
+		. "/";
 	my $cf = read_file('t/conf/httpd.conf');
 	$cf =~ s/TransferLog/#/g;
 	if ($ENV{APACHE_SWIT_PROFILE}) {

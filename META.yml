@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Apache-SWIT
-version:             0.48
+version:             0.49
 abstract:            mod_perl server with integrated testing
 license:             ~
 author:              
@@ -10,13 +10,11 @@ distribution_type:   module
 requires:     
     Apache2::Cookie:               
     Apache2::Request:              
-    Apache::DB:                    
     Apache::Test:                  
     Class::Accessor:               
     Class::DBI:                    
     Class::DBI::Pg:                0.09
     Class::DBI::Pg::More:          0.04
-    DBD::Pg:                       2.11
     DBIx::VersionedSchema:         0.03
     Devel::NYTProf:                
     ExtUtils::ModuleMaker:         

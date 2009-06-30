@@ -14,6 +14,8 @@ BEGIN { use_ok('T::Test');
 
 $ENV{SWIT_HAS_APACHE} = 0;
 
+my $_hp = "http://" .  Apache::TestRequest::hostport() . "/";
+
 my $td = tempdir("/tmp/swit_ht_page_XXXXXXX", CLEANUP => 1);
 
 T::Test->make_aliases(another_page => 'T::HTPage',
@@ -26,7 +28,7 @@ $t->ok_ht_another_page_r(base_url => '/test/ht_page', ht => {
 
 my $res = $t->ok_ht_another_page_r(base_url => '/test/ht_page', 
 	param => { v1 => 'hi', },
-	ht => { hello => 'world', v1 => 'hi', hostport => 'some.host'
+	ht => { hello => 'world', v1 => 'hi', hostport => $_hp
 		, req_uri => '/test/ht_page' });
 is($res, 1);
 
@@ -60,11 +62,11 @@ $t->ok_ht_inhe_page_r(param => { inhe => 'FFF' }
 		, base_url => '/test/inhe_page/r', ht => { 
 		hello => 'world', HT_SEALED_hid => 'secret'
 		, inhe_val => 'FFF'
-		, hostport => Apache::TestRequest::hostport() });
+		, hostport => $_hp });
 
 $t->ok_ht_another_page_r(base_url => '/test/ht_page/r', ht => { 
 		hello => 'world', HT_SEALED_hid => 'secret'
-		, hostport => Apache::TestRequest::hostport() });
+		, hostport => $_hp });
 like($t->mech->content, qr/got more/);
 
 $t->ok_ht_another_page_r(base_url => '/test/ht_page/r'

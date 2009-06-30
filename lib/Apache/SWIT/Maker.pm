@@ -136,6 +136,7 @@ sub write_t_extra_conf_in {
 	my $an = Apache::SWIT::Maker::Config->instance->app_name;
 	swmani_write_file('t/conf/extra.conf.in', <<ENDM);
 PerlPassEnv APACHE_SWIT_DB_NAME
+PerlPassEnv APACHE_SWIT_SERVER_URL
 LogLevel notice
 <IfModule mod_mime.c>
 	Include "/etc/apache2/mods-enabled/mime.conf"
@@ -594,6 +595,7 @@ sub test_root {
 		exit;
 	}
 	waitpid $pid, 0;
+	die "Child finished abnormally: $?" if $?;
 	my @to_copy = map { chomp; $_; } `find . -newer Makefile -type f`;
 	for my $f (grep { !/^\.\/blib/ } @to_copy) {
 		mkpath($cwd . "/" . dirname($f));

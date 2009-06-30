@@ -35,11 +35,9 @@ realclean ::
 	'Test::TempDatabase' => '0.13', 'Class::DBI::Pg::More' => '0.04',
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.13'
-	, 'Package::Alias' => '', 'Apache::DB' => ''
-	, 'Linux::Unshare' => ''
+	, 'Package::Alias' => '', 'Linux::Unshare' => ''
 	, 'Queue::Worker' => '', 'IO::CaptureOutput' => ''
-	, 'DBD::Pg' => 2.11, 'Linux::Smaps' => ''
-	, 'Devel::NYTProf' => ''
+	, 'Linux::Smaps' => '', 'Devel::NYTProf' => ''
     },
 );
 

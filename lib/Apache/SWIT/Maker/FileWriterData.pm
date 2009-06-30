@@ -31,6 +31,7 @@ use warnings FATAL => 'all';
 use Test::Harness;
 use T::TempDB;
 
+$ENV{APACHE_SWIT_SERVER_URL} = 'direct.test';
 runtests(@ARGV);
 EM
 

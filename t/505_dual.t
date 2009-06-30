@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 use File::Slurp;
 use Test::TempDatabase;
 use Cwd;
@@ -26,29 +26,39 @@ unlike(read_file("lib/TTT/UI/Index.pm"), qr/sub ht_root_class/);
 
 `./scripts/swit_app.pl add_page Red`;
 is($?, 0);
-$mt->replace_in_file("lib/TTT/UI/Red.pm", "swit_render {", <<ENDS);
+$mt->replace_in_file("lib/TTT/UI/Red.pm", "swit_render {", <<'ENDS');
 swit_render {
-	return [ INTERNAL => "../index/r" ];
+	return [ INTERNAL => "../index/r?first=$ENV{APACHE_SWIT_SERVER_URL}" ];
 ENDS
 
 write_file('t/dual/030_load.t', <<'ENDS');
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 8;
+use Test::More tests => 11;
 use File::Slurp;
 
 BEGIN { use_ok('T::Test'); };
 
 my $t = T::Test->new;
-$t->with_or_without_mech_do(1, sub { ok 1; write_file("A", ""); },
-		1, sub { ok 1; write_file("D", ""); });
+$t->with_or_without_mech_do(2, sub {
+	ok 1;
+	write_file("A", "");
+	is($ENV{APACHE_SWIT_SERVER_URL}, 'http://'
+		. Apache::TestRequest::hostport() . "/");
+}, 2, sub {
+	ok 1;
+	write_file("D", "");
+	is($ENV{APACHE_SWIT_SERVER_URL}, 'direct.test');
+});
 $t->ok_ht_index_r(make_url => 1, ht => { first => '' });
 $t->content_like(qr/hrum/);
 $t->red_r(make_url => 1);
 $t->content_like(qr/hrum/);
-$t->with_or_without_mech_do(1, sub {
+$t->with_or_without_mech_do(2, sub {
 	like($t->mech->uri, qr#red/r#);
+	my $hp = Apache::TestRequest::hostport();
+	like($t->mech->content, qr#http://$hp/#);
 });
 $t->aga_html_r(make_url => 1);
 $t->content_like(qr/hrum/);
@@ -121,5 +131,9 @@ unlike($sws, qr/httpd\.conf/);
 my $sct = read_file("$td/startup_classes_test");
 like($sws, qr/do_swit_startups\.pl/);
 unlike($sws, qr/httpd\.conf/);
+
+append_file("t/010_db.t", "\ndie;\n");
+$res = `make test_ 2>&1`;
+isnt($?, 0);
 
 chdir '/';
