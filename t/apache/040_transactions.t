@@ -48,7 +48,21 @@ my $cnt = $t->mech->content;
 like($cnt, qr/xxxxxxx/);
 like($cnt, qr/world/);
 
-is_deeply([ ASTU_Apache_Pids() ], \@ap_pids);
+my @pids;
+for (1 .. 5) {
+	my $pid = fork();
+	if ($pid) {
+		push @pids, $pid;
+	} else {
+		$t->mech_get_base('/test/huge');
+		exit;
+	}
+}
+waitpid($_, 0) for @pids;
+
+my @ap2 = ASTU_Apache_Pids();
+cmp_ok(@ap2, '>=', @ap_pids);
+@ap2 = @ap_pids;
 
 my @mem2 = ASTU_Mem_Stats(@ap_pids);
 is(@mem2, @ap_pids);
@@ -58,7 +72,7 @@ $priv1 += $_ for map { $_->[2] } @mem;
 
 my $priv2 = 0;
 $priv2 += $_ for map { $_->[2] } @mem2;
-cmp_ok($priv2 - $priv1, '<', 6000);
+cmp_ok(($priv2 - $priv1) / @ap_pids, '<', 5000) or ASTU_Wait(ASTU_Mem_Report());
 
 like(ASTU_Mem_Report(), qr/$priv2/);
 

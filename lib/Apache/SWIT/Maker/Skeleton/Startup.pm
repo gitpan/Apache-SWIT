@@ -16,7 +16,7 @@ BEGIN {
 	unshift @INC, abs_path(dirname(__FILE__) . "/../lib");
 }
 
-use Template;
+use Apache::SWIT::Template;
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::RequestUtil ();
@@ -42,9 +42,8 @@ eval "use " . HTV() . "::$_" for qw(Marked Form Hidden Submit EditBox Link
 
 HTML::Tested::Seal->instance(read_file($INC[0] . '/../conf/seal.key'));
 
-$Apache::SWIT::TEMPLATE = Template->new({ ABSOLUTE => 1
-		, INCLUDE_PATH => ($INC[0] . "/..") })
-	or die "Unable to create template object";
+$Apache::SWIT::TEMPLATE = Apache::SWIT::Template->new;
+$Apache::SWIT::TEMPLATE->preload_all;
 
 1;
 ENDM

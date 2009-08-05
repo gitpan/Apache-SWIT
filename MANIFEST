@@ -3,6 +3,7 @@ LICENSE
 README
 scripts/swit_init
 lib/Apache/SWIT.pm
+lib/Apache/SWIT/Template.pm
 t/T/WorkPage.pm
 t/T/Safe.pm
 t/T/Invalid.pm

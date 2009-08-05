@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 31;
+use Test::More tests => 32;
 use File::Temp qw(tempdir);
 use File::Slurp;
 use Apache::SWIT::Session;
@@ -68,6 +68,7 @@ $t->ok_ht_another_page_r(base_url => '/test/ht_page/r', ht => {
 		hello => 'world', HT_SEALED_hid => 'secret'
 		, hostport => $_hp });
 like($t->mech->content, qr/got more/);
+like($t->mech->content, qr#:templates/htpage\.tt:#);
 
 $t->ok_ht_another_page_r(base_url => '/test/ht_page/r'
 	, param => { HT_SEALED_hid => 'gaga' }, ht => { 

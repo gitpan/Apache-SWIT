@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 22;
+use Test::More tests => 24;
 use File::Temp qw(tempdir);
 use File::Basename qw(dirname);
 use File::Slurp;
@@ -51,3 +51,12 @@ is($t->mech->status, 200);
 
 like(ASTU_Read_Error_Log(), qr/normal operations/);
 like(ASTU_Read_Access_Log(), qr/GET/);
+
+my $env = $ENV{APACHE_SWIT_SERVER_URL};
+{
+	local $ENV{APACHE_SWIT_SERVER_URL} = "$env/test";
+	$t->mech_get_base("/swit/r");
+	like($t->mech->content, qr/hello world/);
+};
+# ok_get works with other protocols
+$t->ok_get('https://mail.google.com');

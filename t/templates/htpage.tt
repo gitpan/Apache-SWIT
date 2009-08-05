@@ -4,6 +4,7 @@
 [% INCLUDE templates/more.tt %]
 
 <form action="u" method="post" enctype="multipart/form-data">
+:[% template.name %]:
 hello [% hello %]
 file: [% file %]
 upload: [% up %]

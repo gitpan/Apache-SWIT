@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 25;
+use Test::More tests => 26;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -103,6 +103,9 @@ my $dres = `nytprofhtml -f $outs[1] 2>&1`;
 is($?, 0) or ASTU_Wait($dres);
 ok(-f './nytprof/index.html') or ASTU_Wait;
 unlink($_) for @outs;
+
+my $ind = read_file('./nytprof/index.html');
+unlike($ind, qr/Template::Provider::/) or ASTU_Wait($mt->root_dir);
 
 my $hiddens = join("\n", map { "<input type=\"hidden\" name=\"n$_\""
 	. " value=\"v$_\" />" } (1 .. 100));

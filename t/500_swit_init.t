@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 66;
+use Test::More tests => 67;
 use File::Temp qw(tempdir);
 use Data::Dumper;
 use File::Path qw(rmtree);
@@ -72,6 +72,7 @@ like(read_file('t/logs/access_log'), qr/ttt\/index.*200/);
 
 # Check that we run configuration only once
 $tres = join('', `make 2>&1`);
+is($?, 0) or ASTU_Wait($tres);
 unlike($tres, qr/configuration/);
 
 # But now config should be regenerated

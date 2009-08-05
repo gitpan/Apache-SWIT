@@ -11,6 +11,10 @@ CustomLog logs/access_log switlog
 AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript
 
 PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
+KeepAlive off
+MaxClients 5
+StartServers 2
+MinSpareServers 3
 
 PerlPostConfigRequire @ServerRoot@/../blib/conf/startup.pl
 PerlSetEnv APACHE_SWIT_DB_NAME swit_test_db

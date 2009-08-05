@@ -1,9 +1,10 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 29;
+use Test::More tests => 31;
 use Test::TempDatabase;
 use Apache::SWIT::Test::Utils;
+use File::Slurp;
 use LWP::UserAgent;
 use IPC::Run qw( start pump finish timeout ) ;
 
@@ -100,6 +101,16 @@ is($@, '') or ASTU_Wait("$out,\n$err");
 like($err, qr/Press Enter to finish \.\.\./);
 like($ua->get("http://$host/ttt/onecoltable/list/r")->content, qr/gggg/)
 	or ASTU_Wait($td);
+
+my $f = "blib/templates/onecoltable/list.tt";
+ok(-f $f);
+`chmod +w $f`;
+append_file($f, "hhhhh");
+sleep 1;
+$ua = LWP::UserAgent->new;
+like($ua->get("http://$host/ttt/onecoltable/list/r")->content, qr/hhhhh/)
+	or diag(read_file($f));
+
 finish $h or die "cmd returned $?" ;
 
 like(`psql -l`, qr/swit_run_server_db/);

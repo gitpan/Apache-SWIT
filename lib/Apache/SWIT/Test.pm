@@ -175,10 +175,11 @@ sub _direct_update {
 
 sub mech_get_base {
 	my ($self, $loc) = @_;
-	return $self->mech->get($loc) if $loc =~ /^http:\/\//;
+	return $self->mech->get($loc) if $loc =~ /^\w+:\/\//;
 	$loc = $self->root_location . "/$loc" unless ($loc =~ /^\//);
-	my $url = "http://" . Apache::TestRequest::hostport() . $loc;
-	return $self->mech->get($url);
+	my $url = $ENV{APACHE_SWIT_SERVER_URL};
+	$url =~ s/\/$//;
+	return $self->mech->get($url . $loc);
 }
 
 sub _find_url_to_go {
