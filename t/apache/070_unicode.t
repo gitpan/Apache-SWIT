@@ -1,6 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
+use utf8;
 use Test::More tests => 11;
 use Apache::SWIT::Test::Utils;
 use Apache::SWIT::Session;
@@ -22,17 +23,16 @@ $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 });
 
 $t->ht_db_page_u(ht => { val => 'дед' });
-$t->ok_ht_db_page_r(ht => {
-	HT_SEALED_id => '1', val => 'дед',
-});
-like($t->mech->content, qr/дед/);
-
 my $dbh = Apache::SWIT::DB::Connection->instance->db_handle;
 my $arr = $dbh->selectcol_arrayref("select val from dbp");
 {
-use utf8;
-is_deeply($arr, [ 'дед' ]);
+is_deeply($arr, [ 'дед' ]) or ASTU_Wait;
 };
+
+$t->ok_ht_db_page_r(ht => {
+	HT_SEALED_id => '1', val => 'дед',
+}) or ASTU_Wait;
+like($t->mech->content, qr/дед/);
 
 my $c = $arr->[0];
 $c =~ s/\W/m/g;

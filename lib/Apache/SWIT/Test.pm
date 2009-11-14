@@ -10,12 +10,6 @@ sub reload {
 	$self->get($self->uri);
 }
 
-sub update_html {
-	my ($self, $html) = @_;
-	return $self->SUPER::update_html(utf8::is_utf8($html)
-			? Encode::encode_utf8($html) : $html);
-}
-
 sub redirect_ok {
 	my $self = shift;
 	return $self->max_redirect ? $self->SUPER::redirect_ok(@_) : undef;
@@ -41,12 +35,6 @@ use Apache::SWIT;
 BEGIN {
 	no strict 'refs';
 	no warnings 'redefine';
-	my $init_sub = HTML::Parser->can("init");
-	*{ "HTML::Parser::init" } = sub {
-		my $res = shift()->$init_sub(@_);
-		$res->utf8_mode(1);
-		return $res;
-	};
 	*{ "Apache::SWIT::swit_die" } = sub {
 		my ($class, $msg, $r, @more) = @_;
 		confess "$msg with request:\n" . $r->as_string . "and more:\n"

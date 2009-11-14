@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 19;
+use Test::More tests => 21;
 use Apache::SWIT::Test::Utils;
 use Encode;
 
@@ -16,12 +16,18 @@ my $t;
 eval { $t = T::Test->new_guitest; };
 
 SKIP: {
-	skip "Unable to load guitest", 16 unless $t;
+	skip "Unable to load guitest", 18 unless $t;
 
 is($ENV{MOZ_NO_REMOTE}, 1); # or else there are coredumps sometimes
 $t->ok_ht_db_page_r(base_url => '/test/db_page/r', ht => {
 	val => ''
 });
+
+my $cla = $t->mech->get_html_element_by_id("cla");
+ok($cla);
+
+$t->mech->x_click($cla, 5, 5);
+like($t->mech->pull_alerts, qr/Clicked/) or ASTU_Wait;
 
 $t->mech->run_js("return form_submit()");
 is_deeply($t->mech->console_messages, []);

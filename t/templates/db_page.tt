@@ -10,6 +10,7 @@ function form_submit() {
 }
 </script>
 </head>
+<a id="cla" href="javascript:alert('Clicked');">Click</a>
 <form id="f" action="u">
 [% id %] <br />
 [% val %]
