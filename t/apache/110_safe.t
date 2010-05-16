@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 58;
+use Test::More tests => 62;
 use Apache::SWIT::Session;
 use Apache::SWIT::Test::Utils;
 
@@ -19,7 +19,7 @@ $t->ok_ht_safe_r(make_url => 1, ht => { name => '', email => ''
 like($t->mech->content, qr/html>\n$/) or exit 1;
 
 $t->ht_safe_u(ht => { name => 'foo', email => 'boo' });
-$t->ok_ht_safe_r(ht => { name => '', email => '' });
+$t->ok_ht_safe_r(ht => { name => 'foo', email => 'boo' });
 unlike($t->mech->content, qr/Name cannot be empty/);
 is_deeply($dbh->selectcol_arrayref("select count(*) from safet"), [ 1 ]);
 
@@ -54,12 +54,20 @@ like($t->mech->content, qr/o integer/);
 
 is_deeply($dbh->selectcol_arrayref("select count(*) from safet"), [ 1 ]);
 $t->mech->reload;
-$t->ht_safe_u(ht => { name => 'heek', email => 'al@example.com'
+
+$t->ht_safe_u(ht => { name => 'йойо', email => 'al@example.com'
 	, k1 => 12, k2 => 13 });
 is_deeply($dbh->selectcol_arrayref("select count(*) from safet"), [ 2 ]);
 
 unlike($t->mech->content, qr/k1 uq k2/);
 unlike($t->mech->content, qr/k2 uq k1/);
+
+like($t->mech->uri, qr/s_id/);
+$t->ok_ht_safe_r(ht => { name => 'йойо' }) or ASTU_Wait($t->mech->uri);
+
+$t->ht_safe_u(ht => { email => '', k1 => 12, k2 => 13 });
+is_deeply($dbh->selectcol_arrayref("select count(*) from safet"), [ 2 ]);
+$t->ok_ht_safe_r(ht => { name => 'йойо' });
 
 $t->ht_safe_u(ht => { name => 'fook', email => 'j@example.com'
 	, k1 => 12, k2 => 13 });

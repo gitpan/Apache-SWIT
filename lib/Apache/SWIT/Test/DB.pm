@@ -12,7 +12,7 @@ our $Test_DB;
 sub setup {
 	my ($class, $dbn, $sc, $args) = @_;
 	my $nd = $ENV{APACHE_SWIT_DB_NAME};
-	$ENV{APACHE_SWIT_DB_NAME} = $dbn unless $ENV{APACHE_SWIT_DB_NAME};
+	$ENV{APACHE_SWIT_DB_NAME} = "$dbn$$" unless $ENV{APACHE_SWIT_DB_NAME};
 	conv_eval_use($sc);
 	local $SIG{__DIE__} = sub {
 		print STDERR "# " . Carp::longmess(@_);
@@ -41,6 +41,6 @@ LOAD:
 	write_file("/tmp/db_is_clean.$ENV{APACHE_SWIT_DB_NAME}.$<", "\n");
 }
 
-END { $Test_DB->destroy; }
+END { my $res = $?; undef $Test_DB; exit $res; };
 
 1;

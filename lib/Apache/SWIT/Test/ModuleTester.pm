@@ -13,7 +13,7 @@ use Linux::Unshare qw(unshare_ns);
 use Test::TempDatabase;
 
 __PACKAGE__->mk_accessors(qw(root_dir root_class install_dir project_class
-			subsystem_name));
+			subsystem_name no_cleanup));
 
 sub new {
 	delete $ENV{TEST_FILES};
@@ -22,7 +22,7 @@ sub new {
 
 	my $self = shift()->SUPER::new(@_);
 	$self->root_dir(tempdir("/tmp/" . basename($0) 
-				. "_XXXXXX", CLEANUP => 1))
+				. "_XXXXXX", CLEANUP => $self->no_cleanup ? 0 : 1))
 		unless $self->root_dir;
 	return $self;
 }

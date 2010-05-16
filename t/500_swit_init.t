@@ -40,8 +40,15 @@ $t->with_or_without_mech_do(1, sub {
 ENDM
 
 sub check_db_is_clean {
-	ok($< ? unlink("/tmp/db_is_clean.ttt_test_db.$<")
-		: ! -f "/tmp/db_is_clean.ttt_test_db.$<") or ASTU_Wait;
+	my @files = glob("/tmp/db_is_clean.ttt_test_db*.$<");
+	my $res;
+	if ($<) {
+		$res = ok(scalar(@files));
+		unlink($_) for @files;
+	} else {
+		$res = ok(!scalar(@files));
+	}
+	$res or ASTU_Wait;
 }
 
 check_db_is_clean();

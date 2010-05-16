@@ -77,7 +77,7 @@ $tstr =~ s/(\$t->ok_ht_thetable_info_r)/die;$1/;
 write_file('t/dual/002_the_table_error.t', $tstr);
 $res = `make test_direct 2>&1`;
 isnt($?, 0) or ASTU_Wait($res);
-like($res, qr/011_the_table\.+ok/) or ASTU_Wait;
+like($res, qr/011_the_table.+ok/) or ASTU_Wait;
 
 append_file('t/dual/011_the_table.t', <<'ENDS');
 $t->reset_db;
@@ -89,7 +89,7 @@ $res = `make test_apache 2>&1`;
 isnt($?, 0) or ASTU_Wait($res);
 
 my $elog = read_file('t/logs/error_log');
-like($res, qr/011_the_table\.+ok/);
+like($res, qr/011_the_table.+ok/);
 unlike($elog, qr/ERROR/);
 unlike($elog, qr/SIGHUP/);
 

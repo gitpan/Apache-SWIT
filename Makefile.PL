@@ -32,7 +32,7 @@ realclean ::
 	'ExtUtils::ModuleMaker' => '', 'HTML::Tested::ClassDBI' => '0.21',
 	'Apache2::Request' => '', 'Class::Accessor' => '', YAML => '',
 	'Apache2::Cookie' => '', 'DBIx::VersionedSchema' => '0.03',
-	'Test::TempDatabase' => '0.13', 'Class::DBI::Pg::More' => '0.04',
+	'Test::TempDatabase' => '0.16', 'Class::DBI::Pg::More' => '0.04',
 	'Class::DBI' => '', 'Class::DBI::Pg' => '0.09', 'File::Slurp' => '',
 	'IPC::Run' => '', 'HTML::Tested::JavaScript' => '0.13'
 	, 'Package::Alias' => '', 'Linux::Unshare' => ''

@@ -47,7 +47,7 @@ use Carp;
 use Data::Dumper;
 use File::Slurp;
 
-our $VERSION = 0.51;
+our $VERSION = 0.52;
 
 sub swit_startup {}
 

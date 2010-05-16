@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Apache-SWIT
-version:             0.51
+version:             0.52
 abstract:            mod_perl server with integrated testing
 license:             ~
 author:              
@@ -30,7 +30,7 @@ requires:
     Queue::Worker:                 
     Template:                      
     Test::Simple:                  0.44
-    Test::TempDatabase:            0.13
+    Test::TempDatabase:            0.16
     WWW::Mechanize:                
     YAML:                          
 meta-spec:

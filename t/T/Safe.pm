@@ -30,6 +30,7 @@ use Carp;
 
 sub ht_swit_render {
 	my ($class, $r, $root) = @_;
+	$root->cdbi_load if $root->s_id;
 	$root->referer($r->headers_in->{Referer});
 	$root->name('boob') if $r->param('boob');
 	$root->sl([ map { $root->sl_containee->new({ o => $_ }) } (1 .. 2) ]);
@@ -54,7 +55,7 @@ sub ht_swit_update {
 		$dbh->do("insert into another_t (name) values ('fff')");
 	}
 	$root->cdbi_create;
-	return "r";
+	return $root->ht_make_query_string("r", "s_id");
 }
 
 sub ht_swit_update_die {

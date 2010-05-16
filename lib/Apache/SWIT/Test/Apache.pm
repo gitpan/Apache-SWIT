@@ -11,7 +11,10 @@ use Apache::SWIT::Test::Utils;
 
 sub Check_For_Run_Server {
 	my $argv = shift;
-	my $rshp = $ENV{__APACHE_SWIT_RUN_SERVER__} or return;
+	my $rshp = $ENV{__APACHE_SWIT_RUN_SERVER__} or do {
+		$ENV{APACHE_TEST_PORT} = 'select';
+		return;
+	};
 	my ($h, $p) = split(/:/, $rshp);
 	return unless ($h && $p);
 	push @$argv, "-servername", $h, "-port", $p;
@@ -34,6 +37,8 @@ sub swit_run {
 sub run_tests {
 	my $res = 0;
 	ASTU_Mem_Show("Apache memory before");
+	$ENV{APACHE_SWIT_SERVER_URL} = "http://" . Apache::TestRequest::hostport . "/";
+	delete $ENV{APACHE_TEST_PORT};
 	if ($ENV{__APACHE_SWIT_RUN_SERVER__}) {
 		print STDERR "# Server url is $ENV{APACHE_SWIT_SERVER_URL}\n";
 		print STDERR "# Press Enter to finish ...\n";
@@ -47,8 +52,7 @@ sub run_tests {
 
 sub configure {
 	shift()->SUPER::configure(@_);
-	$ENV{APACHE_SWIT_SERVER_URL} = "http://" . Apache::TestRequest::hostport
-		. "/";
+	$ENV{APACHE_SWIT_SERVER_URL} = "http://" . Apache::TestRequest::hostport . "/";
 	my $cf = read_file('t/conf/httpd.conf');
 	$cf =~ s/TransferLog/#/g;
 	if ($ENV{APACHE_SWIT_PROFILE}) {
