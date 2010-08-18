@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Apache::SWIT::Test::Utils;
 use Encode;
 
@@ -27,7 +27,9 @@ my $cla = $t->mech->get_html_element_by_id("cla");
 ok($cla);
 
 $t->mech->x_click($cla, 5, 5);
-like($t->mech->pull_alerts, qr/Clicked/) or ASTU_Wait;
+my $pa = $t->mech->pull_alerts;
+like($pa, qr/Clicked/) or ASTU_Wait;
+unlike($pa, qr/\w+=\w+/) or ASTU_Wait;
 
 $t->mech->run_js("return form_submit()");
 is_deeply($t->mech->console_messages, []);

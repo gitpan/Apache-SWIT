@@ -31,7 +31,7 @@ sub end {
 	my $cookie = Apache2::Cookie->new($self->{_request}, 
 			'-name' => $self->cookie_name,
 			'-value' => $self->session_value);
-	$cookie->path($self->{_request}->dir_config("SWITRootLocation"));
+	$cookie->path($self->{_request}->dir_config("SWITRootLocation") . ";HttpOnly");
 	$cookie->bake($self->{_request});
 }
 

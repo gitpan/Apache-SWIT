@@ -8,9 +8,13 @@ function form_submit() {
 	document.getElementById("val").value = "баба";
 	document.getElementById("f").submit();
 }
+
+function click() {
+	alert('Clicked ' + document.cookie);
+}
 </script>
 </head>
-<a id="cla" href="javascript:alert('Clicked');">Click</a>
+<a id="cla" href="javascript:click();">Click</a>
 <form id="f" action="u">
 [% id %] <br />
 [% val %]
