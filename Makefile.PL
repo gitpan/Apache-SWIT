@@ -12,7 +12,22 @@ test :: test_apache
 t/templates/2mb.tt :: Makefile
 	perl -e 'print "<html><body>" . ("x" x (2048 * 64)) . " [% hello %] </body></html>"' > t/templates/2mb.tt
 
-test_apache :: pure_all t/templates/2mb.tt
+t/conf/extra.conf.in :: t/conf/extra.conf.part blib/lib/Apache/SWIT/Maker.pm
+	perl -I blib/lib -MApache::SWIT::Maker \
+		-e 'print Apache::SWIT::Maker->gen_conf_header' > t/conf/extra.conf.in
+	cat t/conf/extra.conf.part >> t/conf/extra.conf.in
+
+t/conf/mime.types ::
+	ln -sf /etc/mime.types t/conf
+
+t/public_html/hello.xhtml ::
+	ln -sf `pwd`/t/public_html/hello.html t/public_html/hello.xhtml
+
+t/public_html/hello.svg ::
+	ln -sf `pwd`/t/public_html/hello.html t/public_html/hello.svg
+
+test_apache :: pure_all t/templates/2mb.tt t/conf/extra.conf.in t/conf/mime.types \
+			t/public_html/hello.xhtml t/public_html/hello.svg
 	$(RM_F) t/logs/access_log  t/logs/error_log
 	ulimit -c unlimited && PERL_DL_NONLAZY=1 $(FULLPERLRUN) -I t/ t/apache_test.pl $(APACHE_TEST_FILES)
 

@@ -81,7 +81,7 @@ t/570_run_server.t
 t/580_sub_override.t
 t/590_sub_scaffold.t
 t/910_self_install.t
-t/conf/extra.conf.in
+t/conf/extra.conf.part
 t/conf/do_swit_startups.pl
 t/apache_test.pl
 t/apache/001_basic.t

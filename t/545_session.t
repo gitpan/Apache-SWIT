@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::TempDatabase;
 use File::Slurp;
 use Apache::SWIT::Test::Utils;
@@ -98,6 +98,7 @@ ENDM
 $res = `make test_direct 2>&1`;
 isnt($?, 0) or ASTU_Wait($res);
 like($res, qr/VAR1.*first/ms);
+like($res, qr/Failed at.*001_load.t line 47.*001_load.t line 47/ms);
 
 $res = `make test_apache 2>&1`;
 isnt($?, 0) or ASTU_Wait($res);

@@ -300,12 +300,8 @@ return <<ENDS
 ENDS
 }
 
-sub regenerate_httpd_conf {
-	my $self = shift;
-	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
-	my $tree = Apache::SWIT::Maker::Config->instance;
-	my ($sc, $rl) = ($tree->{session_class}, $tree->{root_location});
-	my $ht_in = <<ENDS;
+sub gen_conf_header {
+	return <<ENDS;
 <IfModule !apreq_module.c>
 	LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
 </IfModule>
@@ -315,10 +311,18 @@ sub regenerate_httpd_conf {
 <IfModule !mod_deflate.c>
 	LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
 </IfModule>
-AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript application/javascript
+AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/x-javascript application/javascript application/xhtml+xml image/svg+xml
 
 PerlModule Apache2::Request Apache2::Cookie Apache2::Upload Apache2::SubRequest
+ENDS
+}
 
+sub regenerate_httpd_conf {
+	my $self = shift;
+	my $gq = Apache::SWIT::Maker::GeneratorsQueue->new;
+	my $tree = Apache::SWIT::Maker::Config->instance;
+	my ($sc, $rl) = ($tree->{session_class}, $tree->{root_location});
+	my $ht_in = $self->gen_conf_header . <<ENDS;
 PerlPostConfigRequire \@ServerRoot\@/conf/startup.pl
 PerlPostConfigRequire \@ServerRoot\@/conf/do_swit_startups.pl
 <Location $rl>

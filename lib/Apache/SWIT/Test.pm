@@ -334,10 +334,12 @@ sub make_aliases {
 		*{ "$class\::ok_$r_func" } = sub {
 			my $self = shift;
 			my @tre = $self->$r_func(@_);
-			my $res = is(shift @tre, undef);
-			carp('#' . ($self->mech ? "" : " " . Dumper(\@tre)))
-				unless $res;
-			return $res;
+			my $ftr = shift @tre;
+			return ok(1) unless defined($ftr);
+
+			Carp::cluck("# Failed");
+			carp("# $ftr " . ($self->mech ? "" : " " . Dumper(\@tre)));
+			return ok(0);
 		};
 	}
 }

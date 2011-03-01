@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More tests => 58;
+use Test::More tests => 63;
 use File::Basename qw(dirname);
 use File::Temp qw(tempdir);
 use Data::Dumper;
@@ -139,11 +139,18 @@ ENDS
 # works
 is($t->ok_follow_link(text => 'This'), 1);
 $t->ok_get('/test/www/hello.html');
-
 my $_hc = $t->mech->content;
 my $_uri = $t->mech->uri;
 
 $t->content_like(qr/HELLO, HTML/);
+is($t->mech->response->headers->content_encoding, "gzip") or ASTU_Wait;
+
+$t->ok_get('/test/www/hello.svg');
+is($t->mech->response->headers->content_encoding, "gzip") or ASTU_Wait;
+
+$t->ok_get('/test/www/hello.xhtml');
+is($t->mech->response->headers->content_encoding, "gzip") or ASTU_Wait;
+
 $t->ok_get('/test/www/nothing.html', 404);
 
 $t->ok_get($_uri);
